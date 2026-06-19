@@ -1,51 +1,51 @@
 import os
 import sys
-import numpy as np
 import pickle
+import numpy as np
+import traci
 
-# SUMO setup
+# ---------------- SUMO SETUP ----------------
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
     sys.exit("SUMO_HOME not set")
 
-import traci
-
-
-# ---------------- LOAD TRAINED MODEL ----------------
-with open("qtable.pkl", "rb") as f:
-    q_table = pickle.load(f)
-
 
 # ---------------- CONFIG ----------------
 J1 = "J1"
+J2 = "J2"
 
-GREEN_TIME = 6
+GREEN_TIME = 6   # MUST match training
 YELLOW_TIME = 3
 
 ACTION_SPACE = [
-    0,  # phase A
-    2   # phase B
+    (0, 0),
+    (0, 2),
+    (2, 0),
+    (2, 2)
 ]
 
+# ---------------- LOAD Q TABLE ----------------
+with open("qtable.pkl", "rb") as f:
+    q_table = pickle.load(f)
 
-# ---------------- STATE ----------------
+print("Loaded states:", len(q_table))
+
+
+# ---------------- STATE FUNCTION (MUST MATCH TRAINING) ----------------
+
 def bucket(x):
     if x == 0:
         return 0
-    elif x <= 2:
+    elif x <= 3:
         return 1
-    elif x <= 4:
+    elif x <= 7:
         return 2
-    elif x <= 6:
+    elif x <= 12:
         return 3
-    elif x <= 8:
-        return 4
-    elif x <= 10:
-        return 5
     else:
-        return 6
+        return 4
 
 
 def lane_count(edge):
@@ -53,72 +53,75 @@ def lane_count(edge):
 
 
 def get_state():
-    ns = lane_count("N1_J1") + lane_count("S1_J1")
-    ew = lane_count("W_J1") + lane_count("J2_J1")
+    j1_ns = lane_count("N1_J1") + lane_count("S1_J1")
+    j1_ew = lane_count("W_J1") + lane_count("J2_J1")
 
-    return (bucket(ns), bucket(ew))
+    j2_ns = lane_count("N2_J2") + lane_count("S2_J2")
+    j2_ew = lane_count("J1_J2") + lane_count("E_J2")
+
+    return (
+        bucket(j1_ns),
+        bucket(j1_ew),
+        bucket(j2_ns),
+        bucket(j2_ew)
+    )
 
 
 # ---------------- POLICY (GREEDY ONLY) ----------------
+
 def choose_action(state):
     if state not in q_table:
         return 0
     return int(np.argmax(q_table[state]))
 
 
-# ---------------- SAFE SIGNAL CONTROL ----------------
-def run_yellow(phase):
-    current = traci.trafficlight.getPhase(J1)
+# ---------------- CONTROL ----------------
 
-    if current != phase:
-        traci.trafficlight.setPhase(J1, 1)  # yellow phase
-        for _ in range(YELLOW_TIME):
-            traci.simulationStep()
+def run_cycle(j1_phase, j2_phase):
 
-    traci.trafficlight.setPhase(J1, phase)
-
-
-def apply_action(phase):
-    run_yellow(phase)
+    traci.trafficlight.setPhase(J1, j1_phase)
+    traci.trafficlight.setPhase(J2, j2_phase)
 
     for _ in range(GREEN_TIME):
         traci.simulationStep()
 
 
-# ---------------- TEST LOOP ----------------
+# ---------------- TEST ----------------
+
 def test():
 
-    traci.start(["sumo", "-c", "simulation.sumocfg"])
+    traci.start(["sumo-gui", "-c", "simulation.sumocfg"])
     traci.simulationStep()
 
     state = get_state()
 
     total_wait = 0
-    step_count = 0
+    total_vehicles = 0
+    steps = 0
 
     while traci.simulation.getMinExpectedNumber() > 0:
 
-        action_idx = choose_action(state)
-        phase = ACTION_SPACE[action_idx]
+        action = choose_action(state)
+        j1_phase, j2_phase = ACTION_SPACE[action]
 
-        apply_action(phase)
+        run_cycle(j1_phase, j2_phase)
 
         state = get_state()
+        steps += 1
 
-        # evaluation metric only (NO learning)
-        for lane in traci.trafficlight.getControlledLanes(J1):
-            total_wait += traci.lane.getWaitingTime(lane)
+        # -------- METRICS --------
+        total_vehicles += len(traci.simulation.getArrivedIDList())
 
-        step_count += 1
+        step_wait = 0
+        for veh in traci.vehicle.getIDList():
+            step_wait += traci.vehicle.getWaitingTime(veh)
+
+        total_wait += step_wait
 
     traci.close()
 
-    print("\n===== TEST RESULTS (J1 ONLY CONTROL) =====")
-    print("Total waiting time:", total_wait)
-    print("Average waiting per step:", total_wait / max(step_count, 1))
-
-
-# ---------------- MAIN ----------------
-if __name__ == "__main__":
-    test()
-    
+    print("\n===== TEST RESULTS (BOTH JUNCTIONS CONTROLLED) =====")
+    print("Steps:", steps)
+    print("Vehicles Arrived:", total_vehicles)
+    print("Cumulative Waiting Time:", total_wait)
+    print("Avg Wait per Step:", total_wait / max(steps, 1))
