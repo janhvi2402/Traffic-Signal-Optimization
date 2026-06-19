@@ -16,44 +16,35 @@ J2 = "J2"
 GREEN_TIME = 10
 
 ACTION_SPACE = [
-    (0,0),
-    (0,2),
-    (2,0),
-    (2,2)
+    (0, 0),
+    (0, 2),
+    (2, 0),
+    (2, 2)
 ]
 
 with open("qtable.pkl", "rb") as f:
     q_table = pickle.load(f)
 
+print("States learned:", len(q_table))
+
 
 def bucket(x):
-
     if x == 0:
         return 0
-
     elif x <= 3:
         return 1
-
     elif x <= 7:
         return 2
-
     elif x <= 12:
         return 3
-
     else:
         return 4
 
 
 def lane_count(edge):
-    lane_id = edge + "_0"
-    return traci.lane.getLastStepVehicleNumber(lane_id)
+    return traci.lane.getLastStepVehicleNumber(edge + "_0")
 
-# (
-#  J1_NS,
-#  J1_EW,
-#  J2_NS,
-#  J2_EW
-# )
+
 def get_state():
 
     j1_ns = (
@@ -83,15 +74,22 @@ def get_state():
         bucket(j2_ew)
     )
 
+
 traci.start([
     "sumo-gui",
     "-c",
     "simulation.sumocfg"
 ])
 
-total_wait = 0
+traci.simulationStep()
+
+cumulative_wait = 0
+arrived = 0
+step = 0
 
 while traci.simulation.getMinExpectedNumber() > 0:
+
+    step += 1
 
     state = get_state()
 
@@ -109,15 +107,25 @@ while traci.simulation.getMinExpectedNumber() > 0:
 
         traci.simulationStep()
 
-        for tls in [J1, J2]:
+        arrived += len(
+            traci.simulation.getArrivedIDList()
+        )
 
-            lanes = list(set(
-                traci.trafficlight.getControlledLanes(tls)
-            ))
+        step_wait = 0
 
-            for lane in lanes:
-                total_wait += traci.lane.getWaitingTime(lane)
+        for veh in traci.vehicle.getIDList():
+            step_wait += traci.vehicle.getWaitingTime(veh)
+
+        cumulative_wait += step_wait
+
+    if step % 100 == 0:
+        print(
+            "Remaining:",
+            traci.simulation.getMinExpectedNumber()
+        )
 
 traci.close()
 
-print("Total Waiting Time:", total_wait)
+print("\n===== RESULTS =====")
+print("Vehicles Arrived :", arrived)
+print("Cumulative Wait  :", cumulative_wait)
