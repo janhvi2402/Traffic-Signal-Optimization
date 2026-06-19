@@ -1,40 +1,51 @@
 import os
 import sys
-import pickle
 import numpy as np
-import traci
+import pickle
 
+# SUMO setup
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
     sys.exit("SUMO_HOME not set")
 
-J1 = "J1"
+import traci
 
-GREEN_TIME = 10
 
-ACTION_SPACE = [
-    0,2
-]
-
+# ---------------- LOAD TRAINED MODEL ----------------
 with open("qtable.pkl", "rb") as f:
     q_table = pickle.load(f)
 
-print("States learned:", len(q_table))
+
+# ---------------- CONFIG ----------------
+J1 = "J1"
+
+GREEN_TIME = 6
+YELLOW_TIME = 3
+
+ACTION_SPACE = [
+    0,  # phase A
+    2   # phase B
+]
 
 
+# ---------------- STATE ----------------
 def bucket(x):
     if x == 0:
         return 0
-    elif x <= 3:
+    elif x <= 2:
         return 1
-    elif x <= 7:
+    elif x <= 4:
         return 2
-    elif x <= 12:
+    elif x <= 6:
         return 3
-    else:
+    elif x <= 8:
         return 4
+    elif x <= 10:
+        return 5
+    else:
+        return 6
 
 
 def lane_count(edge):
@@ -42,73 +53,72 @@ def lane_count(edge):
 
 
 def get_state():
+    ns = lane_count("N1_J1") + lane_count("S1_J1")
+    ew = lane_count("W_J1") + lane_count("J2_J1")
 
-    j1_ns = (
-        lane_count("N1_J1")
-        + lane_count("S1_J1")
-    )
-
-    j1_ew = (
-        lane_count("W_J1")
-        + lane_count("J2_J1")
-    )
-
-    return (
-        bucket(j1_ns),
-        bucket(j1_ew)
-    )
+    return (bucket(ns), bucket(ew))
 
 
-traci.start([
-    "sumo-gui",
-    "-c",
-    "simulation.sumocfg"
-])
+# ---------------- POLICY (GREEDY ONLY) ----------------
+def choose_action(state):
+    if state not in q_table:
+        return 0
+    return int(np.argmax(q_table[state]))
 
-traci.simulationStep()
 
-cumulative_wait = 0
-arrived = 0
-step = 0
+# ---------------- SAFE SIGNAL CONTROL ----------------
+def run_yellow(phase):
+    current = traci.trafficlight.getPhase(J1)
 
-while traci.simulation.getMinExpectedNumber() > 0:
-
-    step += 1
-
-    state = get_state()
-
-    if state in q_table:
-        action_idx = np.argmax(q_table[state])
-    else:
-        action_idx = 0
-
-    phase = ACTION_SPACE[action_idx]
+    if current != phase:
+        traci.trafficlight.setPhase(J1, 1)  # yellow phase
+        for _ in range(YELLOW_TIME):
+            traci.simulationStep()
 
     traci.trafficlight.setPhase(J1, phase)
 
-    for _ in range(GREEN_TIME):
 
+def apply_action(phase):
+    run_yellow(phase)
+
+    for _ in range(GREEN_TIME):
         traci.simulationStep()
 
-        arrived += len(
-            traci.simulation.getArrivedIDList()
-        )
 
-        step_wait = 0
+# ---------------- TEST LOOP ----------------
+def test():
 
-        for veh in traci.vehicle.getIDList():
-            step_wait += traci.vehicle.getWaitingTime(veh)
+    traci.start(["sumo", "-c", "simulation.sumocfg"])
+    traci.simulationStep()
 
-        cumulative_wait += step_wait
+    state = get_state()
 
-    if step % 100 == 0:
-        print(
-            "Remaining:",
-            traci.simulation.getMinExpectedNumber()
-        )
+    total_wait = 0
+    step_count = 0
 
-traci.close()
+    while traci.simulation.getMinExpectedNumber() > 0:
 
-print("\n===== RESULTS =====")
-print("Vehicles Arrived :", arrived)
-print("Cumulative Wait  :", cumulative_wait)
+        action_idx = choose_action(state)
+        phase = ACTION_SPACE[action_idx]
+
+        apply_action(phase)
+
+        state = get_state()
+
+        # evaluation metric only (NO learning)
+        for lane in traci.trafficlight.getControlledLanes(J1):
+            total_wait += traci.lane.getWaitingTime(lane)
+
+        step_count += 1
+
+    traci.close()
+
+    print("\n===== TEST RESULTS (J1 ONLY CONTROL) =====")
+    print("Total waiting time:", total_wait)
+    print("Average waiting per step:", total_wait / max(step_count, 1))
+
+
+# ---------------- MAIN ----------------
+if __name__ == "__main__":
+    test()
+    
