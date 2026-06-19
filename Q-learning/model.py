@@ -1,32 +1,22 @@
 import os
 import sys
-import random
-import numpy as np
 import pickle
+import numpy as np
+import traci
 
-# SUMO setup
+# ---------------- SUMO SETUP ----------------
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
     sys.exit("SUMO_HOME not set")
 
-import traci
 
-
-# ---------------- HYPERPARAMETERS ----------------
-ALPHA = 0.1
-GAMMA = 0.9
-EPSILON = 0.3
-EPSILON_DECAY = 0.995
-MIN_EPSILON = 0.05
-
-EPISODES = 100
-
+# ---------------- CONFIG ----------------
 J1 = "J1"
 J2 = "J2"
 
-GREEN_TIME = 6   # reduced (important for faster feedback)
+GREEN_TIME = 6   # MUST match training
 YELLOW_TIME = 3
 
 ACTION_SPACE = [
@@ -36,10 +26,14 @@ ACTION_SPACE = [
     (2, 2)
 ]
 
-q_table = {}
+# ---------------- LOAD Q TABLE ----------------
+with open("qtable.pkl", "rb") as f:
+    q_table = pickle.load(f)
+
+print("Loaded states:", len(q_table))
 
 
-# ---------------- STATE HELPERS ----------------
+# ---------------- STATE FUNCTION (MUST MATCH TRAINING) ----------------
 
 def bucket(x):
     if x == 0:
@@ -73,113 +67,61 @@ def get_state():
     )
 
 
-# ---------------- OPTIMIZED REWARD ----------------
-
-def get_reward():
-    total_wait = 0
-    queue_pressure = 0
-
-    for tls in [J1, J2]:
-        lanes = set(traci.trafficlight.getControlledLanes(tls))
-
-        for lane in lanes:
-            wait = traci.lane.getWaitingTime(lane)
-            veh = traci.lane.getLastStepVehicleNumber(lane)
-
-            total_wait += wait
-            queue_pressure += veh
-
-    # normalized reward (IMPORTANT for stability)
-    reward = -((total_wait * 0.7) + (queue_pressure * 0.3)) / 50.0
-
-    return reward
-
-
-# ---------------- POLICY ----------------
+# ---------------- POLICY (GREEDY ONLY) ----------------
 
 def choose_action(state):
     if state not in q_table:
-        q_table[state] = np.zeros(len(ACTION_SPACE))
-
-    if random.random() < EPSILON:
-        return random.randint(0, len(ACTION_SPACE) - 1)
-
+        return 0
     return int(np.argmax(q_table[state]))
 
 
-# ---------------- SAFE TRANSITION ----------------
+# ---------------- CONTROL ----------------
 
-def run_yellow(tls_id, next_phase):
-    current_phase = traci.trafficlight.getPhase(tls_id)
+def run_cycle(j1_phase, j2_phase):
 
-    if current_phase != next_phase:
-        traci.trafficlight.setPhase(tls_id, 1)  # yellow
-        for _ in range(YELLOW_TIME):
-            traci.simulationStep()
-
-    traci.trafficlight.setPhase(tls_id, next_phase)
-
-
-def apply_action(j1_phase, j2_phase):
-    run_yellow(J1, j1_phase)
-    run_yellow(J2, j2_phase)
+    traci.trafficlight.setPhase(J1, j1_phase)
+    traci.trafficlight.setPhase(J2, j2_phase)
 
     for _ in range(GREEN_TIME):
         traci.simulationStep()
 
 
-# ---------------- TRAINING LOOP ----------------
+# ---------------- TEST ----------------
 
-def train():
+def test():
 
-    global EPSILON
+    traci.start(["sumo-gui", "-c", "simulation.sumocfg"])
+    traci.simulationStep()
 
-    for episode in range(EPISODES):
+    state = get_state()
 
-        traci.start(["sumo", "-c", "simulation.sumocfg"])
-        traci.simulationStep()
+    total_wait = 0
+    total_vehicles = 0
+    steps = 0
+
+    while traci.simulation.getMinExpectedNumber() > 0:
+
+        action = choose_action(state)
+        j1_phase, j2_phase = ACTION_SPACE[action]
+
+        run_cycle(j1_phase, j2_phase)
 
         state = get_state()
-        total_reward = 0
+        steps += 1
 
-        while traci.simulation.getMinExpectedNumber() > 0:
+        # -------- METRICS --------
+        total_vehicles += len(traci.simulation.getArrivedIDList())
 
-            action_idx = choose_action(state)
-            new_j1, new_j2 = ACTION_SPACE[action_idx]
+        step_wait = 0
+        for veh in traci.vehicle.getIDList():
+            step_wait += traci.vehicle.getWaitingTime(veh)
 
-            apply_action(new_j1, new_j2)
+        total_wait += step_wait
 
-            reward = get_reward()
-            next_state = get_state()
+    traci.close()
 
-            if next_state not in q_table:
-                q_table[next_state] = np.zeros(len(ACTION_SPACE))
-
-            best_next = np.max(q_table[next_state])
-
-            q_table[state][action_idx] += ALPHA * (
-                reward + GAMMA * best_next - q_table[state][action_idx]
-            )
-
-            state = next_state
-            total_reward += reward
-
-        traci.close()
-
-        # decay exploration
-        EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
-
-        print(f"Episode {episode+1} | Reward: {total_reward:.2f} | EPS: {EPSILON:.3f}")
-
-    # save Q-table
-    with open("qtable.pkl", "wb") as f:
-        pickle.dump(q_table, f)
-
-    print("\nTraining Complete")
-    print("Q-table saved")
-
-
-# ---------------- MAIN ----------------
-
-if __name__ == "__main__":
-    train()
+    print("\n===== TEST RESULTS (BOTH JUNCTIONS CONTROLLED) =====")
+    print("Steps:", steps)
+    print("Vehicles Arrived:", total_vehicles)
+    print("Cumulative Waiting Time:", total_wait)
+    print("Avg Wait per Step:", total_wait / max(steps, 1))
