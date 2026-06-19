@@ -13,16 +13,20 @@ else:
 
 import traci
 
-# Hyperparameters
+
+# ---------------- HYPERPARAMETERS ----------------
 ALPHA = 0.1
 GAMMA = 0.9
-EPSILON = 0.2
+EPSILON = 0.3
+EPSILON_DECAY = 0.995
+MIN_EPSILON = 0.05
+
 EPISODES = 100
 
 J1 = "J1"
 J2 = "J2"
 
-GREEN_TIME = 10
+GREEN_TIME = 6   # reduced (important for faster feedback)
 YELLOW_TIME = 3
 
 ACTION_SPACE = [
@@ -51,8 +55,7 @@ def bucket(x):
 
 
 def lane_count(edge):
-    lane_id = edge + "_0"
-    return traci.lane.getLastStepVehicleNumber(lane_id)
+    return traci.lane.getLastStepVehicleNumber(edge + "_0")
 
 
 def get_state():
@@ -70,20 +73,29 @@ def get_state():
     )
 
 
-# ---------------- REWARD ----------------
+# ---------------- OPTIMIZED REWARD ----------------
 
 def get_reward():
     total_wait = 0
+    queue_pressure = 0
 
     for tls in [J1, J2]:
-        lanes = list(set(traci.trafficlight.getControlledLanes(tls)))
+        lanes = set(traci.trafficlight.getControlledLanes(tls))
+
         for lane in lanes:
-            total_wait += traci.lane.getWaitingTime(lane)
+            wait = traci.lane.getWaitingTime(lane)
+            veh = traci.lane.getLastStepVehicleNumber(lane)
 
-    return -total_wait
+            total_wait += wait
+            queue_pressure += veh
+
+    # normalized reward (IMPORTANT for stability)
+    reward = -((total_wait * 0.7) + (queue_pressure * 0.3)) / 50.0
+
+    return reward
 
 
-# ---------------- Q-LEARNING POLICY ----------------
+# ---------------- POLICY ----------------
 
 def choose_action(state):
     if state not in q_table:
@@ -95,13 +107,13 @@ def choose_action(state):
     return int(np.argmax(q_table[state]))
 
 
-# ---------------- SAFE SIGNAL TRANSITION ----------------
+# ---------------- SAFE TRANSITION ----------------
 
 def run_yellow(tls_id, next_phase):
     current_phase = traci.trafficlight.getPhase(tls_id)
 
     if current_phase != next_phase:
-        traci.trafficlight.setPhase(tls_id, 1)  # yellow phase
+        traci.trafficlight.setPhase(tls_id, 1)  # yellow
         for _ in range(YELLOW_TIME):
             traci.simulationStep()
 
@@ -120,13 +132,14 @@ def apply_action(j1_phase, j2_phase):
 
 def train():
 
+    global EPSILON
+
     for episode in range(EPISODES):
 
         traci.start(["sumo", "-c", "simulation.sumocfg"])
-
         traci.simulationStep()
-        state = get_state()
 
+        state = get_state()
         total_reward = 0
 
         while traci.simulation.getMinExpectedNumber() > 0:
@@ -153,18 +166,17 @@ def train():
 
         traci.close()
 
-        print(f"Episode {episode + 1} | Reward = {total_reward:.2f}")
+        # decay exploration
+        EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
 
-    # Save Q-table
+        print(f"Episode {episode+1} | Reward: {total_reward:.2f} | EPS: {EPSILON:.3f}")
+
+    # save Q-table
     with open("qtable.pkl", "wb") as f:
         pickle.dump(q_table, f)
 
     print("\nTraining Complete")
-    print("Q-table saved as qtable.pkl")
-
-    print("\nLearned Q Table:")
-    for s, q in q_table.items():
-        print(s, q)
+    print("Q-table saved")
 
 
 # ---------------- MAIN ----------------
