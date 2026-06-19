@@ -91,12 +91,6 @@ while traci.simulation.getMinExpectedNumber() > 0:
 
     step += 1
 
-    phase_j1 = 0
-    phase_j2 = 0
-
-    traci.trafficlight.setPhase(J1, phase_j1)
-    traci.trafficlight.setPhase(J2, phase_j2)
-
     for _ in range(GREEN_TIME):
 
         traci.simulationStep()
