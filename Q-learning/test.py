@@ -88,7 +88,7 @@ traci.trafficlight.setPhase(J2, j2_phase)
 
 cumulative_wait = 0
 arrived         = 0
-steps           = 0
+sim_steps          = 0
 
 # inside your test while loop, replace the apply_action call with this pattern:
 
@@ -108,7 +108,7 @@ while traci.simulation.getMinExpectedNumber() > 0:
     if j1_new != j1_phase or j2_new != j2_phase:
         for _ in range(YELLOW_TIME):
             traci.simulationStep()
-            sim_steps += 1
+            sim_steps+= 1
             arrived += len(traci.simulation.getArrivedIDList())
             for veh in traci.vehicle.getIDList():
                 cumulative_wait += traci.vehicle.getWaitingTime(veh)
@@ -120,7 +120,7 @@ while traci.simulation.getMinExpectedNumber() > 0:
 
     for _ in range(GREEN_TIME):
         traci.simulationStep()
-        sim_steps += 1
+        sim_steps+= 1
         arrived += len(traci.simulation.getArrivedIDList())
         for veh in traci.vehicle.getIDList():
             cumulative_wait += traci.vehicle.getWaitingTime(veh)
@@ -128,7 +128,7 @@ while traci.simulation.getMinExpectedNumber() > 0:
 traci.close()
 
 print("\n===== TEST RESULTS =====")
-print(f"Steps             : {steps}")
+print(f"sim_sim_steps            : {sim_steps}")
 print(f"Vehicles Arrived  : {arrived}")
 print(f"Cumulative Wait   : {cumulative_wait:.0f}s")
-print(f"Avg Wait/Step     : {cumulative_wait/max(steps,1):.2f}s")
+print(f"Avg Wait/Step     : {cumulative_wait/max(sim_steps,1):.2f}s")
