@@ -90,27 +90,40 @@ cumulative_wait = 0
 arrived         = 0
 steps           = 0
 
+# inside your test while loop, replace the apply_action call with this pattern:
+
 while traci.simulation.getMinExpectedNumber() > 0:
-    steps += 1
+
+    # --- decide action (every GREEN_TIME steps) ---
     state = get_state(j1_phase, j2_phase)
-
-    if state in q_table:
-        action_idx = int(np.argmax(q_table[state]))
-    else:
-        action_idx = 0      # default: keep NS green
-
+    action_idx = int(np.argmax(q_table[state])) if state in q_table else 0
     j1_new, j2_new = ACTION_SPACE[action_idx]
-    apply_action(j1_new, j2_new, j1_phase, j2_phase)
 
-    j1_phase = j1_new
-    j2_phase = j2_new
+    # --- yellow transition ---
+    if j1_new != j1_phase:
+        traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
+    if j2_new != j2_phase:
+        traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_phase])
 
-    arrived += len(traci.simulation.getArrivedIDList())
-    for veh in traci.vehicle.getIDList():
-        cumulative_wait += traci.vehicle.getWaitingTime(veh)
+    if j1_new != j1_phase or j2_new != j2_phase:
+        for _ in range(YELLOW_TIME):
+            traci.simulationStep()
+            sim_steps += 1
+            arrived += len(traci.simulation.getArrivedIDList())
+            for veh in traci.vehicle.getIDList():
+                cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
-    if steps % 50 == 0:
-        print(f"Step {steps} | Remaining: {traci.simulation.getMinExpectedNumber()}")
+    # --- green phase ---
+    traci.trafficlight.setPhase(J1, j1_new)
+    traci.trafficlight.setPhase(J2, j2_new)
+    j1_phase, j2_phase = j1_new, j2_new
+
+    for _ in range(GREEN_TIME):
+        traci.simulationStep()
+        sim_steps += 1
+        arrived += len(traci.simulation.getArrivedIDList())
+        for veh in traci.vehicle.getIDList():
+            cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
 traci.close()
 
