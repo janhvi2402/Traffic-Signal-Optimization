@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import numpy as np
+import pickle
 
 # SUMO setup
 if 'SUMO_HOME' in os.environ:
@@ -12,9 +13,8 @@ else:
 
 import traci
 
-# ==========================
 # Hyperparameters
-# ==========================
+
 
 ALPHA = 0.1
 GAMMA = 0.9
@@ -27,7 +27,6 @@ J2 = "J2"
 
 GREEN_TIME = 10
 
-# (J1 phase, J2 phase)
 ACTION_SPACE = [
     (0, 0),
     (0, 2),
@@ -37,9 +36,7 @@ ACTION_SPACE = [
 
 q_table = {}
 
-# ==========================
 # Helpers
-# ==========================
 
 def bucket(x):
 
@@ -132,9 +129,7 @@ def apply_action(action_idx):
     traci.trafficlight.setPhase(J2, phase_j2)
 
 
-# ==========================
 # Training
-# ==========================
 
 def train():
 
@@ -145,6 +140,7 @@ def train():
             "-c",
             "simulation.sumocfg"
         ])
+        traci.simulationStep()# after simulation step get the state
 
         state = get_state()
 
@@ -187,6 +183,13 @@ def train():
 
         traci.close()
 
+    print("\nTraining Complete")
+
+    with open("qtable.pkl", "wb") as f:
+        pickle.dump(q_table, f)
+
+        print("Q-table saved")
+
         print(
             f"Episode {episode+1} "
             f"Reward = {total_reward:.2f}"
@@ -203,7 +206,4 @@ def train():
 if __name__ == "__main__":
     train()
 
-import pickle
 
-with open("qtable.pkl", "wb") as f:
-    pickle.dump(q_table, f)
