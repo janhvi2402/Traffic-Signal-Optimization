@@ -14,18 +14,16 @@ else:
 import traci
 
 # Hyperparameters
-
-
 ALPHA = 0.1
 GAMMA = 0.9
 EPSILON = 0.2
-
 EPISODES = 100
 
 J1 = "J1"
 J2 = "J2"
 
 GREEN_TIME = 10
+YELLOW_TIME = 3
 
 ACTION_SPACE = [
     (0, 0),
@@ -36,22 +34,18 @@ ACTION_SPACE = [
 
 q_table = {}
 
-# Helpers
+
+# ---------------- STATE HELPERS ----------------
 
 def bucket(x):
-
     if x == 0:
         return 0
-
     elif x <= 3:
         return 1
-
     elif x <= 7:
         return 2
-
     elif x <= 12:
         return 3
-
     else:
         return 4
 
@@ -62,26 +56,11 @@ def lane_count(edge):
 
 
 def get_state():
+    j1_ns = lane_count("N1_J1") + lane_count("S1_J1")
+    j1_ew = lane_count("W_J1") + lane_count("J2_J1")
 
-    j1_ns = (
-        lane_count("N1_J1")
-        + lane_count("S1_J1")
-    )
-
-    j1_ew = (
-        lane_count("W_J1")
-        + lane_count("J2_J1")
-    )
-
-    j2_ns = (
-        lane_count("N2_J2")
-        + lane_count("S2_J2")
-    )
-
-    j2_ew = (
-        lane_count("J1_J2")
-        + lane_count("E_J2")
-    )
+    j2_ns = lane_count("N2_J2") + lane_count("S2_J2")
+    j2_ew = lane_count("J1_J2") + lane_count("E_J2")
 
     return (
         bucket(j1_ns),
@@ -91,57 +70,61 @@ def get_state():
     )
 
 
-def get_reward():
+# ---------------- REWARD ----------------
 
+def get_reward():
     total_wait = 0
 
     for tls in [J1, J2]:
-
-        lanes = list(set(
-            traci.trafficlight.getControlledLanes(tls)
-        ))
-
+        lanes = list(set(traci.trafficlight.getControlledLanes(tls)))
         for lane in lanes:
             total_wait += traci.lane.getWaitingTime(lane)
 
     return -total_wait
 
 
-def choose_action(state):
+# ---------------- Q-LEARNING POLICY ----------------
 
+def choose_action(state):
     if state not in q_table:
         q_table[state] = np.zeros(len(ACTION_SPACE))
 
     if random.random() < EPSILON:
-        return random.randint(
-            0,
-            len(ACTION_SPACE)-1
-        )
+        return random.randint(0, len(ACTION_SPACE) - 1)
 
-    return np.argmax(q_table[state])
+    return int(np.argmax(q_table[state]))
 
 
-def apply_action(action_idx):
+# ---------------- SAFE SIGNAL TRANSITION ----------------
 
-    phase_j1, phase_j2 = ACTION_SPACE[action_idx]
+def run_yellow(tls_id, next_phase):
+    current_phase = traci.trafficlight.getPhase(tls_id)
 
-    traci.trafficlight.setPhase(J1, phase_j1)
-    traci.trafficlight.setPhase(J2, phase_j2)
+    if current_phase != next_phase:
+        traci.trafficlight.setPhase(tls_id, 1)  # yellow phase
+        for _ in range(YELLOW_TIME):
+            traci.simulationStep()
+
+    traci.trafficlight.setPhase(tls_id, next_phase)
 
 
-# Training
+def apply_action(j1_phase, j2_phase):
+    run_yellow(J1, j1_phase)
+    run_yellow(J2, j2_phase)
+
+    for _ in range(GREEN_TIME):
+        traci.simulationStep()
+
+
+# ---------------- TRAINING LOOP ----------------
 
 def train():
 
     for episode in range(EPISODES):
 
-        traci.start([
-            "sumo",
-            "-c",
-            "simulation.sumocfg"
-        ])
-        traci.simulationStep()# after simulation step get the state
+        traci.start(["sumo", "-c", "simulation.sumocfg"])
 
+        traci.simulationStep()
         state = get_state()
 
         total_reward = 0
@@ -149,61 +132,42 @@ def train():
         while traci.simulation.getMinExpectedNumber() > 0:
 
             action_idx = choose_action(state)
+            new_j1, new_j2 = ACTION_SPACE[action_idx]
 
-            apply_action(action_idx)
-
-            for _ in range(GREEN_TIME):
-                traci.simulationStep()
+            apply_action(new_j1, new_j2)
 
             reward = get_reward()
-
             next_state = get_state()
 
             if next_state not in q_table:
-                q_table[next_state] = np.zeros(
-                    len(ACTION_SPACE)
-                )
+                q_table[next_state] = np.zeros(len(ACTION_SPACE))
 
-            best_next = np.max(
-                q_table[next_state]
-            )
+            best_next = np.max(q_table[next_state])
 
-            q_table[state][action_idx] += (
-                ALPHA *
-                (
-                    reward
-                    + GAMMA * best_next
-                    - q_table[state][action_idx]
-                )
+            q_table[state][action_idx] += ALPHA * (
+                reward + GAMMA * best_next - q_table[state][action_idx]
             )
 
             state = next_state
-
             total_reward += reward
 
         traci.close()
 
-    print("\nTraining Complete")
+        print(f"Episode {episode + 1} | Reward = {total_reward:.2f}")
 
+    # Save Q-table
     with open("qtable.pkl", "wb") as f:
         pickle.dump(q_table, f)
 
-        print("Q-table saved")
-
-        print(
-            f"Episode {episode+1} "
-            f"Reward = {total_reward:.2f}"
-        )
-
     print("\nTraining Complete")
+    print("Q-table saved as qtable.pkl")
 
-    print("\nLearned Q Table")
-
+    print("\nLearned Q Table:")
     for s, q in q_table.items():
         print(s, q)
 
 
+# ---------------- MAIN ----------------
+
 if __name__ == "__main__":
     train()
-
-
