@@ -50,3 +50,17 @@ print(f"Simulation Steps  : {sim_steps}")
 print(f"Vehicles Arrived  : {arrived}")
 print(f"Cumulative Wait   : {cumulative_wait:.0f} s")
 print(f"Avg Wait/Step     : {cumulative_wait / max(sim_steps, 1):.3f} s")
+
+import json
+
+baseline_result = {
+    "cumulative_wait":   cumulative_wait,
+    "avg_wait_per_step": cumulative_wait / max(sim_steps, 1),
+    "vehicles_arrived":  arrived,
+    "steps":             sim_steps
+}
+
+with open("baseline_result.json", "w") as f:
+    json.dump(baseline_result, f, indent=2)
+
+print("Saved: baseline_result.json")

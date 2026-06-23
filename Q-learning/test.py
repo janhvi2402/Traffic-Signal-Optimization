@@ -132,3 +132,34 @@ print(f"sim_sim_steps            : {sim_steps}")
 print(f"Vehicles Arrived  : {arrived}")
 print(f"Cumulative Wait   : {cumulative_wait:.0f}s")
 print(f"Avg Wait/Step     : {cumulative_wait/max(sim_steps,1):.2f}s")
+
+import json
+
+test_result = {
+    "alpha":             0.1,    # what you used in train.py
+    "gamma":             0.95,   # what you used in train.py
+    "episodes":          150,    # what you used in train.py
+    "epsilon_decay":     0.98,   # what you used in train.py
+    "green_time":        GREEN_TIME,
+    "yellow_time":       YELLOW_TIME,
+    "cumulative_wait":   cumulative_wait,
+    "avg_wait_per_step": cumulative_wait / max(sim_steps, 1),
+    "vehicles_arrived":  arrived,
+    "steps":             sim_steps
+}
+
+filename = (
+    f"result"
+    f"_a{test_result['alpha']}"
+    f"_g{test_result['gamma']}"
+    f"_ep{test_result['episodes']}"
+    f"_gt{GREEN_TIME}"
+    f"_yt{YELLOW_TIME}"
+    f"_d{test_result['epsilon_decay']}"
+    f".json"
+)
+
+with open(filename, "w") as f:
+    json.dump(test_result, f, indent=2)
+
+print(f"Saved: {filename}")
