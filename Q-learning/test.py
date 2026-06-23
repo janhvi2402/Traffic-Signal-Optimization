@@ -94,12 +94,12 @@ sim_steps          = 0
 
 while traci.simulation.getMinExpectedNumber() > 0:
 
-    # --- decide action (every GREEN_TIME steps) ---
+    # decide action (every GREEN_TIME steps)
     state = get_state(j1_phase, j2_phase)
     action_idx = int(np.argmax(q_table[state])) if state in q_table else 0
     j1_new, j2_new = ACTION_SPACE[action_idx]
 
-    # --- yellow transition ---
+    #  yellow transition 
     if j1_new != j1_phase:
         traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
     if j2_new != j2_phase:
@@ -113,7 +113,7 @@ while traci.simulation.getMinExpectedNumber() > 0:
             for veh in traci.vehicle.getIDList():
                 cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
-    # --- green phase ---
+    #  green phase 
     traci.trafficlight.setPhase(J1, j1_new)
     traci.trafficlight.setPhase(J2, j2_new)
     j1_phase, j2_phase = j1_new, j2_new
