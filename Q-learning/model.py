@@ -37,7 +37,7 @@ ACTION_SPACE = [
 q_table = {}
 
 
-#STATE
+# STATE
 
 def bucket(x):
     """
@@ -90,7 +90,8 @@ def get_state(j1_phase, j2_phase):
         j2_phase // 2,            # 0 or 1
     )
 
-#REWARD
+
+#  REWARD
 
 def get_reward():
     """
@@ -106,7 +107,7 @@ def get_reward():
     return -total_halted          # simple, unscaled, works well
 
 
-# POLICY 
+# POLICY
 
 def choose_action(state):
     if state not in q_table:
@@ -116,13 +117,19 @@ def choose_action(state):
     return int(np.argmax(q_table[state]))
 
 
-#PHASE TRANSITION 
+# ---------------- PHASE TRANSITION ----------------
 
 # Yellow phase index for each green phase (from your tlLogic)
 # phase 0 (NS green) -> yellow is phase 1
 # phase 2 (EW green) -> yellow is phase 3
 YELLOW_PHASE = {0: 1, 2: 3}
+# phase 0 → NS green   (GGggrrrrGGggrrrr)
+# phase 1 → NS yellow  (yyyyrrrryyyyrrrr)
+# phase 2 → EW green   (rrrrGGggrrrrGGgg)
+# phase 3 → EW yellow  (rrrryyyyrrrryyyy)
 
+# if currently on phase 0 (NS green), yellow is phase 1
+# if currently on phase 2 (EW green), yellow is phase 3
 
 def apply_action(j1_new, j2_new, j1_cur, j2_cur):
     """
@@ -169,7 +176,7 @@ def update_q(state, action, reward, next_state):
     q_table[state][action] += ALPHA * td_error
 
 
-#TRAINING LOOP
+# TRAINING LOOP 
 
 def train():
     global EPSILON
