@@ -1,0 +1,12 @@
+{
+  "alpha": 0.1,
+  "gamma": 0.95,
+  "episodes": 150,
+  "epsilon_decay": 0.98,
+  "green_time": 10,
+  "yellow_time": 3,
+  "cumulative_wait": 223867.0,
+  "avg_wait_per_step": 167.31464872944693,
+  "vehicles_arrived": 1023,
+  "steps": 1338
+}

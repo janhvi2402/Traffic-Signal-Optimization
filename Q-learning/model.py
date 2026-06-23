@@ -13,8 +13,8 @@ else:
 import traci
 
 # HYPERPARAMETERS 
-ALPHA         = 0.1
-GAMMA         = 0.95
+ALPHA         = 0.15
+GAMMA         = 0.9
 EPSILON       = 1.0        # start fully random
 EPSILON_DECAY = 0.98       # decay per episode (not per step)
 MIN_EPSILON   = 0.05
