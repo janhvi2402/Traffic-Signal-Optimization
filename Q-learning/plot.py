@@ -69,6 +69,8 @@ def single_plot(vary_key, vary_label, fixed, color, filename, title):
     ax.legend()
     fig.tight_layout()
     fig.savefig(f"plots/{filename}.png", dpi=150)
+    plt.grid()
+    plt.show()
     plt.close()
     print(f"Saved plots/{filename}.png")
 
@@ -100,6 +102,8 @@ def joint_plot(vary_key1, vary_key2, label1, label2, fixed, filename, title):
     ax.legend()
     fig.tight_layout()
     fig.savefig(f"plots/{filename}.png", dpi=150)
+    plt.grid()
+    plt.show()
     plt.close()
     print(f"Saved plots/{filename}.png")
 
@@ -177,6 +181,8 @@ ax.legend()
 ax.tick_params(axis="x", labelsize=7)
 fig.tight_layout()
 fig.savefig("plots/10_overall.png", dpi=150)
+plt.grid()
+plt.show()
 plt.close()
 print("Saved plots/10_overall.png")
 
