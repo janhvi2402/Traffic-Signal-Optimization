@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import numpy as np
 import pickle
 
@@ -11,7 +12,8 @@ else:
 
 import traci
 
-GREEN_TIME  = 10     # MUST match train.py
+# CONFIG — GREEN_TIME and YELLOW_TIME must match train.py
+GREEN_TIME  = 10
 YELLOW_TIME = 3
 
 J1 = "J1"
@@ -20,12 +22,14 @@ J2 = "J2"
 ACTION_SPACE = [(0,0),(0,2),(2,0),(2,2)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
+# LOAD Q-TABLE
 with open("qtable.pkl", "rb") as f:
     q_table = pickle.load(f)
 
 print(f"States loaded: {len(q_table)}")
 
 
+# HELPERS
 def bucket(x):
     if x == 0:    return 0
     elif x <= 2:  return 1
@@ -61,23 +65,7 @@ def get_state(j1_phase, j2_phase):
     )
 
 
-def apply_action(j1_new, j2_new, j1_cur, j2_cur):
-    if j1_new != j1_cur:
-        traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_cur])
-    if j2_new != j2_cur:
-        traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_cur])
-
-    if j1_new != j1_cur or j2_new != j2_cur:
-        for _ in range(YELLOW_TIME):
-            traci.simulationStep()
-
-    traci.trafficlight.setPhase(J1, j1_new)
-    traci.trafficlight.setPhase(J2, j2_new)
-
-    for _ in range(GREEN_TIME):
-        traci.simulationStep()
-
-
+# RUN SIMULATION
 traci.start(["sumo-gui", "-c", "simulation.sumocfg"])
 traci.simulationStep()
 
@@ -88,18 +76,16 @@ traci.trafficlight.setPhase(J2, j2_phase)
 
 cumulative_wait = 0
 arrived         = 0
-sim_steps          = 0
-
-# inside your test while loop, replace the apply_action call with this pattern:
+sim_steps       = 0
 
 while traci.simulation.getMinExpectedNumber() > 0:
 
-    # decide action (every GREEN_TIME steps)
+    # decide action
     state = get_state(j1_phase, j2_phase)
     action_idx = int(np.argmax(q_table[state])) if state in q_table else 0
     j1_new, j2_new = ACTION_SPACE[action_idx]
 
-    #  yellow transition 
+    # yellow transition
     if j1_new != j1_phase:
         traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
     if j2_new != j2_phase:
@@ -108,42 +94,46 @@ while traci.simulation.getMinExpectedNumber() > 0:
     if j1_new != j1_phase or j2_new != j2_phase:
         for _ in range(YELLOW_TIME):
             traci.simulationStep()
-            sim_steps+= 1
+            sim_steps += 1
             arrived += len(traci.simulation.getArrivedIDList())
             for veh in traci.vehicle.getIDList():
                 cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
-    #  green phase 
+    # green phase
     traci.trafficlight.setPhase(J1, j1_new)
     traci.trafficlight.setPhase(J2, j2_new)
     j1_phase, j2_phase = j1_new, j2_new
 
     for _ in range(GREEN_TIME):
         traci.simulationStep()
-        sim_steps+= 1
+        sim_steps += 1
         arrived += len(traci.simulation.getArrivedIDList())
         for veh in traci.vehicle.getIDList():
             cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
 traci.close()
 
+# PRINT RESULTS
+
+avg_wait = cumulative_wait / max(sim_steps, 1)
+
 print("\n===== TEST RESULTS =====")
-print(f"sim_sim_steps            : {sim_steps}")
+print(f"Sim Steps         : {sim_steps}")
 print(f"Vehicles Arrived  : {arrived}")
 print(f"Cumulative Wait   : {cumulative_wait:.0f}s")
-print(f"Avg Wait/Step     : {cumulative_wait/max(sim_steps,1):.2f}s")
+print(f"Avg Wait/Step     : {avg_wait:.2f}s")
 
-import json
+# SAVE RESULT — update top 4 values to match what you used in train.py
 
 test_result = {
-    "alpha":             0.1,    # what you used in train.py
-    "gamma":             0.95,   # what you used in train.py
-    "episodes":          150,    # what you used in train.py
-    "epsilon_decay":     0.98,   # what you used in train.py
+    "alpha":             0.1,       # change to match train.py
+    "gamma":             0.95,      # change to match train.py
+    "episodes":          150,       # change to match train.py
+    "epsilon_decay":     0.98,      # change to match train.py
     "green_time":        GREEN_TIME,
     "yellow_time":       YELLOW_TIME,
     "cumulative_wait":   cumulative_wait,
-    "avg_wait_per_step": cumulative_wait / max(sim_steps, 1),
+    "avg_wait_per_step": avg_wait,
     "vehicles_arrived":  arrived,
     "steps":             sim_steps
 }
@@ -162,4 +152,4 @@ filename = (
 with open(filename, "w") as f:
     json.dump(test_result, f, indent=2)
 
-print(f"Saved: {filename}")
+print(f"\nSaved: {filename}")
