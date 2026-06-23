@@ -7,19 +7,36 @@ import os
 # LOAD DATA
 # ================================================================
 
-with open("baseline_result.json") as f:
-    baseline = json.load(f)
+# load all baselines keyed by (green_time, yellow_time)
+baseline_files = glob.glob("baseline_gt*_yt*.json")
+baselines = {}
+for fp in baseline_files:
+    with open(fp) as f:
+        b = json.load(f)
+    baselines[(b["green_time"], b["yellow_time"])] = b
 
-BASELINE_AVG = baseline["avg_wait_per_step"]
+if not baselines:
+    print("No baseline files found. Run baseline.py first.")
+    exit()
 
+# main baseline (gt10, yt3) used for overall comparison
+BASELINE_AVG = baselines[(10, 3)]["avg_wait_per_step"]
+
+print(f"Main baseline avg wait : {BASELINE_AVG:.2f}s")
+print(f"Baselines loaded       : {list(baselines.keys())}")
+
+# load all experiment results
 files = glob.glob("result_*.json")
+if not files:
+    print("No result files found. Run test.py first.")
+    exit()
+
 results = []
 for fp in files:
     with open(fp) as f:
         results.append(json.load(f))
 
-print(f"Baseline avg wait : {BASELINE_AVG:.2f}s")
-print(f"Experiments loaded: {len(results)}")
+print(f"Experiments loaded     : {len(results)}")
 
 os.makedirs("plots", exist_ok=True)
 
@@ -28,14 +45,26 @@ os.makedirs("plots", exist_ok=True)
 # HELPERS
 # ================================================================
 
-def improvement(avg):
-    return ((BASELINE_AVG - avg) / BASELINE_AVG) * 100
+def get_baseline_avg(green_time, yellow_time):
+    key = (green_time, yellow_time)
+    if key in baselines:
+        return baselines[key]["avg_wait_per_step"]
+    print(f"Warning: no baseline for gt={green_time} yt={yellow_time}, using gt10_yt3")
+    return baselines[(10, 3)]["avg_wait_per_step"]
+
+def improvement(avg_wait, green_time=10, yellow_time=3):
+    baseline_avg = get_baseline_avg(green_time, yellow_time)
+    return ((baseline_avg - avg_wait) / baseline_avg) * 100
 
 def filter_results(fixed: dict):
+    """Return results where all keys in fixed match."""
     out = []
     for r in results:
         match = True
         for k, v in fixed.items():
+            if k not in r:
+                match = False
+                break
             if isinstance(v, float):
                 if abs(r[k] - v) > 1e-9:
                     match = False
@@ -46,23 +75,53 @@ def filter_results(fixed: dict):
             out.append(r)
     return out
 
+
+# ================================================================
+# SINGLE SENSITIVITY PLOT
+# ================================================================
+
 def single_plot(vary_key, vary_label, fixed, color, filename, title):
     data = filter_results(fixed)
     data.sort(key=lambda x: x[vary_key])
+
     if len(data) < 2:
-        print(f"Skipping {filename} — need at least 2 data points")
+        print(f"Skipping {filename} — need at least 2 data points, got {len(data)}")
         return
-    x = [r[vary_key] for r in data]
-    y = [r["avg_wait_per_step"] for r in data]
+
+    x  = [r[vary_key] for r in data]
+    y  = [r["avg_wait_per_step"] for r in data]
+    gt = fixed.get("green_time", 10)
+    yt = fixed.get("yellow_time", 3)
+
+    # for green_time plot, each point has its own matched baseline
+    if vary_key == "green_time":
+        baseline_y = [get_baseline_avg(r["green_time"], r["yellow_time"]) for r in data]
+    elif vary_key == "yellow_time":
+        baseline_y = [get_baseline_avg(r["green_time"], r["yellow_time"]) for r in data]
+    else:
+        baseline_val = get_baseline_avg(gt, yt)
+        baseline_y   = [baseline_val] * len(data)
 
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.plot(x, y, marker="o", color=color, linewidth=2, markersize=7, label="RL Agent")
-    ax.axhline(BASELINE_AVG, color="red", linestyle="--", linewidth=2,
-               label=f"Baseline ({BASELINE_AVG:.2f}s)")
-    for xi, yi in zip(x, y):
-        ax.annotate(f"{improvement(yi):+.1f}%", (xi, yi),
-                    textcoords="offset points", xytext=(0, 10),
-                    ha="center", fontsize=9)
+    ax.plot(x, y, marker="o", color=color, linewidth=2,
+            markersize=7, label="RL Agent")
+
+    # if baseline is same for all points, draw a single line
+    if len(set(baseline_y)) == 1:
+        ax.axhline(baseline_y[0], color="red", linestyle="--", linewidth=2,
+                   label=f"Baseline ({baseline_y[0]:.2f}s)")
+    else:
+        # draw baseline as its own line (varies with green/yellow time)
+        ax.plot(x, baseline_y, marker="s", color="red", linewidth=2,
+                linestyle="--", markersize=7, label="Matched Baseline")
+
+    # annotate improvement % on each point
+    for xi, yi, bi in zip(x, y, baseline_y):
+        pct = ((bi - yi) / bi) * 100
+        ax.annotate(f"{pct:+.1f}%", (xi, yi),
+                    textcoords="offset points",
+                    xytext=(0, 10), ha="center", fontsize=9)
+
     ax.set_xlabel(vary_label)
     ax.set_ylabel("Avg Wait per Step (s)")
     ax.set_title(title)
@@ -73,18 +132,30 @@ def single_plot(vary_key, vary_label, fixed, color, filename, title):
     print(f"Saved plots/{filename}.png")
 
 
+# ================================================================
+# JOINT SENSITIVITY PLOT
+# ================================================================
+
 def joint_plot(vary_key1, vary_key2, label1, label2, fixed, filename, title):
     data = filter_results(fixed)
+
     if len(data) < 2:
-        print(f"Skipping {filename} — need at least 2 data points")
+        print(f"Skipping {filename} — need at least 2 data points, got {len(data)}")
         return
+
+    # group by vary_key2
     groups = {}
     for r in data:
         k = r[vary_key2]
         groups.setdefault(k, []).append(r)
 
+    gt = fixed.get("green_time", 10)
+    yt = fixed.get("yellow_time", 3)
+    baseline_val = get_baseline_avg(gt, yt)
+
     colors = ["steelblue", "green", "orange", "purple"]
     fig, ax = plt.subplots(figsize=(8, 5))
+
     for i, (k2_val, group) in enumerate(sorted(groups.items())):
         group.sort(key=lambda x: x[vary_key1])
         ax.plot([r[vary_key1] for r in group],
@@ -92,8 +163,9 @@ def joint_plot(vary_key1, vary_key2, label1, label2, fixed, filename, title):
                 marker="o", linewidth=2,
                 color=colors[i % len(colors)],
                 label=f"{label2}={k2_val}")
-    ax.axhline(BASELINE_AVG, color="red", linestyle="--", linewidth=2,
-               label=f"Baseline ({BASELINE_AVG:.2f}s)")
+
+    ax.axhline(baseline_val, color="red", linestyle="--", linewidth=2,
+               label=f"Baseline ({baseline_val:.2f}s)")
     ax.set_xlabel(label1)
     ax.set_ylabel("Avg Wait per Step (s)")
     ax.set_title(title)
@@ -160,19 +232,27 @@ labels     = [
     for r in all_sorted
 ]
 avg_waits  = [r["avg_wait_per_step"] for r in all_sorted]
-bar_colors = ["green" if w < BASELINE_AVG else "steelblue" for w in avg_waits]
 
-fig, ax = plt.subplots(figsize=(max(14, len(all_sorted)*1.2), 6))
+# each bar compared against its own matched baseline
+bar_colors = [
+    "green" if w < get_baseline_avg(r["green_time"], r["yellow_time"]) else "steelblue"
+    for w, r in zip(avg_waits, all_sorted)
+]
+
+fig, ax = plt.subplots(figsize=(max(14, len(all_sorted) * 1.2), 6))
 bars = ax.bar(labels, avg_waits, color=bar_colors)
 ax.axhline(BASELINE_AVG, color="red", linestyle="--", linewidth=2,
-           label=f"Baseline ({BASELINE_AVG:.2f}s)")
-for bar, w in zip(bars, avg_waits):
-    ax.text(bar.get_x() + bar.get_width()/2,
+           label=f"Main Baseline gt10_yt3 ({BASELINE_AVG:.2f}s)")
+
+for bar, w, r in zip(bars, avg_waits, all_sorted):
+    pct = improvement(w, r["green_time"], r["yellow_time"])
+    ax.text(bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 0.3,
-            f"{improvement(w):+.1f}%",
+            f"{pct:+.1f}%",
             ha="center", va="bottom", fontsize=7)
+
 ax.set_ylabel("Avg Wait per Step (s)")
-ax.set_title("All Experiments vs Baseline (green = beats baseline)")
+ax.set_title("All Experiments vs Matched Baseline (green = beats its baseline)")
 ax.legend()
 ax.tick_params(axis="x", labelsize=7)
 fig.tight_layout()
@@ -186,26 +266,33 @@ print("Saved plots/10_overall.png")
 # ================================================================
 
 lines = []
-lines.append("=" * 80)
+lines.append("=" * 85)
 lines.append("EXPERIMENT SUMMARY")
-lines.append("=" * 80)
-lines.append(f"{'Config':<50} {'Avg Wait':>10} {'Improvement':>12}")
-lines.append("-" * 80)
-lines.append(f"{'Baseline (Fixed Timing)':<50} {BASELINE_AVG:>10.2f} {'—':>12}")
+lines.append("=" * 85)
+lines.append(f"{'Config':<50} {'Avg Wait':>10} {'Baseline':>10} {'Improvement':>12}")
+lines.append("-" * 85)
 
 for r in all_sorted:
     label = (f"a={r['alpha']} g={r['gamma']} ep={r['episodes']} "
              f"gt={r['green_time']} yt={r['yellow_time']} d={r['epsilon_decay']}")
-    pct = improvement(r["avg_wait_per_step"])
-    lines.append(f"{label:<50} {r['avg_wait_per_step']:>10.2f} {pct:>+11.1f}%")
+    matched_baseline = get_baseline_avg(r["green_time"], r["yellow_time"])
+    pct = improvement(r["avg_wait_per_step"], r["green_time"], r["yellow_time"])
+    lines.append(
+        f"{label:<50} "
+        f"{r['avg_wait_per_step']:>10.2f} "
+        f"{matched_baseline:>10.2f} "
+        f"{pct:>+11.1f}%"
+    )
 
-lines.append("=" * 80)
+lines.append("=" * 85)
 best = all_sorted[0]
+best_baseline = get_baseline_avg(best["green_time"], best["yellow_time"])
 lines.append(f"\nBEST CONFIG:")
 lines.append(f"  alpha={best['alpha']}, gamma={best['gamma']}, episodes={best['episodes']}")
 lines.append(f"  green={best['green_time']}, yellow={best['yellow_time']}, decay={best['epsilon_decay']}")
-lines.append(f"  Avg Wait   : {best['avg_wait_per_step']:.2f}s")
-lines.append(f"  Improvement: {improvement(best['avg_wait_per_step']):+.1f}% over baseline")
+lines.append(f"  Avg Wait        : {best['avg_wait_per_step']:.2f}s")
+lines.append(f"  Matched Baseline: {best_baseline:.2f}s")
+lines.append(f"  Improvement     : {improvement(best['avg_wait_per_step'], best['green_time'], best['yellow_time']):+.1f}%")
 
 summary = "\n".join(lines)
 print("\n" + summary)
