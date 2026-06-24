@@ -13,7 +13,7 @@ else:
 import traci
 
 # CONFIG — GREEN_TIME and YELLOW_TIME must match train.py
-GREEN_TIME  = 20
+GREEN_TIME  = 10
 YELLOW_TIME = 3
 
 J1 = "J1"
@@ -127,8 +127,8 @@ print(f"Avg Wait/Step     : {avg_wait:.2f}s")
 
 test_result = {
     "alpha":             0.1,       # change to match train.py
-    "gamma":             0.9,      # change to match train.py
-    "episodes":          300,       # change to match train.py
+    "gamma":             0.95,      # change to match train.py
+    "episodes":          100,       # change to match train.py
     "epsilon_decay":     0.98,      # change to match train.py
     "green_time":        GREEN_TIME,
     "yellow_time":       YELLOW_TIME,

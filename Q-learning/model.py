@@ -14,13 +14,13 @@ import traci
 
 # HYPERPARAMETERS 
 ALPHA         = 0.1
-GAMMA         = 0.9
+GAMMA         = 0.95
 EPSILON       = 1.0        # start fully random
 EPSILON_DECAY = 0.98       # decay per episode (not per step)
 MIN_EPSILON   = 0.05
 
-EPISODES   = 300
-GREEN_TIME = 20            # same value used in test.py
+EPISODES   = 100
+GREEN_TIME = 10            # same value used in test.py
 YELLOW_TIME = 3
 
 J1 = "J1"

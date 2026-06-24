@@ -4,15 +4,18 @@ EXPERIMENT SUMMARY
 Config                                               Avg Wait  Improvement
 --------------------------------------------------------------------------------
 Baseline (Fixed Timing)                                243.34            —
+a=0.1 g=0.95 ep=100 gt=10 yt=3 d=0.98                  129.29       +46.9%
 a=0.15 g=0.9 ep=150 gt=10 yt=3 d=0.98                  167.31       +31.2%
 a=0.1 g=0.95 ep=150 gt=10 yt=3 d=0.98                  167.31       +31.2%
 a=0.1 g=0.9 ep=300 gt=20 yt=3 d=0.98                   189.55       +22.1%
 a=0.1 g=0.95 ep=300 gt=10 yt=3 d=0.98                  193.49       +20.5%
+a=0.1 g=0.95 ep=150 gt=20 yt=3 d=0.98                  717.56      -194.9%
 a=0.1 g=0.95 ep=300 gt=20 yt=3 d=0.98                 1788.86      -635.1%
+a=0.1 g=0.95 ep=600 gt=10 yt=3 d=0.98                 2050.21      -742.5%
 ================================================================================
 
 BEST CONFIG:
-  alpha=0.15, gamma=0.9, episodes=150
+  alpha=0.1, gamma=0.95, episodes=100
   green=10, yellow=3, decay=0.98
-  Avg Wait   : 167.31s
-  Improvement: +31.2% over baseline
+  Avg Wait   : 129.29s
+  Improvement: +46.9% over baseline
