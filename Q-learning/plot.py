@@ -7,12 +7,12 @@ import os
 # LOAD DATA
 # ================================================================
 
-with open("baseline_result.json") as f:
+with open("results/baseline_result.json") as f:
     baseline = json.load(f)
 
 BASELINE_AVG = baseline["avg_wait_per_step"]
 
-files = glob.glob("result_*.json")
+files = glob.glob("results/result_*.json")
 results = []
 for fp in files:
     with open(fp) as f:

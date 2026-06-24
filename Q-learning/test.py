@@ -148,8 +148,15 @@ filename = (
     f"_d{test_result['epsilon_decay']}"
     f".json"
 )
+filepath = os.path.join("results", filename)
 
-with open(filename, "w") as f:
-    json.dump(test_result, f, indent=2)
+with open(filepath, "w") as f:
+    json.dump(test_result, f, indent=2)#indent makes it readable, otherwise in same line all data will be stored
 
 print(f"\nSaved: {filename}")
+
+# dump()
+# Python Dictionary → JSON File
+
+# load()
+# JSON File → Python Dictionary

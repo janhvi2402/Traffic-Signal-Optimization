@@ -60,7 +60,7 @@ baseline_result = {
     "steps":             sim_steps
 }
 
-with open("baseline_result.json", "w") as f:
+with open("results/baseline_result.json", "w") as f:
     json.dump(baseline_result, f, indent=2)
 
 print("Saved: baseline_result.json")
