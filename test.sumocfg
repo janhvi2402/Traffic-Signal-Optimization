@@ -2,7 +2,7 @@
 <configuration>
     <input>
         <net-file value="network.net.xml"/>
-        <route-files value="routes/train.rou.xml"/>
+        <route-files value="routes/test_scenario.rou.xml"/>
     </input>
     <time>
         <begin value="0"/>

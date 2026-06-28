@@ -194,8 +194,8 @@ lines.append("-" * 80)
 lines.append(f"{'Baseline (Fixed Timing)':<50} {BASELINE_AVG:>10.2f} {'—':>12}")
 
 for r in all_sorted:
-    label = (f"a={r['alpha']} g={r['gamma']} ep={r['episodes']} "
-             f"gt={r['green_time']} yt={r['yellow_time']} d={r['epsilon_decay']}")
+    label = (f"scenario={r.get('scenario','medium')} "
+         f"a={r['alpha']} g={r['gamma']} ep={r['episodes']}")
     pct = improvement(r["avg_wait_per_step"])
     lines.append(f"{label:<50} {r['avg_wait_per_step']:>10.2f} {pct:>+11.1f}%")
 
