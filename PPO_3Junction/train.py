@@ -3,14 +3,22 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.policies import ActorCriticPolicy
-import torch.nn as nn
+import functools
 
-
-train_env = make_vec_env(TrafficEnv3J, n_envs=4)
+# randomize_rates=True for training — different traffic every episode
+train_env = make_vec_env(
+    TrafficEnv3J,
+    n_envs=4,
+    env_kwargs={"randomize_rates": True}   # passed to TrafficEnv3J()
+)
 train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
-eval_env = make_vec_env(TrafficEnv3J, n_envs=1)
+# fixed rates for eval so you can track progress consistently
+eval_env = make_vec_env(
+    TrafficEnv3J,
+    n_envs=1,
+    env_kwargs={"randomize_rates": False}  # fixed default rates during eval
+)
 eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
 
 eval_callback = EvalCallback(
@@ -24,20 +32,15 @@ eval_callback = EvalCallback(
 model = PPO(
     policy="MlpPolicy",
     env=train_env,
-    policy_kwargs=dict(
-        net_arch=dict(
-            pi=[128, 128],
-            vf=[128, 128]
-        )
-    ),
-    learning_rate=1e-4,      # was 3e-4, lower for larger network
-    n_steps=4096,            # was 2048, more data per update
-    batch_size=128,          # was 64, scale with n_steps
+    policy_kwargs=dict(net_arch=dict(pi=[128, 128], vf=[128, 128])),
+    learning_rate=1e-4,
+    n_steps=4096,
+    batch_size=128,
     n_epochs=10,
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
-    ent_coef=0.02,           # was 0.05, entropy was too high (-1.74)
+    ent_coef=0.02,
     verbose=1,
 )
 

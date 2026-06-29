@@ -17,39 +17,50 @@ class TrafficEnv3J(gym.Env):
     """
 
     def __init__(self, max_queue=20, max_steps=500,
-                 yellow_duration=3, travel_delay=5):
+             yellow_duration=3, travel_delay=5,
+             arrival_rates=None, randomize_rates=False):
         super().__init__()
         self.max_queue = max_queue
         self.max_steps = max_steps
         self.yellow_duration = yellow_duration
         self.travel_delay = travel_delay
         self.n_junctions = 3
+        self.randomize_rates = randomize_rates   # flag to control this
 
-        # 3 junctions x (4 queues + 1 phase + 1 time_in_phase) = 18 features
+        # fixed rates if provided, else default
+        if arrival_rates is None:
+            self.arrival_rates = {
+                0: [0.4, 0.4, 0.1, 0.1],
+                1: [0.4, 0.4, 0.1, 0.1],
+                2: [0.4, 0.4, 0.1, 0.1],
+            }
+        else:
+            self.arrival_rates = arrival_rates
+
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(18,), dtype=np.float32
+            low=0.0, high=1.0, shape=(21,), dtype=np.float32
         )
-
-        # one binary decision per junction: keep(0) or switch(1)
         self.action_space = spaces.MultiDiscrete([2, 2, 2])
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # queues[j] = [N, S, E, W] for junction j
+        # randomize rates at the start of every episode during training
+        if self.randomize_rates:
+            low, high = self.rate_range if hasattr(self, 'rate_range') else (0.1, 0.8)
+            for j in range(self.n_junctions):
+                # sample both N-S and E-W from the same range
+                # so agent has no directional bias
+                ns = self.np_random.uniform(0.1, 0.7)
+                ew = self.np_random.uniform(0.1, 0.7)   # was 0.05 to 0.4
+                self.arrival_rates[j] = [ns, ns, ew, ew]
+
         self.queues = np.zeros((3, 4), dtype=np.float32)
         self.phase = [0, 0, 0]
         self.time_in_phase = [0, 0, 0]
         self.in_yellow = [False, False, False]
         self.yellow_timer = [0, 0, 0]
         self.step_count = 0
-
-        # pipeline buffers for inter-junction travel delay
-        # transfer_pipeline[j] = list of (steps_remaining, volume) tuples
-        # j=0: flow from J0-east to J1-west
-        # j=1: flow from J1-east to J2-west
-        # j=2: flow from J1-west to J0-east
-        # j=3: flow from J2-west to J1-east
         self.pipeline = [[], [], [], []]
 
         return self._get_obs(), {}
@@ -61,18 +72,12 @@ class TrafficEnv3J(gym.Env):
                 obs.append(self.queues[j][q] / self.max_queue)
             obs.append(float(self.phase[j]))
             obs.append(min(self.time_in_phase[j] / 60.0, 1.0))
+            obs.append(float(self.in_yellow[j]))
         return np.array(obs, dtype=np.float32)
 
     def _arrival_step(self):
-        # external arrivals (Poisson) at every approach of every junction
-        # N and S get higher rates, E and W get lower (some come from other junctions)
-        rates = {
-            0: [0.4, 0.4, 0.1, 0.1],   # J0: low E/W external, rest comes from J1
-            1: [0.4, 0.4, 0.1, 0.1],   # J1: middle junction
-            2: [0.4, 0.4, 0.1, 0.1],   # J2: low E/W external, rest comes from J1
-        }
         for j in range(self.n_junctions):
-            for i, rate in enumerate(rates[j]):
+            for i, rate in enumerate(self.arrival_rates[j]):
                 arrivals = self.np_random.poisson(rate)
                 self.queues[j][i] = min(
                     self.queues[j][i] + arrivals, self.max_queue
