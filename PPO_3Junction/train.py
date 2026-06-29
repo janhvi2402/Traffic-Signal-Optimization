@@ -9,7 +9,7 @@ import functools
 train_env = make_vec_env(
     TrafficEnv3J,
     n_envs=4,
-    env_kwargs={"randomize_rates": True}   # passed to TrafficEnv3J()
+    env_kwargs={"randomize_rates": True}   # passed to TrafficEnv3J() TrafficEnv3J(**env_kwargs), argument to it
 )
 train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 

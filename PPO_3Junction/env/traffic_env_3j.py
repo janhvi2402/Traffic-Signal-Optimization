@@ -1,6 +1,7 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
+#We use Gymnasium because it provides a standard interface, and PPO is written to work with environments that follow that interface
 
 class TrafficEnv3J(gym.Env):
     """
@@ -38,7 +39,7 @@ class TrafficEnv3J(gym.Env):
             self.arrival_rates = arrival_rates
 
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(21,), dtype=np.float32
+            low=0.0, high=1.0, shape=(21,), dtype=np.float32 #3 junctions × 7 features = 21 
         )
         self.action_space = spaces.MultiDiscrete([2, 2, 2])
 
