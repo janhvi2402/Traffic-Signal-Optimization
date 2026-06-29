@@ -46,15 +46,21 @@ class TrafficEnv3J(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # randomize rates at the start of every episode during training
         if self.randomize_rates:
-            low, high = self.rate_range if hasattr(self, 'rate_range') else (0.1, 0.8)
             for j in range(self.n_junctions):
-                # sample both N-S and E-W from the same range
-                # so agent has no directional bias
                 ns = self.np_random.uniform(0.1, 0.7)
-                ew = self.np_random.uniform(0.1, 0.7)   # was 0.05 to 0.4
+                ew = self.np_random.uniform(0.1, 0.7)
                 self.arrival_rates[j] = [ns, ns, ew, ew]
+
+        self.queues = np.zeros((3, 4), dtype=np.float32)
+        self.phase = [0, 0, 0]
+        self.time_in_phase = [0, 0, 0]
+        self.in_yellow = [False, False, False]
+        self.yellow_timer = [0, 0, 0]
+        self.step_count = 0
+        self.pipeline = [[], [], [], []]
+
+        return self._get_obs(), {}
 
         self.queues = np.zeros((3, 4), dtype=np.float32)
         self.phase = [0, 0, 0]
