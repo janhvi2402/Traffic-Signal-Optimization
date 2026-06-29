@@ -62,16 +62,6 @@ class TrafficEnv3J(gym.Env):
 
         return self._get_obs(), {}
 
-        self.queues = np.zeros((3, 4), dtype=np.float32)
-        self.phase = [0, 0, 0]
-        self.time_in_phase = [0, 0, 0]
-        self.in_yellow = [False, False, False]
-        self.yellow_timer = [0, 0, 0]
-        self.step_count = 0
-        self.pipeline = [[], [], [], []]
-
-        return self._get_obs(), {}
-
     def _get_obs(self):
         obs = []
         for j in range(self.n_junctions):
