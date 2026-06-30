@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <edge id="W_J1" from="W" to="J1" numlanes="1" speed="13.9"/>
+    <edge id="J1_W" from="J1" to="W" numlanes="1" speed="13.9"/>
+
+    <edge id="J1_J2" from="J1" to="J2" numlanes="1" speed="13.9"/>
+    <edge id="J2_J1" from="J2" to="J1" numlanes="1" speed="13.9"/>
+
+    <edge id="J2_E" from="J2" to="E" numlanes="1" speed="13.9"/>
+    <edge id="E_J2" from="E" to="J2" numlanes="1" speed="13.9"/>
+
+    <edge id="J1_N1" from="J1" to="N1" numlanes="1" speed="13.9"/>
+    <edge id="N1_J1" from="N1" to="J1" numlanes="1" speed="13.9"/>
+
+    <edge id="J1_S1" from="J1" to="S1" numlanes="1" speed="13.9"/>
+    <edge id="S1_J1" from="S1" to="J1" numlanes="1" speed="13.9"/>
+
+    <edge id="J2_N2" from="J2" to="N2" numlanes="1" speed="13.9"/>
+    <edge id="N2_J2" from="N2" to="J2" numlanes="1" speed="13.9"/>
+
+    <edge id="J2_S2" from="J2" to="S2" numlanes="1" speed="13.9"/>
+    <edge id="S2_J2" from="S2" to="J2" numlanes="1" speed="13.9"/>
+</edges>
