@@ -88,6 +88,7 @@ class SumoTrafficEnv2J(gym.Env):
         use_gui     = False,
         max_steps   = 3600,
         seed        = None,
+        port=8813
     ):
         super().__init__()
 
@@ -98,7 +99,7 @@ class SumoTrafficEnv2J(gym.Env):
         self.use_gui   = use_gui
         self.max_steps = max_steps
         self._seed     = seed
-
+        self.port = port
         # spaces
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(14,), dtype=np.float32
@@ -121,11 +122,11 @@ class SumoTrafficEnv2J(gym.Env):
             "-c", self.cfg_path,
             "--no-step-log",
             "--no-warnings",
-            "--random",            # randomise vehicle insertion order
+            "--random",
         ]
         if self._seed is not None:
             cmd += ["--seed", str(self._seed)]
-        traci.start(cmd)
+        traci.start(cmd, port=self.port)
         self._traci_started = True
 
     def _close_sumo(self):

@@ -5,7 +5,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback
 
-from sumo_env import SumoTrafficEnv2J
+from env import SumoTrafficEnv2J
 
 os.makedirs("models/best", exist_ok=True)
 
@@ -15,23 +15,20 @@ os.makedirs("models/best", exist_ok=True)
 # sharing state.  n_envs=1 is safe; increase only if you launch each
 # env on a separate TraCI port (see sumo --remote-port).
 
-def make_env(seed=0):
+def make_train_env(seed=0):
     def _init():
-        env = SumoTrafficEnv2J(
-            cfg_path  = os.path.join(os.path.dirname(__file__), "network.sumocfg"),
-            use_gui   = False,
-            max_steps = 3600,
-            seed      = seed,
-        )
-        return env
+        return SumoTrafficEnv2J(cfg_path=..., seed=seed, port=8813)
     return _init
 
-# Single training env (SUMO only supports 1 TraCI connection per process
-# without extra port configuration).
-train_env = make_vec_env(make_env(seed=42), n_envs=1)
+def make_eval_env(seed=0):
+    def _init():
+        return SumoTrafficEnv2J(cfg_path=..., seed=seed, port=8814)
+    return _init
+
+train_env = make_vec_env(make_train_env(seed=42), n_envs=1)
 train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
-eval_env  = make_vec_env(make_env(seed=0), n_envs=1)
+eval_env  = make_vec_env(make_eval_env(seed=0), n_envs=1)
 eval_env  = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
 
 # ── callbacks ─────────────────────────────────────────────────────────────────

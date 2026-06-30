@@ -1,4 +1,4 @@
-from env import TrafficEnv2J
+from PPO_2junction.env import TrafficEnv2J
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback

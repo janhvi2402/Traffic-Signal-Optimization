@@ -2,7 +2,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import VecNormalize
-from env import TrafficEnv
+from PPO_1junction.env import TrafficEnv
 
 # 1. create first
 train_env = make_vec_env(TrafficEnv, n_envs=4)

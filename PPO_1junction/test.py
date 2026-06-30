@@ -1,5 +1,5 @@
 import numpy as np
-from env import TrafficEnv
+from PPO_1junction.env import TrafficEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
