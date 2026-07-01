@@ -9,7 +9,7 @@ from env import SumoTrafficEnv2J
 MODEL_PATH      = "models/ppo_sumo_2junction"
 NORMALIZER_PATH = "models/vec_normalize_sumo.pkl"
 
-# ── helpers ───────────────────────────────────────────────────────────────────
+#  helpers 
 
 def make_env(seed=0):
     def _init():
@@ -102,7 +102,7 @@ def run_fixed_time(cycle_ns=42, cycle_ew=42, yellow=3, n_episodes=5):
     return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues)
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
+# main 
 
 base_env = make_vec_env(make_env(seed=0), n_envs=1)
 base_env = VecNormalize.load(NORMALIZER_PATH, base_env)
