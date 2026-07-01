@@ -42,7 +42,7 @@ def run_ppo(model, n_episodes=5):
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
             total     += reward[0]
-            queue_sum += -reward[0] * env.unwrapped.MAX_QUEUE   # unnormalise
+            queue_sum += -reward[0] * env.get_attr("MAX_QUEUE")[0]   # unnormalise  
             steps     += 1
 
         episode_rewards.append(total)
