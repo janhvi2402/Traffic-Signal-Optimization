@@ -126,18 +126,23 @@ class SumoTrafficEnv2J(gym.Env):
         ]
         if self._seed is not None:
             cmd += ["--seed", str(self._seed)]
-        traci.start(cmd, port=self.port)
+
+        # unique label per instance/port avoids "Connection 'default' is
+        # already active" when train_env and eval_env run at the same time
+        self.label = f"sim_{self.port}"
+        traci.start(cmd, port=self.port, label=self.label)
+        self.conn = traci.getConnection(self.label)
         self._traci_started = True
 
     def _close_sumo(self):
         if self._traci_started:
-            traci.close()
+            self.conn.close()
             self._traci_started = False
 
     def _get_lane_stat(self, lane_id):
         """Return (queue_length, waiting_time) for a single lane."""
-        q = traci.lane.getLastStepHaltingNumber(lane_id)
-        w = traci.lane.getWaitingTime(lane_id)
+        q = self.conn.lane.getLastStepHaltingNumber(lane_id)
+        w = self.conn.lane.getWaitingTime(lane_id)
         return q, w
 
     def _get_obs(self):
@@ -166,33 +171,26 @@ class SumoTrafficEnv2J(gym.Env):
         for tl in self.TL_IDS:
             for group in self.INCOMING_LANES[tl].values():
                 for lane in group:
-                    total_queue += traci.lane.getLastStepHaltingNumber(lane)
+                    total_queue += self.conn.lane.getLastStepHaltingNumber(lane)
                     n_lanes += 1
         return -(total_queue / n_lanes) / self.MAX_QUEUE
 
     def _apply_action(self, tl, action):
-        """
-        action=0: keep phase.
-        action=1: request switch (only allowed after MIN_GREEN seconds).
-        """
         if self._in_yellow[tl]:
-            # check if SUMO has completed the yellow phase
-            sumo_phase = traci.trafficlight.getPhase(tl)
+            sumo_phase = self.conn.trafficlight.getPhase(tl)
             if sumo_phase in (self.PHASE_NS_YELLOW, self.PHASE_EW_YELLOW):
-                return  # still in yellow, wait
-            # yellow done — SUMO auto-advanced to next green phase
+                return
             self._in_yellow[tl]     = False
-            self._phase[tl]         = 1 - self._phase[tl]   # flip logical phase
+            self._phase[tl]         = 1 - self._phase[tl]
             self._time_in_phase[tl] = 0
         else:
             self._time_in_phase[tl] += 1
             if action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN:
-                # trigger yellow
                 yellow_phase = (
                     self.PHASE_NS_YELLOW if self._phase[tl] == 0
                     else self.PHASE_EW_YELLOW
                 )
-                traci.trafficlight.setPhase(tl, yellow_phase)
+                self.conn.trafficlight.setPhase(tl, yellow_phase)
                 self._in_yellow[tl] = True
 
     # ── Gymnasium API ─────────────────────────────────────────────────────────
@@ -211,21 +209,27 @@ class SumoTrafficEnv2J(gym.Env):
 
         self._start_sumo()
 
-        # set both TLs to NS-green to start
         for tl in self.TL_IDS:
-            traci.trafficlight.setPhase(tl, self.PHASE_NS_GREEN)
+            self.conn.trafficlight.setPhase(tl, self.PHASE_NS_GREEN)
 
-        # warm-up step so lanes report sensible stats
-        traci.simulationStep()
+        self.conn.simulationStep()
 
         return self._get_obs(), {}
 
     def step(self, action):
         assert len(action) == 2, "action must be [a_J1, a_J2]"
 
-        # apply agent decisions
         for i, tl in enumerate(self.TL_IDS):
             self._apply_action(tl, int(action[i]))
+
+        self.conn.simulationStep()
+        self._step_count += 1
+
+        obs     = self._get_obs()
+        reward  = self._get_reward()
+        done    = self._step_count >= self.max_steps
+
+        return obs, reward, done, False, {}
 
         # advance SUMO by 1 second
         traci.simulationStep()

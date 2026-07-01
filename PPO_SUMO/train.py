@@ -17,12 +17,20 @@ os.makedirs("models/best", exist_ok=True)
 
 def make_train_env(seed=0):
     def _init():
-        return SumoTrafficEnv2J(cfg_path=..., seed=seed, port=8813)
+        return SumoTrafficEnv2J(
+            cfg_path=os.path.join(os.path.dirname(__file__), "network.sumocfg"),
+            seed=seed,
+            port=8813,
+        )
     return _init
 
 def make_eval_env(seed=0):
     def _init():
-        return SumoTrafficEnv2J(cfg_path=..., seed=seed, port=8814)
+        return SumoTrafficEnv2J(
+            cfg_path=os.path.join(os.path.dirname(__file__), "network.sumocfg"),
+            seed=seed,
+            port=8814,
+        )
     return _init
 
 train_env = make_vec_env(make_train_env(seed=42), n_envs=1)
