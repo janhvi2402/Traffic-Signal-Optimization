@@ -43,8 +43,8 @@ eval_env  = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
 eval_callback = EvalCallback(
     eval_env,
     best_model_save_path = "./models/best/",
-    eval_freq            = 500,   # steps between evaluations
-    n_eval_episodes      = 1,
+    eval_freq            = 20_000,   # steps between evaluations
+    n_eval_episodes      = 3,
     deterministic        = True,
     verbose              = 1,
 )
@@ -65,7 +65,7 @@ model = PPO(
     verbose       = 1,
 )
 
-model.learn(total_timesteps=3_000, callback=eval_callback)
+model.learn(total_timesteps=500_000, callback=eval_callback)
 
 model.save("models/ppo_sumo_2junction")
 train_env.save("models/vec_normalize_sumo.pkl")
