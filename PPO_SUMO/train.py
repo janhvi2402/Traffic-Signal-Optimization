@@ -9,7 +9,7 @@ from env import SumoTrafficEnv2J
 
 os.makedirs("models/best", exist_ok=True)
 
-# ── environment factories ──────────────────────────────────────────────────────
+# environment factories 
 # SUMO can't run two instances on the same port, so each parallel env
 # gets its own seed (which randomises vehicle insertions) rather than
 # sharing state.  n_envs=1 is safe; increase only if you launch each
@@ -39,7 +39,7 @@ train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 eval_env  = make_vec_env(make_eval_env(seed=0), n_envs=1)
 eval_env  = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
 
-# ── callbacks ─────────────────────────────────────────────────────────────────
+# callbacks
 eval_callback = EvalCallback(
     eval_env,
     best_model_save_path = "./models/best/",
@@ -49,7 +49,7 @@ eval_callback = EvalCallback(
     verbose              = 1,
 )
 
-# ── model ─────────────────────────────────────────────────────────────────────
+# model
 model = PPO(
     policy       = "MlpPolicy",
     env          = train_env,
