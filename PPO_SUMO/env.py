@@ -125,7 +125,8 @@ class SumoTrafficEnv2J(gym.Env):
             "--random",
         ]
         if self._seed is not None:
-            cmd += ["--seed", str(self._seed)]
+            safe_seed = int(self._seed) % 2_147_483_647
+            cmd += ["--seed", str(safe_seed)]
 
         # unique label per instance/port avoids "Connection 'default' is
         # already active" when train_env and eval_env run at the same time
@@ -223,16 +224,6 @@ class SumoTrafficEnv2J(gym.Env):
             self._apply_action(tl, int(action[i]))
 
         self.conn.simulationStep()
-        self._step_count += 1
-
-        obs     = self._get_obs()
-        reward  = self._get_reward()
-        done    = self._step_count >= self.max_steps
-
-        return obs, reward, done, False, {}
-
-        # advance SUMO by 1 second
-        traci.simulationStep()
         self._step_count += 1
 
         obs     = self._get_obs()
