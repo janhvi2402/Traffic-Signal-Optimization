@@ -4,7 +4,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-# ── locate SUMO ───────────────────────────────────────────────────────────────
+# locate SUMO 
 if "SUMO_HOME" not in os.environ:
     raise EnvironmentError(
         "SUMO_HOME not set. Add 'export SUMO_HOME=/path/to/sumo' to your shell profile."
@@ -55,7 +55,7 @@ class SumoTrafficEnv2J(gym.Env):
     normalised by max_queue.  Equivalent signal to the custom env.
     """
 
-    # ── SUMO IDs from network.net.xml ─────────────────────────────────────────
+    #  SUMO IDs from network.net.xml 
     TL_IDS = ["J1", "J2"]
 
     # Incoming lanes per junction (order matches incLanes in net file)
@@ -76,7 +76,7 @@ class SumoTrafficEnv2J(gym.Env):
     PHASE_EW_GREEN  = 2
     PHASE_EW_YELLOW = 3
 
-    # ── constants ─────────────────────────────────────────────────────────────
+    #  constants 
     MAX_QUEUE   = 30    # vehicles per lane  (for normalisation)
     MAX_WAIT    = 120   # seconds            (for normalisation)
     MAX_PHASE_T = 60    # seconds            (for normalisation)
@@ -113,7 +113,7 @@ class SumoTrafficEnv2J(gym.Env):
         self._in_yellow     = {tl: False for tl in self.TL_IDS}
         self._traci_started = False
 
-    # ── helpers ───────────────────────────────────────────────────────────────
+    # helpers
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
@@ -193,7 +193,7 @@ class SumoTrafficEnv2J(gym.Env):
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
                 self._in_yellow[tl] = True
 
-    # ── Gymnasium API ─────────────────────────────────────────────────────────
+    # Gymnasium API
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
