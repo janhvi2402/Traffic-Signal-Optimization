@@ -3,6 +3,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
+from common_baseline import run_offset_fixed_time
 
 from env import SumoTrafficEnv2J
 
@@ -28,54 +29,37 @@ def run_ppo(model, n_episodes=5):
     env.training    = False
     env.norm_reward = False
 
-    episode_rewards = []
-    episode_queues  = []
-    episode_waits   = []   # ADD THIS
+    episode_waits = []
 
     for ep in range(n_episodes):
         obs   = env.reset()
         done  = False
-        total = 0.0
         steps = 0
-        queue_sum = 0.0
-        wait_sum  = 0.0   # ADD THIS
+        wait_sum = 0.0
 
         while not done:
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
-            total     += reward[0]
-            queue_sum += -reward[0] * env.get_attr("MAX_QUEUE")[0]
-            # ADD THIS: pull waiting time straight from the underlying SUMO connection
             conn = env.get_attr("conn")[0]
             for veh in conn.vehicle.getIDList():
                 wait_sum += conn.vehicle.getWaitingTime(veh)
-            steps     += 1
+            steps += 1
 
-        episode_rewards.append(total)
-        episode_queues.append(queue_sum / steps)
-        episode_waits.append(wait_sum / steps)   # ADD THIS
+        episode_waits.append(wait_sum / steps)
 
     env.close()
-    return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues), np.mean(episode_waits)  # CHANGED
+    return np.mean(episode_waits), np.std(episode_waits)
 
 
-def run_fixed_time(cycle_ns=42, cycle_ew=42, yellow=3, n_episodes=5):
-    """
-    Mimics the static tlLogic from the net file:
-      42 s NS green → 3 s yellow → 42 s EW green → 3 s yellow → repeat
-    J2 starts offset by half a full cycle so they're not synchronised.
-    """
-    full_cycle = cycle_ns + yellow + cycle_ew + yellow   # 90 s
-    half_cycle = full_cycle // 2                          # 45 s
-
-    env = SumoTrafficEnv2J(
-        cfg_path  = os.path.join(os.path.dirname(__file__), "network.sumocfg"),
-        use_gui   = False,
-        max_steps = 3600,
-    )
-
-    episode_rewards = []
-    episode_queues  = []
+def run_fixed_time(n_episodes=5):
+    waits = []
+    for ep in range(n_episodes):
+        traci.start(["sumo", "-c", "network.sumocfg", "--no-warnings", "--seed", str(ep)])
+        traci.simulationStep()
+        _, avg_wait, _, _ = run_offset_fixed_time()
+        traci.close()
+        waits.append(avg_wait)
+    return np.mean(waits), np.std(waits)
 
     for ep in range(n_episodes):
         obs, _ = env.reset(seed=ep)
@@ -120,14 +104,13 @@ model = PPO.load(MODEL_PATH, env=base_env)
 N_EP = 5
 print(f"\nEvaluating over {N_EP} episodes each...\n")
 
-ppo_r,   ppo_std,   ppo_q   = run_ppo(model,        n_episodes=N_EP)
-fixed_r, fixed_std, fixed_q = run_fixed_time(        n_episodes=N_EP)
+ppo_wait, ppo_wait_std     = run_ppo(model, n_episodes=N_EP)
+fixed_wait, fixed_wait_std = run_fixed_time(n_episodes=N_EP)
 
-improvement = (ppo_r - fixed_r) / abs(fixed_r) * 100
+improvement = (fixed_wait - ppo_wait) / fixed_wait * 100
 
-print(f"{'Metric':<30} {'Fixed-time':>12} {'PPO':>12}")
-print("─" * 56)
-print(f"{'Mean episode reward':<30} {fixed_r:>12.2f} {ppo_r:>12.2f}")
-print(f"{'Reward std':<30} {fixed_std:>12.2f} {ppo_std:>12.2f}")
-print(f"{'Mean queue (vehicles/lane)':<30} {fixed_q:>12.2f} {ppo_q:>12.2f}")
+print(f"{'Metric':<30} {'Fixed-time':>14} {'PPO':>14}")
+print("─" * 60)
+print(f"{'Mean avg wait/step (s)':<30} {fixed_wait:>13.2f}s {ppo_wait:>13.2f}s")
+print(f"{'Std':<30} {fixed_wait_std:>13.2f}s {ppo_wait_std:>13.2f}s")
 print(f"\nImprovement over fixed-time: {improvement:.1f}%")

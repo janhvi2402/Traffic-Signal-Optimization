@@ -1,8 +1,8 @@
 import os
 import sys
+import json
 import numpy as np
 import pickle
-import json
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -11,8 +11,7 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from route_generator import generate_route_file
-from common_baseline import run_offset_fixed_time  # SAME baseline used for PPO comparison
+from common_baseline import run_offset_fixed_time
 
 GREEN_TIME  = 10
 YELLOW_TIME = 3
@@ -64,7 +63,10 @@ def get_state(j1_phase, j2_phase):
     )
 
 
-def run_qlearning_episode():
+def run_qlearning_episode(seed):
+    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings", "--seed", str(seed)])
+    traci.simulationStep()
+
     j1_phase = 0
     j2_phase = 0
     traci.trafficlight.setPhase(J1, j1_phase)
@@ -83,7 +85,7 @@ def run_qlearning_episode():
             action_idx = int(np.argmax(q_table[state]))
         else:
             unseen_states += 1
-            action_idx = 0   # fallback: keep/default to NS-NS green
+            action_idx = 0
 
         j1_new, j2_new = ACTION_SPACE[action_idx]
 
@@ -111,49 +113,47 @@ def run_qlearning_episode():
             for veh in traci.vehicle.getIDList():
                 cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
+    traci.close()
     coverage = 1.0 - (unseen_states / max(total_decisions, 1))
     return cumulative_wait, cumulative_wait / max(sim_steps, 1), arrived, sim_steps, coverage
 
 
-SCENARIOS = ["low", "medium", "high", "asymmetric", "rush_hour"]
+N_EPISODES = 5
+ql_waits = []
+fixed_waits = []
+coverages = []
 
-results = {}
-print(f"\n{'Scenario':<15} {'Fixed-time':>14} {'Q-learning':>14} {'Improvement':>13} {'State cov.':>11}")
-print("─" * 72)
-
-for scenario in SCENARIOS:
-    generate_route_file(scenario)
-
-    # Fixed-time baseline — SAME offset logic used in PPO's evaluation
-    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings"])
+for ep in range(N_EPISODES):
+    # Fixed-time baseline
+    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings", "--seed", str(ep)])
     traci.simulationStep()
     _, fixed_avg_wait, _, _ = run_offset_fixed_time()
     traci.close()
+    fixed_waits.append(fixed_avg_wait)
 
     # Q-learning
-    generate_route_file(scenario)   # regenerate — baseline run consumed the route file's vehicles
-    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings"])
-    traci.simulationStep()
-    _, ql_avg_wait, arrived, steps, coverage = run_qlearning_episode()
-    traci.close()
+    _, ql_avg_wait, arrived, steps, coverage = run_qlearning_episode(seed=ep)
+    ql_waits.append(ql_avg_wait)
+    coverages.append(coverage)
 
-    improvement = (fixed_avg_wait - ql_avg_wait) / fixed_avg_wait * 100
+fixed_mean = np.mean(fixed_waits)
+ql_mean    = np.mean(ql_waits)
+improvement = (fixed_mean - ql_mean) / fixed_mean * 100
 
-    results[scenario] = {
-        "fixed_avg_wait": fixed_avg_wait,
-        "qlearning_avg_wait": ql_avg_wait,
-        "improvement_pct": improvement,
-        "state_coverage": coverage,
-        "vehicles_arrived": arrived,
-    }
-
-    print(f"{scenario:<15} {fixed_avg_wait:>13.2f}s {ql_avg_wait:>13.2f}s {improvement:>12.1f}% {coverage:>10.1%}")
+print(f"\n{'Metric':<25} {'Fixed-time':>14} {'Q-learning':>14}")
+print("─" * 55)
+print(f"{'Mean avg wait/step (s)':<25} {fixed_mean:>13.2f}s {ql_mean:>13.2f}s")
+print(f"{'Std':<25} {np.std(fixed_waits):>13.2f}s {np.std(ql_waits):>13.2f}s")
+print(f"\nImprovement over fixed-time: {improvement:.1f}%")
+print(f"Mean state coverage: {np.mean(coverages):.1%}")
 
 os.makedirs("results", exist_ok=True)
 with open("results/qlearning_vs_fixed_unified.json", "w") as f:
-    json.dump(results, f, indent=2)
+    json.dump({
+        "fixed_mean_wait": fixed_mean,
+        "qlearning_mean_wait": ql_mean,
+        "improvement_pct": improvement,
+        "mean_state_coverage": float(np.mean(coverages)),
+    }, f, indent=2)
 
-print("\nSaved: results/qlearning_vs_fixed_unified.json")
-print("\nNote: 'State coverage' shows the fraction of decisions where the agent")
-print("recognized the state from training. Low coverage on a scenario means")
-print("results there are less trustworthy — the agent was mostly guessing/defaulting.")
+print("Saved: results/qlearning_vs_fixed_unified.json")
