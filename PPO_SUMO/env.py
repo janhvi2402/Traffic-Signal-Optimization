@@ -81,6 +81,7 @@ class SumoTrafficEnv2J(gym.Env):
     MAX_WAIT    = 120   # seconds            (for normalisation)
     MAX_PHASE_T = 60    # seconds            (for normalisation)
     MIN_GREEN   = 10    # minimum green duration before a switch is allowed
+    MAX_GREEN = 90      # seconds — hard cap so a phase can't run forever
 
     def __init__(
         self,
@@ -184,14 +185,18 @@ class SumoTrafficEnv2J(gym.Env):
             self._in_yellow[tl]     = False
             self._phase[tl]         = 1 - self._phase[tl]
             self._time_in_phase[tl] = 0
-        else:
+            green_phase = self.PHASE_NS_GREEN if self._phase[tl] == 0 else self.PHASE_EW_GREEN
+            self.conn.trafficlight.setPhase(tl, green_phase)
+            self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
+
+        else:   # <-- THIS is the else block you replace
             self._time_in_phase[tl] += 1
-            if action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN:
-                yellow_phase = (
-                    self.PHASE_NS_YELLOW if self._phase[tl] == 0
-                    else self.PHASE_EW_YELLOW
-                )
+            force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
+            if (action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN) or force_switch:
+                yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
+                self.conn.trafficlight.setPhaseDuration(tl, 9999)
+                self._in_yellow[tl] = True
                 self._in_yellow[tl] = True
 
     # Gymnasium API
