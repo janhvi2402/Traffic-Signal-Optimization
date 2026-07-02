@@ -1,0 +1,175 @@
+|    n_updates            | 2410        |
+|    policy_gradient_loss | -0.0253     |
+|    value_loss           | 0.11        |
+-----------------------------------------
+ Retrying in 1 seconds
+------------------------------------------
+| rollout/                |              |
+|    ep_len_mean          | 3.6e+03      |
+|    ep_rew_mean          | -636         |
+| time/                   |              |
+|    fps                  | 109          |
+|    iterations           | 243          |
+|    time_elapsed         | 4531         |
+|    total_timesteps      | 497664       |
+| train/                  |              |
+|    approx_kl            | 0.0143916495 |
+|    clip_fraction        | 0.149        |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.02        |
+|    explained_variance   | 0.444        |
+|    learning_rate        | 0.0003       |
+|    loss                 | -0.0381      |
+|    n_updates            | 2420         |
+|    policy_gradient_loss | -0.0332      |
+|    value_loss           | 0.0226       |
+------------------------------------------
+-----------------------------------------
+| rollout/                |             |
+|    ep_len_mean          | 3.6e+03     |
+|    ep_rew_mean          | -636        |
+| time/                   |             |
+|    fps                  | 109         |
+|    iterations           | 244         |
+|    time_elapsed         | 4543        |
+|    total_timesteps      | 499712      |
+| train/                  |             |
+|    approx_kl            | 0.014679931 |
+|    clip_fraction        | 0.148       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.02       |
+|    explained_variance   | 0.117       |
+|    learning_rate        | 0.0003      |
+|    loss                 | -0.00272    |
+|    n_updates            | 2430        |
+|    policy_gradient_loss | -0.0219     |
+|    value_loss           | 0.133       |
+-----------------------------------------
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Eval num_timesteps=500000, episode_reward=-630.37 +/- 5.27
+Episode length: 3600.00 +/- 0.00
+-----------------------------------------
+| eval/                   |             |
+|    mean_ep_length       | 3.6e+03     |
+|    mean_reward          | -630        |
+| time/                   |             |
+|    total_timesteps      | 500000      |
+| train/                  |             |
+|    approx_kl            | 0.017121617 |
+|    clip_fraction        | 0.178       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -0.986      |
+|    explained_variance   | -0.087      |
+|    learning_rate        | 0.0003      |
+|    loss                 | -0.0391     |
+|    n_updates            | 2440        |
+|    policy_gradient_loss | -0.0317     |
+|    value_loss           | 0.0145      |
+-----------------------------------------
+ Retrying in 1 seconds
+---------------------------------
+| rollout/           |          |
+|    ep_len_mean     | 3.6e+03  |
+|    ep_rew_mean     | -636     |
+| time/              |          |
+|    fps             | 108      |
+|    iterations      | 245      |
+|    time_elapsed    | 4616     |
+|    total_timesteps | 501760   |
+---------------------------------
+Training done → models/ppo_sumo_2junction.zip
+Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
+Quitting (on error).
+Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
+Quitting (on error).
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test.py
+
+Evaluating over 5 episodes each...
+
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Metric                           Fixed-time          PPO
+────────────────────────────────────────────────────────
+Mean episode reward                 -879.49      -634.85
+Reward std                            14.14        10.89
+Mean queue (vehicles/lane)             7.33         5.29
+
+Improvement over fixed-time: 27.8%
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ 
+ *  History restored 
+
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ git add .
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ git commit -m "Add all models"
+[main 73d0f5b] Add all models
+ 5 files changed, 3 insertions(+), 3 deletions(-)
+ rewrite PPO_SUMO/__pycache__/env.cpython-38.pyc (62%)
+ rewrite models/best/best_model.zip (90%)
+ create mode 100644 models/ppo_sumo_2junction.zip
+ create mode 100644 models/vec_normalize_sumo.pkl
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ git push
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (11/11), 842.03 KiB | 17.54 MiB/s, done.
+Total 11 (delta 5), reused 0 (delta 0)
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/janhvi2402/Traffic-Signal-Optimization.git
+   65299cd..73d0f5b  main -> main
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ 
+ *  History restored 
+
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ git pull
+Already up to date.
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ 
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ |    policy_gradient_loss | -0.0253     |
+bash: syntax error near unexpected token `|'
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ |    value_loss           | 0.11        |
+bash: syntax error near unexpected token `|'
+--------------------------
+ Retrying in 1 seconds
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ 
+
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ pkill -f sumo
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test.py
+
+Evaluating over 5 episodes each...
+
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Metric                           Fixed-time          PPO
+────────────────────────────────────────────────────────
+Mean episode reward                 -884.50      -626.68
+Reward std                            12.16         6.38
+Mean queue (vehicles/lane)             7.37         5.22
+
+Improvement over fixed-time: 29.1%
