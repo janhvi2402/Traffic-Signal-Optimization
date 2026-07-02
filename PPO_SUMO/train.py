@@ -7,6 +7,12 @@ from stable_baselines3.common.callbacks import EvalCallback
 
 from env import SumoTrafficEnv2J
 
+from stable_baselines3.common.utils import get_linear_fn
+
+# Linear LR decay: 3e-4 -> 5e-5 over training
+lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
+
+
 os.makedirs("models/best", exist_ok=True)
 
 # environment factories 
@@ -34,10 +40,10 @@ def make_eval_env(seed=0):
     return _init
 
 train_env = make_vec_env(make_train_env(seed=42), n_envs=1)
-train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
+train_env = VecNormalize(train_env, norm_obs=False, norm_reward=False)  # was True, True
 
 eval_env  = make_vec_env(make_eval_env(seed=0), n_envs=1)
-eval_env  = VecNormalize(eval_env, norm_obs=True, norm_reward=False)
+eval_env  = VecNormalize(eval_env, norm_obs=False, norm_reward=False)  # was norm_obs=True
 
 # callbacks
 eval_callback = EvalCallback(
@@ -51,17 +57,20 @@ eval_callback = EvalCallback(
 
 # model
 model = PPO(
-    policy       = "MlpPolicy",
-    env          = train_env,
+    policy        = "MlpPolicy",
+    env           = train_env,
     policy_kwargs = dict(net_arch=dict(pi=[128, 128], vf=[128, 128])),
-    learning_rate = 3e-4,
-    n_steps       = 2048,   # collected per update (1 env × 2048 steps)
-    batch_size    = 64,
-    n_epochs      = 10,
+    learning_rate = lr_schedule,   # was flat 3e-4
+    n_steps       = 4096,          # was 2048 — more data per update, less noisy value target
+    batch_size    = 128,           # was 64 — bigger minibatches, smoother gradients
+    n_epochs      = 4,             # was 10 — fewer passes over noisy data = less overfitting
     gamma         = 0.99,
     gae_lambda    = 0.95,
     clip_range    = 0.2,
     ent_coef      = 0.01,
+    vf_coef       = 0.75,          # was default 0.5 — give the critic more weight
+    max_grad_norm = 0.5,           # add gradient clipping for stability
+    target_kl     = 0.03,          # stop updates early if policy shifts too much in one epoch
     verbose       = 1,
 )
 
