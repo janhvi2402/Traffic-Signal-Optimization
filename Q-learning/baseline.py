@@ -1,66 +1,53 @@
-import os
-import sys
 import traci
-
-if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:
-    sys.exit("SUMO_HOME not set")
-
-# Fixed cycle that mirrors your tlLogic definition exactly
-# phase 0: NS green = 42s, phase 1: yellow = 3s,
-# phase 2: EW green = 42s, phase 3: yellow = 3s
-# Total cycle = 90s — this is what SUMO runs by default
 
 J1 = "J1"
 J2 = "J2"
 
-FIXED_GREEN  = 42   # matches your tlLogic duration
-YELLOW_TIME  = 3
+def run_offset_fixed_time(cycle_ns=42, cycle_ew=42, yellow=3, max_steps=3600):
+    """
+    Same offset fixed-time baseline logic as PPO's test.py, ported to
+    raw TraCI. J2 is offset by half a cycle so signals aren't
+    synchronized — this is the SAME baseline used for both PPO and
+    Q-learning comparisons, so improvement % means the same thing
+    for both.
 
-traci.start(["sumo-gui", "-c", "simulation.sumocfg"])
-traci.simulationStep()
+    Returns (cumulative_wait, avg_wait_per_step, vehicles_arrived, steps)
+    """
+    full_cycle = cycle_ns + yellow + cycle_ew + yellow
+    half_cycle = full_cycle // 2
 
-# Force SUMO to use the static program (already default, but explicit)
-traci.trafficlight.setProgram(J1, "0")
-traci.trafficlight.setProgram(J2, "0")
+    traci.trafficlight.setPhase(J1, 0)
+    traci.trafficlight.setPhase(J2, 0)
 
-cumulative_wait = 0
-arrived         = 0
-sim_steps       = 0
+    cumulative_wait = 0.0
+    arrived = 0
+    steps = 0
+    t = 0
 
-while traci.simulation.getMinExpectedNumber() > 0:
-    traci.simulationStep()
-    sim_steps += 1
+    def phase_for(pos):
+        if pos < cycle_ns:
+            return 0  # NS green
+        elif pos < cycle_ns + yellow:
+            return 1  # NS yellow
+        elif pos < cycle_ns + yellow + cycle_ew:
+            return 2  # EW green
+        else:
+            return 3  # EW yellow
 
-    # count vehicles that finished this step
-    arrived += len(traci.simulation.getArrivedIDList())
+    while traci.simulation.getMinExpectedNumber() > 0 and steps < max_steps:
+        pos_j1 = t % full_cycle
+        pos_j2 = (t + half_cycle) % full_cycle
 
-    # sum waiting time across all active vehicles
-    step_wait = 0
-    for veh in traci.vehicle.getIDList():
-        step_wait += traci.vehicle.getWaitingTime(veh)
-    cumulative_wait += step_wait
+        traci.trafficlight.setPhase(J1, phase_for(pos_j1))
+        traci.trafficlight.setPhase(J2, phase_for(pos_j2))
 
-traci.close()
+        traci.simulationStep()
+        steps += 1
+        t += 1
 
-print("\n===== BASELINE RESULTS (Fixed 42s Cycle) =====")
-print(f"Simulation Steps  : {sim_steps}")
-print(f"Vehicles Arrived  : {arrived}")
-print(f"Cumulative Wait   : {cumulative_wait:.0f} s")
-print(f"Avg Wait/Step     : {cumulative_wait / max(sim_steps, 1):.3f} s")
+        arrived += len(traci.simulation.getArrivedIDList())
+        for veh in traci.vehicle.getIDList():
+            cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
-import json
-
-baseline_result = {
-    "cumulative_wait":   cumulative_wait,
-    "avg_wait_per_step": cumulative_wait / max(sim_steps, 1),
-    "vehicles_arrived":  arrived,
-    "steps":             sim_steps
-}
-
-with open("results/baseline_result.json", "w") as f:
-    json.dump(baseline_result, f, indent=2)
-
-print("Saved: baseline_result.json")
+    avg_wait = cumulative_wait / max(steps, 1)
+    return cumulative_wait, avg_wait, arrived, steps

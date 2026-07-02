@@ -30,6 +30,7 @@ def run_ppo(model, n_episodes=5):
 
     episode_rewards = []
     episode_queues  = []
+    episode_waits   = []   # ADD THIS
 
     for ep in range(n_episodes):
         obs   = env.reset()
@@ -37,19 +38,25 @@ def run_ppo(model, n_episodes=5):
         total = 0.0
         steps = 0
         queue_sum = 0.0
+        wait_sum  = 0.0   # ADD THIS
 
         while not done:
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
             total     += reward[0]
-            queue_sum += -reward[0] * env.get_attr("MAX_QUEUE")[0]   # unnormalise  
+            queue_sum += -reward[0] * env.get_attr("MAX_QUEUE")[0]
+            # ADD THIS: pull waiting time straight from the underlying SUMO connection
+            conn = env.get_attr("conn")[0]
+            for veh in conn.vehicle.getIDList():
+                wait_sum += conn.vehicle.getWaitingTime(veh)
             steps     += 1
 
         episode_rewards.append(total)
         episode_queues.append(queue_sum / steps)
+        episode_waits.append(wait_sum / steps)   # ADD THIS
 
     env.close()
-    return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues)
+    return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues), np.mean(episode_waits)  # CHANGED
 
 
 def run_fixed_time(cycle_ns=42, cycle_ew=42, yellow=3, n_episodes=5):
