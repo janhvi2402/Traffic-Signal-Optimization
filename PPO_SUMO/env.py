@@ -40,6 +40,12 @@ class SumoTrafficEnv2J(gym.Env):
         0 = keep current phase
         1 = request phase switch (triggers yellow → opposite green)
 
+    NOTE: Phase timing is now FULLY agent/env controlled. SUMO's default
+    tlLogic durations are overridden (setPhaseDuration=9999) immediately
+    on every phase change, and both green (MIN_GREEN/MAX_GREEN) and
+    yellow (YELLOW_TIME) durations are tracked and enforced manually in
+    _apply_action. Nothing relies on SUMO's internal program timer.
+
     Observation (per junction, 7 features × 2 = 14 total)
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
         [1] mean queue length on EW incoming lanes   (normalised 0-1)
@@ -81,7 +87,8 @@ class SumoTrafficEnv2J(gym.Env):
     MAX_WAIT    = 120   # seconds            (for normalisation)
     MAX_PHASE_T = 60    # seconds            (for normalisation)
     MIN_GREEN   = 10    # minimum green duration before a switch is allowed
-    MAX_GREEN = 90      # seconds — hard cap so a phase can't run forever
+    MAX_GREEN   = 90    # seconds — hard cap so a phase can't run forever
+    YELLOW_TIME = 3      # seconds — matches the net file's yellow duration
 
     def __init__(
         self,
@@ -108,11 +115,12 @@ class SumoTrafficEnv2J(gym.Env):
         self.action_space = spaces.MultiDiscrete([2, 2])
 
         # internal state
-        self._step_count    = 0
-        self._phase         = {tl: 0 for tl in self.TL_IDS}   # 0=NS, 1=EW (logical)
-        self._time_in_phase = {tl: 0 for tl in self.TL_IDS}
-        self._in_yellow     = {tl: False for tl in self.TL_IDS}
-        self._traci_started = False
+        self._step_count      = 0
+        self._phase           = {tl: 0 for tl in self.TL_IDS}   # 0=NS, 1=EW (logical)
+        self._time_in_phase   = {tl: 0 for tl in self.TL_IDS}
+        self._in_yellow       = {tl: False for tl in self.TL_IDS}
+        self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
+        self._traci_started   = False
 
     # helpers
 
@@ -179,25 +187,27 @@ class SumoTrafficEnv2J(gym.Env):
 
     def _apply_action(self, tl, action):
         if self._in_yellow[tl]:
-            sumo_phase = self.conn.trafficlight.getPhase(tl)
-            if sumo_phase in (self.PHASE_NS_YELLOW, self.PHASE_EW_YELLOW):
-                return
-            self._in_yellow[tl]     = False
-            self._phase[tl]         = 1 - self._phase[tl]
-            self._time_in_phase[tl] = 0
-            green_phase = self.PHASE_NS_GREEN if self._phase[tl] == 0 else self.PHASE_EW_GREEN
-            self.conn.trafficlight.setPhase(tl, green_phase)
-            self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
+            # manual yellow timer — SUMO's own program is frozen (duration=9999),
+            # so we are the only thing advancing yellow -> green now.
+            self._time_in_yellow[tl] += 1
+            if self._time_in_yellow[tl] >= self.YELLOW_TIME:
+                self._in_yellow[tl]      = False
+                self._phase[tl]          = 1 - self._phase[tl]
+                self._time_in_phase[tl]  = 0
+                self._time_in_yellow[tl] = 0
+                green_phase = self.PHASE_NS_GREEN if self._phase[tl] == 0 else self.PHASE_EW_GREEN
+                self.conn.trafficlight.setPhase(tl, green_phase)
+                self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
 
-        else:   # <-- THIS is the else block you replace
+        else:
             self._time_in_phase[tl] += 1
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
             if (action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN) or force_switch:
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
-                self.conn.trafficlight.setPhaseDuration(tl, 9999)
-                self._in_yellow[tl] = True
-                self._in_yellow[tl] = True
+                self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
+                self._in_yellow[tl]      = True
+                self._time_in_yellow[tl] = 0
 
     # Gymnasium API
 
@@ -208,15 +218,17 @@ class SumoTrafficEnv2J(gym.Env):
         if seed is not None:
             self._seed = seed
 
-        self._step_count    = 0
-        self._phase         = {tl: 0 for tl in self.TL_IDS}
-        self._time_in_phase = {tl: 0 for tl in self.TL_IDS}
-        self._in_yellow     = {tl: False for tl in self.TL_IDS}
+        self._step_count     = 0
+        self._phase          = {tl: 0 for tl in self.TL_IDS}
+        self._time_in_phase  = {tl: 0 for tl in self.TL_IDS}
+        self._in_yellow      = {tl: False for tl in self.TL_IDS}
+        self._time_in_yellow = {tl: 0 for tl in self.TL_IDS}
 
         self._start_sumo()
 
         for tl in self.TL_IDS:
             self.conn.trafficlight.setPhase(tl, self.PHASE_NS_GREEN)
+            self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance from the very first step
 
         self.conn.simulationStep()
 
