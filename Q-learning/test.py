@@ -148,7 +148,11 @@ for ep in range(N_EPISODES):
     # Fixed-time baseline
     traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(ep)])
     traci.simulationStep()
-    _, fixed_avg_wait, _, _ = run_offset_fixed_time()
+    # max_steps set high so the real stopping condition is "network fully cleared"
+    # (same criterion run_qlearning_episode uses), not an arbitrary step cap.
+    # This keeps the two runs comparable instead of truncating one early.
+    _, fixed_avg_wait, _, fixed_steps = run_offset_fixed_time(max_steps=100000)
+    print(f"[DEBUG] Episode {ep}: fixed-time ran {fixed_steps} steps before clearing")
     traci.close()
     fixed_waits.append(fixed_avg_wait)
 
