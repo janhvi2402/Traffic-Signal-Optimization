@@ -27,6 +27,22 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "test.sumocfg")
 QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 
+# --- DIAGNOSTIC: fail loudly, with the exact path, instead of a vague SUMO error ---
+print(f"[DEBUG] Script dir      : {SCRIPT_DIR}")
+print(f"[DEBUG] Looking for cfg : {SUMOCFG_PATH}")
+print(f"[DEBUG] cfg exists?     : {os.path.exists(SUMOCFG_PATH)}")
+print(f"[DEBUG] Looking for qtb : {QTABLE_PATH}")
+print(f"[DEBUG] qtable exists?  : {os.path.exists(QTABLE_PATH)}")
+
+if not os.path.exists(SUMOCFG_PATH):
+    sys.exit(
+        f"\nFATAL: test.sumocfg not found at:\n  {SUMOCFG_PATH}\n"
+        f"Contents of {SCRIPT_DIR}:\n  " +
+        "\n  ".join(sorted(os.listdir(SCRIPT_DIR)))
+    )
+if not os.path.exists(QTABLE_PATH):
+    sys.exit(f"\nFATAL: qtable.pkl not found at:\n  {QTABLE_PATH}")
+
 with open(QTABLE_PATH, "rb") as f:
     q_table = pickle.load(f)
 
