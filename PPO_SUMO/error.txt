@@ -1,215 +1,67 @@
-|    n_updates            | 460          |
-|    policy_gradient_loss | -0.00125     |
-|    value_loss           | 0.792        |
-------------------------------------------
- Retrying in 1 seconds
- Retrying in 1 seconds
--------------------------------------------
-| rollout/                |               |
-|    ep_len_mean          | 3.6e+03       |
-|    ep_rew_mean          | -630          |
-| time/                   |               |
-|    fps                  | 117           |
-|    iterations           | 117           |
-|    time_elapsed         | 4087          |
-|    total_timesteps      | 479232        |
-| train/                  |               |
-|    approx_kl            | 0.00020481023 |
-|    clip_fraction        | 0             |
-|    clip_range           | 0.2           |
-|    entropy_loss         | -0.693        |
-|    explained_variance   | 0.257         |
-|    learning_rate        | 6.24e-05      |
-|    loss                 | 2.43          |
-|    n_updates            | 464           |
-|    policy_gradient_loss | 5.76e-05      |
-|    value_loss           | 0.806         |
--------------------------------------------
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-Eval num_timesteps=480000, episode_reward=-616.32 +/- 7.56
-Episode length: 3600.00 +/- 0.00
--------------------------------------------
-| eval/                   |               |
-|    mean_ep_length       | 3.6e+03       |
-|    mean_reward          | -616          |
-| time/                   |               |
-|    total_timesteps      | 480000        |
-| train/                  |               |
-|    approx_kl            | 0.00047012587 |
-|    clip_fraction        | 6.1e-05       |
-|    clip_range           | 0.2           |
-|    entropy_loss         | -0.709        |
-|    explained_variance   | 0.205         |
-|    learning_rate        | 6.04e-05      |
-|    loss                 | 0.344         |
-|    n_updates            | 468           |
-|    policy_gradient_loss | -0.000259     |
-|    value_loss           | 1.4           |
--------------------------------------------
- Retrying in 1 seconds
----------------------------------
-| rollout/           |          |
-|    ep_len_mean     | 3.6e+03  |
-|    ep_rew_mean     | -630     |
-| time/              |          |
-|    fps             | 115      |
-|    iterations      | 118      |
-|    time_elapsed    | 4167     |
-|    total_timesteps | 483328   |
----------------------------------
- Retrying in 1 seconds
--------------------------------------------
-| rollout/                |               |
-|    ep_len_mean          | 3.6e+03       |
-|    ep_rew_mean          | -630          |
-| time/                   |               |
-|    fps                  | 116           |
-|    iterations           | 119           |
-|    time_elapsed         | 4190          |
-|    total_timesteps      | 487424        |
-| train/                  |               |
-|    approx_kl            | 0.00089431036 |
-|    clip_fraction        | 0.00061       |
-|    clip_range           | 0.2           |
-|    entropy_loss         | -0.717        |
-|    explained_variance   | 0.249         |
-|    learning_rate        | 5.83e-05      |
-|    loss                 | 0.177         |
-|    n_updates            | 472           |
-|    policy_gradient_loss | -0.00034      |
-|    value_loss           | 0.78          |
--------------------------------------------
- Retrying in 1 seconds
-------------------------------------------
-| rollout/                |              |
-|    ep_len_mean          | 3.6e+03      |
-|    ep_rew_mean          | -629         |
-| time/                   |              |
-|    fps                  | 116          |
-|    iterations           | 120          |
-|    time_elapsed         | 4213         |
-|    total_timesteps      | 491520       |
-| train/                  |              |
-|    approx_kl            | 0.0016386302 |
-|    clip_fraction        | 0.00623      |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.739       |
-|    explained_variance   | 0.29         |
-|    learning_rate        | 5.63e-05     |
-|    loss                 | 0.903        |
-|    n_updates            | 476          |
-|    policy_gradient_loss | -0.000486    |
-|    value_loss           | 0.779        |
-------------------------------------------
- Retrying in 1 seconds
-------------------------------------------
-| rollout/                |              |
-|    ep_len_mean          | 3.6e+03      |
-|    ep_rew_mean          | -629         |
-| time/                   |              |
-|    fps                  | 116          |
-|    iterations           | 121          |
-|    time_elapsed         | 4237         |
-|    total_timesteps      | 495616       |
-| train/                  |              |
-|    approx_kl            | 0.0031436705 |
-|    clip_fraction        | 0.0176       |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.768       |
-|    explained_variance   | 0.248        |
-|    learning_rate        | 5.42e-05     |
-|    loss                 | 0.665        |
-|    n_updates            | 480          |
-|    policy_gradient_loss | -0.00182     |
-|    value_loss           | 0.771        |
-------------------------------------------
- Retrying in 1 seconds
------------------------------------------
-| rollout/                |             |
-|    ep_len_mean          | 3.6e+03     |
-|    ep_rew_mean          | -629        |
-| time/                   |             |
-|    fps                  | 117         |
-|    iterations           | 122         |
-|    time_elapsed         | 4261        |
-|    total_timesteps      | 499712      |
-| train/                  |             |
-|    approx_kl            | 0.001593898 |
-|    clip_fraction        | 0.00171     |
-|    clip_range           | 0.2         |
-|    entropy_loss         | -0.805      |
-|    explained_variance   | 0.256       |
-|    learning_rate        | 5.22e-05    |
-|    loss                 | 0.265       |
-|    n_updates            | 484         |
-|    policy_gradient_loss | -0.00114    |
-|    value_loss           | 0.794       |
------------------------------------------
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-Eval num_timesteps=500000, episode_reward=-616.76 +/- 4.69
-Episode length: 3600.00 +/- 0.00
-------------------------------------------
-| eval/                   |              |
-|    mean_ep_length       | 3.6e+03      |
-|    mean_reward          | -617         |
-| time/                   |              |
-|    total_timesteps      | 500000       |
-| train/                  |              |
-|    approx_kl            | 0.0010991148 |
-|    clip_fraction        | 0            |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.757       |
-|    explained_variance   | 0.294        |
-|    learning_rate        | 5.01e-05     |
-|    loss                 | 0.143        |
-|    n_updates            | 488          |
-|    policy_gradient_loss | -0.000816    |
-|    value_loss           | 0.784        |
-------------------------------------------
- Retrying in 1 seconds
----------------------------------
-| rollout/           |          |
-|    ep_len_mean     | 3.6e+03  |
-|    ep_rew_mean     | -629     |
-| time/              |          |
-|    fps             | 115      |
-|    iterations      | 123      |
-|    time_elapsed    | 4344     |
-|    total_timesteps | 503808   |
----------------------------------
-Training done → models/ppo_sumo_2junction.zip
-Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
-Quitting (on error).
-Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
-Quitting (on error).
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ pkill -f sumo
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test.py
 
-Evaluating over 5 episodes each...
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 338 bytes | 21.00 KiB/s, done.
+From https://github.com/janhvi2402/Traffic-Signal-Optimization
+   517a490..62656d3  main       -> origin/main
+Updating 517a490..62656d3
+error: Your local changes to the following files would be overwritten by merge:
+        Q-learning/test.py
+Please commit your changes or stash them before you merge.
+Aborting
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ git stash
+Saved working directory and index state WIP on main: 517a490 Add
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ git pull
+Updating 517a490..62656d3
+Fast-forward
+ Q-learning/test.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ pkill -f sumo
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
+Traceback (most recent call last):
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py", line 14, in <module>
+    from common_baseline import run_offset_fixed_time
+ModuleNotFoundError: No module named 'common_baseline'
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
+Traceback (most recent call last):
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py", line 14, in <module>
+    from common_baseline import run_offset_fixed_time
+ModuleNotFoundError: No module named 'common_baseline'
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
+[DEBUG] Script dir      : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning
+[DEBUG] Looking for cfg : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/simulation.sumocfg
+[DEBUG] cfg exists?     : True
+[DEBUG] Looking for qtb : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/qtable.pkl
+[DEBUG] qtable exists?  : True
+States loaded: 1181
+ Retrying in 1 seconds
+Step #3601.00 (4ms ~= 250.00*RT, ~22500.00UPS, TraCI: 3ms, vehicles TOT 2202 ACT 90 BUF 11
+ Retrying in 1 seconds
+Step #22619.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13803 ACT 0 BUF 0)               
+ Retrying in 1 seconds
+Step #3601.00 (3ms ~= 333.33*RT, ~31333.33UPS, TraCI: 3ms, vehicles TOT 2197 ACT 94 BUF 11
+ Retrying in 1 seconds
+Step #22389.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13696 ACT 0 BUF 0)               
+ Retrying in 1 seconds
+Step #3601.00 (4ms ~= 250.00*RT, ~23500.00UPS, TraCI: 3ms, vehicles TOT 2177 ACT 94 BUF 11
+ Retrying in 1 seconds
+Step #22662.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13766 ACT 0 BUF 0)               
+ Retrying in 1 seconds
+Step #3601.00 (3ms ~= 333.33*RT, ~27333.33UPS, TraCI: 3ms, vehicles TOT 2204 ACT 82 BUF 11
+ Retrying in 1 seconds
+Step #22222.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 13559 ACT 0 BUF 0)               
+ Retrying in 1 seconds
+Step #3601.00 (3ms ~= 333.33*RT, ~27666.67UPS, TraCI: 3ms, vehicles TOT 2177 ACT 83 BUF 11
+ Retrying in 1 seconds
+Step #22726.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13835 ACT 0 BUF 0)               
 
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-Metric                           Fixed-time          PPO
-────────────────────────────────────────────────────────
-Mean episode reward                 -898.10      -616.27
-Reward std                            13.28        15.10
-Mean queue (vehicles/lane)             7.48         5.14
+Metric                        Fixed-time     Q-learning
+───────────────────────────────────────────────────────
+Mean avg wait/step (s)          1226.64s        404.62s
+Std                               46.12s         25.79s
+
+Improvement over fixed-time: 67.0%
+Mean state coverage: 99.9%
+Saved: /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/results/qlearning_vs_fixed_unified.json
