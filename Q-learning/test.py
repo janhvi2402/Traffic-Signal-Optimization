@@ -11,7 +11,7 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from baseline import run_offset_fixed_time
+from common_baseline import run_offset_fixed_time
 
 GREEN_TIME  = 10
 YELLOW_TIME = 3
@@ -22,7 +22,12 @@ J2 = "J2"
 ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
-with open("qtable.pkl", "rb") as f:
+# --- FIX: resolve paths relative to this script's own folder, not the cwd ---
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "test.sumocfg")
+QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
+
+with open(QTABLE_PATH, "rb") as f:
     q_table = pickle.load(f)
 
 print(f"States loaded: {len(q_table)}")
@@ -64,7 +69,7 @@ def get_state(j1_phase, j2_phase):
 
 
 def run_qlearning_episode(seed):
-    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings", "--seed", str(seed)])
+    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(seed)])
     traci.simulationStep()
 
     j1_phase = 0
@@ -125,7 +130,7 @@ coverages = []
 
 for ep in range(N_EPISODES):
     # Fixed-time baseline
-    traci.start(["sumo", "-c", "test.sumocfg", "--no-warnings", "--seed", str(ep)])
+    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(ep)])
     traci.simulationStep()
     _, fixed_avg_wait, _, _ = run_offset_fixed_time()
     traci.close()
@@ -147,8 +152,9 @@ print(f"{'Std':<25} {np.std(fixed_waits):>13.2f}s {np.std(ql_waits):>13.2f}s")
 print(f"\nImprovement over fixed-time: {improvement:.1f}%")
 print(f"Mean state coverage: {np.mean(coverages):.1%}")
 
-os.makedirs("results", exist_ok=True)
-with open("results/qlearning_vs_fixed_unified.json", "w") as f:
+RESULTS_DIR = os.path.join(SCRIPT_DIR, "results")
+os.makedirs(RESULTS_DIR, exist_ok=True)
+with open(os.path.join(RESULTS_DIR, "qlearning_vs_fixed_unified.json"), "w") as f:
     json.dump({
         "fixed_mean_wait": fixed_mean,
         "qlearning_mean_wait": ql_mean,
@@ -156,4 +162,4 @@ with open("results/qlearning_vs_fixed_unified.json", "w") as f:
         "mean_state_coverage": float(np.mean(coverages)),
     }, f, indent=2)
 
-print("Saved: results/qlearning_vs_fixed_unified.json")
+print(f"Saved: {os.path.join(RESULTS_DIR, 'qlearning_vs_fixed_unified.json')}")
