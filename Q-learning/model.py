@@ -31,14 +31,6 @@ J2 = "J2"
 ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
-# KEY FIX: train across a MIX of scenarios, not just one.
-# Q-learning was previously trained on a single fixed distribution and
-# then tested on 5 different ones — more episodes just meant deeper
-# overfitting to that one distribution, which is why higher-episode
-# configs got WORSE, not better, on the eval scenarios. Randomizing
-# the scenario every episode forces the agent to learn a policy that
-# generalizes across traffic patterns instead of memorizing one.
-TRAIN_SCENARIOS = ["low", "medium", "high", "asymmetric"]
 
 q_table = {}
 alpha = ALPHA_START
@@ -145,6 +137,7 @@ def train():
 
         # KEY FIX: randomize training scenario every episode
         scenario = random.choice(TRAIN_SCENARIOS)
+        generate_route_file(scenario)
 
         traci.start(["sumo", "-c", "simulation.sumocfg", "--no-warnings"])
         traci.simulationStep()
@@ -180,10 +173,9 @@ def train():
         alpha   = max(ALPHA_MIN, alpha * ALPHA_DECAY)
 
         print(
-            f"Ep {episode+1:3d} | Scenario: {scenario:<10s} | "
-            f"Steps: {steps:4d} | Reward: {total_reward:8.2f} | "
-            f"States: {len(q_table):4d} | eps: {EPSILON:.3f} | alpha: {alpha:.4f}"
-        )
+        f"Ep {episode+1:3d} | Steps: {steps:4d} | Reward: {total_reward:8.2f} | "
+        f"States: {len(q_table):4d} | eps: {EPSILON:.3f} | alpha: {alpha:.4f}"
+)
 
     with open("qtable.pkl", "wb") as f:
         pickle.dump(q_table, f)
