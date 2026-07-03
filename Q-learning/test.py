@@ -24,7 +24,7 @@ YELLOW_PHASE = {0: 1, 2: 3}
 
 # --- FIX: resolve paths relative to this script's own folder, not the cwd ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "test.sumocfg")
+SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
 QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 
 # --- DIAGNOSTIC: fail loudly, with the exact path, instead of a vague SUMO error ---
