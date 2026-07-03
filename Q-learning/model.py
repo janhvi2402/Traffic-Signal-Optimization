@@ -11,7 +11,6 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from route_generator import generate_route_file  # move generate_route_file into its own file, shared by train/test
 
 # HYPERPARAMETERS
 ALPHA_START   = 0.1
@@ -146,7 +145,6 @@ def train():
 
         # KEY FIX: randomize training scenario every episode
         scenario = random.choice(TRAIN_SCENARIOS)
-        generate_route_file(scenario)
 
         traci.start(["sumo", "-c", "simulation.sumocfg", "--no-warnings"])
         traci.simulationStep()
