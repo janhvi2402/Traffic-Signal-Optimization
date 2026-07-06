@@ -1,165 +1,116 @@
 import os
-import sys
-import json
 import numpy as np
-import pickle
-
-if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:
-    sys.exit("SUMO_HOME not set")
-
-import traci
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import VecNormalize
+from stable_baselines3.common.env_util import make_vec_env
 from common_baseline import run_offset_fixed_time
 
-GREEN_TIME  = 10
-YELLOW_TIME = 3
+from env import SumoTrafficEnv2J
 
-J1 = "J1"
-J2 = "J2"
+MODEL_PATH      = "models/ppo_sumo_2junction"
+NORMALIZER_PATH = "models/vec_normalize_sumo.pkl"
 
-ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
-YELLOW_PHASE = {0: 1, 2: 3}
+#  helpers 
 
-# --- FIX: resolve paths relative to this script's own folder, not the cwd ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "test.sumocfg")
-QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
-
-with open(QTABLE_PATH, "rb") as f:
-    q_table = pickle.load(f)
-
-print(f"States loaded: {len(q_table)}")
+def make_env(seed=0):
+    def _init():
+        return SumoTrafficEnv2J(
+            cfg_path  = os.path.join(os.path.dirname(__file__), "network.sumocfg"),
+            use_gui   = False,
+            max_steps = 3600,
+            seed      = seed,
+        )
+    return _init
 
 
-def bucket(x):
-    if x == 0:    return 0
-    elif x <= 2:  return 1
-    elif x <= 6:  return 2
-    elif x <= 12: return 3
-    else:         return 4
+def run_ppo(model, n_episodes=5):
+    raw = make_vec_env(make_env(seed=99), n_envs=1)
+    env = VecNormalize.load(NORMALIZER_PATH, raw)
+    env.training    = False
+    env.norm_reward = False
+
+    episode_waits = []
+
+    for ep in range(n_episodes):
+        obs   = env.reset()
+        done  = False
+        steps = 0
+        wait_sum = 0.0
+
+        while not done:
+            action, _ = model.predict(obs, deterministic=True)
+            obs, reward, done, info = env.step(action)
+            conn = env.get_attr("conn")[0]
+            for veh in conn.vehicle.getIDList():
+                wait_sum += conn.vehicle.getWaitingTime(veh)
+            steps += 1
+
+        episode_waits.append(wait_sum / steps)
+
+    env.close()
+    return np.mean(episode_waits), np.std(episode_waits)
 
 
-def get_halted(lane_id):
-    return traci.lane.getLastStepHaltingNumber(lane_id)
+def run_fixed_time(n_episodes=5):
+    waits = []
+    for ep in range(n_episodes):
+        traci.start(["sumo", "-c", "network.sumocfg", "--no-warnings", "--seed", str(ep)])
+        traci.simulationStep()
+        _, avg_wait, _, _ = run_offset_fixed_time()
+        traci.close()
+        waits.append(avg_wait)
+    return np.mean(waits), np.std(waits)
+
+    for ep in range(n_episodes):
+        obs, _ = env.reset(seed=ep)
+        done   = False
+        total  = 0.0
+        steps  = 0
+        queue_sum = 0.0
+        t = 0
+
+        while not done:
+            # J1: phase position in cycle
+            pos_j1 = t % full_cycle
+            # J2: offset by half cycle
+            pos_j2 = (t + half_cycle) % full_cycle
+
+            def want_switch(pos):
+                # switch at the boundary between green phases
+                return 1 if pos in (cycle_ns, cycle_ns + yellow + cycle_ew) else 0
+
+            action = [want_switch(pos_j1), want_switch(pos_j2)]
+            obs, reward, done, _, _ = env.step(action)
+            total     += reward
+            queue_sum += -reward * env.MAX_QUEUE
+            steps     += 1
+            t         += 1
+
+        episode_rewards.append(total)
+        episode_queues.append(queue_sum / steps)
+
+    env.close()
+    return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues)
 
 
-def get_state(j1_phase, j2_phase):
-    if j1_phase == 0:
-        j1_green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
-        j1_red   = get_halted("W_J1_0")  + get_halted("J2_J1_0")
-    else:
-        j1_green = get_halted("W_J1_0")  + get_halted("J2_J1_0")
-        j1_red   = get_halted("N1_J1_0") + get_halted("S1_J1_0")
+# main 
 
-    if j2_phase == 0:
-        j2_green = get_halted("N2_J2_0") + get_halted("S2_J2_0")
-        j2_red   = get_halted("J1_J2_0") + get_halted("E_J2_0")
-    else:
-        j2_green = get_halted("J1_J2_0") + get_halted("E_J2_0")
-        j2_red   = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+base_env = make_vec_env(make_env(seed=0), n_envs=1)
+base_env = VecNormalize.load(NORMALIZER_PATH, base_env)
+base_env.training    = False
+base_env.norm_reward = False
+model = PPO.load(MODEL_PATH, env=base_env)
 
-    return (
-        bucket(j1_green), bucket(j1_red),
-        bucket(j2_green), bucket(j2_red),
-        j1_phase // 2,
-        j2_phase // 2,
-    )
+N_EP = 5
+print(f"\nEvaluating over {N_EP} episodes each...\n")
 
+ppo_wait, ppo_wait_std     = run_ppo(model, n_episodes=N_EP)
+fixed_wait, fixed_wait_std = run_fixed_time(n_episodes=N_EP)
 
-def run_qlearning_episode(seed):
-    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(seed)])
-    traci.simulationStep()
+improvement = (fixed_wait - ppo_wait) / fixed_wait * 100
 
-    j1_phase = 0
-    j2_phase = 0
-    traci.trafficlight.setPhase(J1, j1_phase)
-    traci.trafficlight.setPhase(J2, j2_phase)
-
-    cumulative_wait = 0.0
-    arrived = 0
-    sim_steps = 0
-    unseen_states = 0
-    total_decisions = 0
-
-    while traci.simulation.getMinExpectedNumber() > 0:
-        state = get_state(j1_phase, j2_phase)
-        total_decisions += 1
-        if state in q_table:
-            action_idx = int(np.argmax(q_table[state]))
-        else:
-            unseen_states += 1
-            action_idx = 0
-
-        j1_new, j2_new = ACTION_SPACE[action_idx]
-
-        if j1_new != j1_phase:
-            traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
-        if j2_new != j2_phase:
-            traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_phase])
-
-        if j1_new != j1_phase or j2_new != j2_phase:
-            for _ in range(YELLOW_TIME):
-                traci.simulationStep()
-                sim_steps += 1
-                arrived += len(traci.simulation.getArrivedIDList())
-                for veh in traci.vehicle.getIDList():
-                    cumulative_wait += traci.vehicle.getWaitingTime(veh)
-
-        traci.trafficlight.setPhase(J1, j1_new)
-        traci.trafficlight.setPhase(J2, j2_new)
-        j1_phase, j2_phase = j1_new, j2_new
-
-        for _ in range(GREEN_TIME):
-            traci.simulationStep()
-            sim_steps += 1
-            arrived += len(traci.simulation.getArrivedIDList())
-            for veh in traci.vehicle.getIDList():
-                cumulative_wait += traci.vehicle.getWaitingTime(veh)
-
-    traci.close()
-    coverage = 1.0 - (unseen_states / max(total_decisions, 1))
-    return cumulative_wait, cumulative_wait / max(sim_steps, 1), arrived, sim_steps, coverage
-
-
-N_EPISODES = 5
-ql_waits = []
-fixed_waits = []
-coverages = []
-
-for ep in range(N_EPISODES):
-    # Fixed-time baseline
-    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(ep)])
-    traci.simulationStep()
-    _, fixed_avg_wait, _, _ = run_offset_fixed_time()
-    traci.close()
-    fixed_waits.append(fixed_avg_wait)
-
-    # Q-learning
-    _, ql_avg_wait, arrived, steps, coverage = run_qlearning_episode(seed=ep)
-    ql_waits.append(ql_avg_wait)
-    coverages.append(coverage)
-
-fixed_mean = np.mean(fixed_waits)
-ql_mean    = np.mean(ql_waits)
-improvement = (fixed_mean - ql_mean) / fixed_mean * 100
-
-print(f"\n{'Metric':<25} {'Fixed-time':>14} {'Q-learning':>14}")
-print("─" * 55)
-print(f"{'Mean avg wait/step (s)':<25} {fixed_mean:>13.2f}s {ql_mean:>13.2f}s")
-print(f"{'Std':<25} {np.std(fixed_waits):>13.2f}s {np.std(ql_waits):>13.2f}s")
+print(f"{'Metric':<30} {'Fixed-time':>14} {'PPO':>14}")
+print("─" * 60)
+print(f"{'Mean avg wait/step (s)':<30} {fixed_wait:>13.2f}s {ppo_wait:>13.2f}s")
+print(f"{'Std':<30} {fixed_wait_std:>13.2f}s {ppo_wait_std:>13.2f}s")
 print(f"\nImprovement over fixed-time: {improvement:.1f}%")
-print(f"Mean state coverage: {np.mean(coverages):.1%}")
-
-RESULTS_DIR = os.path.join(SCRIPT_DIR, "results")
-os.makedirs(RESULTS_DIR, exist_ok=True)
-with open(os.path.join(RESULTS_DIR, "qlearning_vs_fixed_unified.json"), "w") as f:
-    json.dump({
-        "fixed_mean_wait": fixed_mean,
-        "qlearning_mean_wait": ql_mean,
-        "improvement_pct": improvement,
-        "mean_state_coverage": float(np.mean(coverages)),
-    }, f, indent=2)
-
-print(f"Saved: {os.path.join(RESULTS_DIR, 'qlearning_vs_fixed_unified.json')}")
