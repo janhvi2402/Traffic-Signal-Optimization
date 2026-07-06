@@ -1,0 +1,6 @@
+{
+  "fixed_mean_wait": 955.2372593669921,
+  "qlearning_mean_wait": 404.6248862695142,
+  "improvement_pct": 57.641425488611354,
+  "mean_state_coverage": 0.9991092944105393
+}
