@@ -11,7 +11,7 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from common_baseline import run_offset_fixed_time
+from baseline import run_offset_fixed_time
 
 GREEN_TIME  = 10
 YELLOW_TIME = 3
