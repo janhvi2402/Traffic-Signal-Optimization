@@ -23,12 +23,13 @@ J2 = "J2"
 ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
-# --- FIX: resolve paths relative to this script's own folder, not the cwd ---
+# --- set True when you want to record a video, False for fast headless eval ---
+RECORD = True
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
 QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 
-# --- DIAGNOSTIC: fail loudly, with the exact path, instead of a vague SUMO error ---
 print(f"[DEBUG] Script dir      : {SCRIPT_DIR}")
 print(f"[DEBUG] Looking for cfg : {SUMOCFG_PATH}")
 print(f"[DEBUG] cfg exists?     : {os.path.exists(SUMOCFG_PATH)}")
@@ -37,7 +38,7 @@ print(f"[DEBUG] qtable exists?  : {os.path.exists(QTABLE_PATH)}")
 
 if not os.path.exists(SUMOCFG_PATH):
     sys.exit(
-        f"\nFATAL: test.sumocfg not found at:\n  {SUMOCFG_PATH}\n"
+        f"\nFATAL: simulation.sumocfg not found at:\n  {SUMOCFG_PATH}\n"
         f"Contents of {SCRIPT_DIR}:\n  " +
         "\n  ".join(sorted(os.listdir(SCRIPT_DIR)))
     )
@@ -51,11 +52,18 @@ print(f"States loaded: {len(q_table)}")
 
 
 def bucket(x):
-    if x == 0:    return 0
-    elif x <= 2:  return 1
-    elif x <= 6:  return 2
-    elif x <= 12: return 3
-    else:         return 4
+    """
+    MUST stay identical to bucket() in train.py — this is the function
+    that defines the Q-table's state keys. If this drifts from train.py,
+    lookups here will silently miss and fall back to action 0 every time.
+    """
+    if x == 0:     return 0
+    elif x <= 2:   return 1
+    elif x <= 5:   return 2
+    elif x <= 9:   return 3
+    elif x <= 15:  return 4
+    elif x <= 25:  return 5
+    else:          return 6
 
 
 def get_halted(lane_id):
@@ -85,14 +93,24 @@ def get_state(j1_phase, j2_phase):
     )
 
 
+def _sumo_cmd(seed):
+    cmd = ["sumo-gui" if RECORD else "sumo",
+           "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(seed)]
+    if RECORD:
+        cmd += ["--start", "--quit-on-end"]
+    return cmd
+
+
 def run_qlearning_episode(seed):
-    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(seed)])
+    traci.start(_sumo_cmd(seed))
     traci.simulationStep()
 
     j1_phase = 0
     j2_phase = 0
     traci.trafficlight.setPhase(J1, j1_phase)
+    traci.trafficlight.setPhaseDuration(J1, 9999)
     traci.trafficlight.setPhase(J2, j2_phase)
+    traci.trafficlight.setPhaseDuration(J2, 9999)
 
     cumulative_wait = 0.0
     arrived = 0
@@ -113,8 +131,10 @@ def run_qlearning_episode(seed):
 
         if j1_new != j1_phase:
             traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
+            traci.trafficlight.setPhaseDuration(J1, 9999)
         if j2_new != j2_phase:
             traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_phase])
+            traci.trafficlight.setPhaseDuration(J2, 9999)
 
         if j1_new != j1_phase or j2_new != j2_phase:
             for _ in range(YELLOW_TIME):
@@ -125,7 +145,9 @@ def run_qlearning_episode(seed):
                     cumulative_wait += traci.vehicle.getWaitingTime(veh)
 
         traci.trafficlight.setPhase(J1, j1_new)
+        traci.trafficlight.setPhaseDuration(J1, 9999)
         traci.trafficlight.setPhase(J2, j2_new)
+        traci.trafficlight.setPhaseDuration(J2, 9999)
         j1_phase, j2_phase = j1_new, j2_new
 
         for _ in range(GREEN_TIME):
@@ -140,14 +162,14 @@ def run_qlearning_episode(seed):
     return cumulative_wait, cumulative_wait / max(sim_steps, 1), arrived, sim_steps, coverage
 
 
-N_EPISODES = 5
+N_EPISODES = 1 if RECORD else 5
 ql_waits = []
 fixed_waits = []
 coverages = []
 
 for ep in range(N_EPISODES):
     # Fixed-time baseline
-    traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(ep)])
+    traci.start(_sumo_cmd(ep))
     traci.simulationStep()
     # max_steps set high so the real stopping condition is "network fully cleared"
     # (same criterion run_qlearning_episode uses), not an arbitrary step cap.

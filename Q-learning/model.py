@@ -4,6 +4,10 @@ import random
 import numpy as np
 import pickle
 
+SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
+SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
+QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
+
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
@@ -37,11 +41,23 @@ alpha = ALPHA_START
 
 
 def bucket(x):
-    if x == 0:    return 0
-    elif x <= 2:  return 1
-    elif x <= 6:  return 2
-    elif x <= 12: return 3
-    else:         return 4
+    """
+    NOTE: this function must stay IDENTICAL to the one in test.py.
+    If they diverge, the Q-table's state keys won't match what test.py
+    looks up, and every state will silently fall through as "unseen".
+
+    Thresholds tuned to this project's route file (~0.6-0.7 veh/sec
+    per entry arm, ~3.8 veh/sec network-wide) — queues regularly exceed
+    12 vehicles under this demand, so the old 5-bucket version collapsed
+    most of the congested / interesting range into a single bucket.
+    """
+    if x == 0:     return 0
+    elif x <= 2:   return 1
+    elif x <= 5:   return 2
+    elif x <= 9:   return 3
+    elif x <= 15:  return 4
+    elif x <= 25:  return 5
+    else:          return 6
 
 
 def get_halted(lane_id):
@@ -73,11 +89,10 @@ def get_state(j1_phase, j2_phase):
 
 def get_reward():
     """
-    KEY FIX: normalize by GREEN_TIME so reward scale is comparable
-    across different gt configs (previously raw cumulative halted
-    count scaled with gt, making runs with gt=20 structurally
-    different in reward magnitude than gt=10 — a likely contributor
-    to the catastrophic failures at gt=20 in your results).
+    Normalized by GREEN_TIME so reward scale is comparable across
+    different gt configs (raw cumulative halted count would otherwise
+    scale with gt, making runs with different gt structurally
+    incomparable).
     """
     total_halted = 0
     for lane in [
@@ -102,15 +117,19 @@ def apply_action(j1_new, j2_new, j1_cur, j2_cur):
 
     if j1_switching:
         traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_cur])
+        traci.trafficlight.setPhaseDuration(J1, 9999)
     if j2_switching:
         traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_cur])
+        traci.trafficlight.setPhaseDuration(J2, 9999)
 
     if j1_switching or j2_switching:
         for _ in range(YELLOW_TIME):
             traci.simulationStep()
 
     traci.trafficlight.setPhase(J1, j1_new)
+    traci.trafficlight.setPhaseDuration(J1, 9999)
     traci.trafficlight.setPhase(J2, j2_new)
+    traci.trafficlight.setPhaseDuration(J2, 9999)
 
     cycle_reward = 0
     for _ in range(GREEN_TIME):
@@ -135,17 +154,15 @@ def train():
 
     for episode in range(EPISODES):
 
-        # KEY FIX: randomize training scenario every episode
-        scenario = random.choice(TRAIN_SCENARIOS)
-        generate_route_file(scenario)
-
-        traci.start(["sumo", "-c", "simulation.sumocfg", "--no-warnings"])
+        traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings"])
         traci.simulationStep()
 
         j1_phase = 0
         j2_phase = 0
         traci.trafficlight.setPhase(J1, j1_phase)
+        traci.trafficlight.setPhaseDuration(J1, 9999)
         traci.trafficlight.setPhase(J2, j2_phase)
+        traci.trafficlight.setPhaseDuration(J2, 9999)
 
         state        = get_state(j1_phase, j2_phase)
         total_reward = 0
@@ -173,11 +190,11 @@ def train():
         alpha   = max(ALPHA_MIN, alpha * ALPHA_DECAY)
 
         print(
-        f"Ep {episode+1:3d} | Steps: {steps:4d} | Reward: {total_reward:8.2f} | "
-        f"States: {len(q_table):4d} | eps: {EPSILON:.3f} | alpha: {alpha:.4f}"
-)
+            f"Ep {episode+1:3d} | Steps: {steps:4d} | Reward: {total_reward:8.2f} | "
+            f"States: {len(q_table):4d} | eps: {EPSILON:.3f} | alpha: {alpha:.4f}"
+        )
 
-    with open("qtable.pkl", "wb") as f:
+    with open(QTABLE_PATH, "wb") as f:
         pickle.dump(q_table, f)
 
     print(f"\nTraining complete — qtable.pkl saved. Final state coverage: {len(q_table)} states")
