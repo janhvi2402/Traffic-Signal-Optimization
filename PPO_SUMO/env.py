@@ -131,11 +131,15 @@ class SumoTrafficEnv2J(gym.Env):
             "-c", self.cfg_path,
             "--no-step-log",
             "--no-warnings",
-            "--random",
         ]
+        # FIX: --random and --seed are contradictory (--random tells SUMO
+        # to pick its own seed from system time, overriding yours). Only
+        # pass one or the other so per-episode seeds actually take effect.
         if self._seed is not None:
             safe_seed = int(self._seed) % 2_147_483_647
             cmd += ["--seed", str(safe_seed)]
+        else:
+            cmd += ["--random"]
 
         # unique label per instance/port avoids "Connection 'default' is
         # already active" when train_env and eval_env run at the same time

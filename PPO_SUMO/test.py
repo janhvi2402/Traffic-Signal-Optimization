@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+import traci
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
@@ -9,16 +10,20 @@ from baseline import run_offset_fixed_time
 
 from env import SumoTrafficEnv2J
 
-MODEL_PATH      = "models/ppo_sumo_2junction"
-NORMALIZER_PATH = "models/vec_normalize_sumo.pkl"
+SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
+NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
 
-#  helpers 
+# --- set True when you want to record a video, False for fast headless eval ---
+RECORD = False
+
+# --- helpers ---
 
 def make_env(seed=0):
     def _init():
         return SumoTrafficEnv2J(
-            cfg_path  = os.path.join(os.path.dirname(__file__), "network.sumocfg"),
-            use_gui   = False,
+            cfg_path  = os.path.join(SCRIPT_DIR, "network.sumocfg"),
+            use_gui   = RECORD,
             max_steps = 3600,
             seed      = seed,
         )
@@ -56,46 +61,20 @@ def run_ppo(model, n_episodes=5):
 def run_fixed_time(n_episodes=5):
     waits = []
     for ep in range(n_episodes):
-        traci.start(["sumo", "-c", "network.sumocfg", "--no-warnings", "--seed", str(ep)])
+        cmd = ["sumo-gui" if RECORD else "sumo",
+               "-c", os.path.join(SCRIPT_DIR, "network.sumocfg"),
+               "--no-warnings", "--seed", str(ep)]
+        if RECORD:
+            cmd += ["--start", "--quit-on-end"]   # auto-play + auto-close so the script can continue
+        traci.start(cmd)
         traci.simulationStep()
         _, avg_wait, _, _ = run_offset_fixed_time()
         traci.close()
         waits.append(avg_wait)
     return np.mean(waits), np.std(waits)
 
-    for ep in range(n_episodes):
-        obs, _ = env.reset(seed=ep)
-        done   = False
-        total  = 0.0
-        steps  = 0
-        queue_sum = 0.0
-        t = 0
 
-        while not done:
-            # J1: phase position in cycle
-            pos_j1 = t % full_cycle
-            # J2: offset by half cycle
-            pos_j2 = (t + half_cycle) % full_cycle
-
-            def want_switch(pos):
-                # switch at the boundary between green phases
-                return 1 if pos in (cycle_ns, cycle_ns + yellow + cycle_ew) else 0
-
-            action = [want_switch(pos_j1), want_switch(pos_j2)]
-            obs, reward, done, _, _ = env.step(action)
-            total     += reward
-            queue_sum += -reward * env.MAX_QUEUE
-            steps     += 1
-            t         += 1
-
-        episode_rewards.append(total)
-        episode_queues.append(queue_sum / steps)
-
-    env.close()
-    return np.mean(episode_rewards), np.std(episode_rewards), np.mean(episode_queues)
-
-
-# main 
+# --- main ---
 
 base_env = make_vec_env(make_env(seed=0), n_envs=1)
 base_env = VecNormalize.load(NORMALIZER_PATH, base_env)
@@ -103,8 +82,9 @@ base_env.training    = False
 base_env.norm_reward = False
 model = PPO.load(MODEL_PATH, env=base_env)
 
-N_EP = 5
-print(f"\nEvaluating over {N_EP} episodes each...\n")
+# When recording, do 1 episode — GUI runs in real time, 5 episodes will take a while
+N_EP = 1 if RECORD else 5
+print(f"\nEvaluating over {N_EP} episode(s) each...\n")
 
 ppo_wait, ppo_wait_std     = run_ppo(model, n_episodes=N_EP)
 fixed_wait, fixed_wait_std = run_fixed_time(n_episodes=N_EP)
