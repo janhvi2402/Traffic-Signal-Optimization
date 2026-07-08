@@ -11,6 +11,7 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from baseline import run_offset_fixed_time
 
 GREEN_TIME  = 10

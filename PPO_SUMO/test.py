@@ -1,9 +1,11 @@
 import os
+import sys
 import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
-from common_baseline import run_offset_fixed_time
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
+from baseline import run_offset_fixed_time
 
 from env import SumoTrafficEnv2J
 
