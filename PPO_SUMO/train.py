@@ -1,19 +1,24 @@
 import os
-import functools
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.utils import get_linear_fn
 
 from env import SumoTrafficEnv2J
 
-from stable_baselines3.common.utils import get_linear_fn
+# FIX: anchor all paths to this script's own folder, not the cwd —
+# matches the pattern already used in test.py, so train.py and test.py
+# always agree on where the model/normalizer live regardless of where
+# you run each one from.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
+BEST_DIR   = os.path.join(MODELS_DIR, "best")
 
 # Linear LR decay: 3e-4 -> 5e-5 over training
 lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 
-
-os.makedirs("models/best", exist_ok=True)
+os.makedirs(BEST_DIR, exist_ok=True)
 
 # environment factories 
 # SUMO can't run two instances on the same port, so each parallel env
@@ -24,7 +29,7 @@ os.makedirs("models/best", exist_ok=True)
 def make_train_env(seed=0):
     def _init():
         return SumoTrafficEnv2J(
-            cfg_path=os.path.join(os.path.dirname(__file__), "network.sumocfg"),
+            cfg_path=os.path.join(SCRIPT_DIR, "network.sumocfg"),
             seed=seed,
             port=8813,
         )
@@ -33,7 +38,7 @@ def make_train_env(seed=0):
 def make_eval_env(seed=0):
     def _init():
         return SumoTrafficEnv2J(
-            cfg_path=os.path.join(os.path.dirname(__file__), "network.sumocfg"),
+            cfg_path=os.path.join(SCRIPT_DIR, "network.sumocfg"),
             seed=seed,
             port=8814,
         )
@@ -48,7 +53,7 @@ eval_env  = VecNormalize(eval_env, norm_obs=False, norm_reward=False)  # was nor
 # callbacks
 eval_callback = EvalCallback(
     eval_env,
-    best_model_save_path = "./models/best/",
+    best_model_save_path = BEST_DIR,
     eval_freq            = 20_000,   # steps between evaluations
     n_eval_episodes      = 3,
     deterministic        = True,
@@ -76,6 +81,6 @@ model = PPO(
 
 model.learn(total_timesteps=500_000, callback=eval_callback)
 
-model.save("models/ppo_sumo_2junction")
-train_env.save("models/vec_normalize_sumo.pkl")
-print("Training done → models/ppo_sumo_2junction.zip")
+model.save(os.path.join(MODELS_DIR, "ppo_sumo_2junction"))
+train_env.save(os.path.join(MODELS_DIR, "vec_normalize_sumo.pkl"))
+print(f"Training done → {os.path.join(MODELS_DIR, 'ppo_sumo_2junction.zip')}")
