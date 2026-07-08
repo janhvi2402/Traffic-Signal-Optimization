@@ -24,7 +24,7 @@ ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
 # --- set True when you want to record a video, False for fast headless eval ---
-RECORD = True
+RECORD = False
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
