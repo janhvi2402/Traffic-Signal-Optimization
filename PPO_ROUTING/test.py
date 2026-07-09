@@ -43,7 +43,8 @@ def run_decentralized(model, n_episodes=5):
 
             a_j1, _ = model.predict(obs_j1, deterministic=True)
             a_j2, _ = model.predict(obs_j2, deterministic=True)
-            print(f"step {steps}: a_j1={int(a_j1)}, a_j2={int(a_j2)}")
+            print(f"step {steps}: time_j1={obs_j1[5]:.2f} q_j1={obs_j1[0]:.2f} a_j1={int(a_j1)} | "
+            f"time_j2={obs_j2[5]:.2f} q_j2={obs_j2[0]:.2f} a_j2={int(a_j2)}")
             obs, reward, done, _, _ = env.step([int(a_j1), int(a_j2)])
 
             for veh in env.conn.vehicle.getIDList():
