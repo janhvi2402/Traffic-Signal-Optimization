@@ -11,14 +11,14 @@ from env import SumoTrafficEnv2J
 # matches the pattern already used in test.py, so train.py and test.py
 # always agree on where the model/normalizer live regardless of where
 # you run each one from.
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  #location of current script
 MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
 BEST_DIR   = os.path.join(MODELS_DIR, "best")
 
 # Linear LR decay: 3e-4 -> 5e-5 over training
 lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 
-os.makedirs(BEST_DIR, exist_ok=True)
+os.makedirs(BEST_DIR, exist_ok=True)  #if models does not exist it creates it,if already exist-nothing happens b/c exist_ok=True
 
 # environment factories 
 # SUMO can't run two instances on the same port, so each parallel env
@@ -54,10 +54,10 @@ eval_env  = VecNormalize(eval_env, norm_obs=False, norm_reward=False)  # was nor
 eval_callback = EvalCallback(
     eval_env,
     best_model_save_path = BEST_DIR,
-    eval_freq            = 20_000,   # steps between evaluations
+    eval_freq            = 20_000,   # steps between evaluations, evaluate model. save logs
     n_eval_episodes      = 3,
     deterministic        = True,
-    verbose              = 1,
+    verbose              = 1, #how much to print during training , verbose=0 print nothing, verbose =2 even more detailed debuging info
 )
 
 # model
@@ -79,7 +79,7 @@ model = PPO(
     verbose       = 1,
 )
 
-model.learn(total_timesteps=500_000, callback=eval_callback)
+model.learn(total_timesteps=500_000, callback=eval_callback) #callbacks- 
 
 model.save(os.path.join(MODELS_DIR, "ppo_sumo_2junction"))
 train_env.save(os.path.join(MODELS_DIR, "vec_normalize_sumo.pkl"))
