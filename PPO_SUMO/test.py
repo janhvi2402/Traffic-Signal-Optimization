@@ -15,7 +15,7 @@ MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
 NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
 
 # --- set True when you want to record a video, False for fast headless eval ---
-RECORD = False
+RECORD = True
 
 # --- helpers ---
 
@@ -31,14 +31,19 @@ def make_env(seed=0):
 
 
 def run_ppo(model, n_episodes=5):
-    raw = make_vec_env(make_env(seed=99), n_envs=1)
-    env = VecNormalize.load(NORMALIZER_PATH, raw)
-    env.training    = False
-    env.norm_reward = False
-
     episode_waits = []
 
     for ep in range(n_episodes):
+        # FIX: build a fresh env with a NEW seed each episode. Previously
+        # this was built once outside the loop with seed=99 hardcoded, so
+        # every "episode" ran the identical simulation — that's why std
+        # came out as exactly 0.00. Each episode now gets its own seed,
+        # matching the pattern already used by run_fixed_time().
+        raw = make_vec_env(make_env(seed=ep), n_envs=1)
+        env = VecNormalize.load(NORMALIZER_PATH, raw)
+        env.training    = False
+        env.norm_reward = False
+
         obs   = env.reset()
         done  = False
         steps = 0
@@ -53,8 +58,8 @@ def run_ppo(model, n_episodes=5):
             steps += 1
 
         episode_waits.append(wait_sum / steps)
+        env.close()
 
-    env.close()
     return np.mean(episode_waits), np.std(episode_waits)
 
 
