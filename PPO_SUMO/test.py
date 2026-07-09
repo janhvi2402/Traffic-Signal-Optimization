@@ -73,7 +73,7 @@ def run_fixed_time(n_episodes=5):
             cmd += ["--start", "--quit-on-end"]   # auto-play + auto-close so the script can continue
         traci.start(cmd)
         traci.simulationStep()
-        _, avg_wait, _, _ = run_offset_fixed_time()
+        _, avg_wait, _, _ = run_offset_fixed_time(max_steps=100000)
         traci.close()
         waits.append(avg_wait)
     return np.mean(waits), np.std(waits)
