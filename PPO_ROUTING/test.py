@@ -3,7 +3,7 @@ import numpy as np
 import traci
 from stable_baselines3 import PPO
 
-from PPO_ROUTING.multi_env import SumoMultiJunctionEnv
+from multi_env import SumoMultiJunctionEnv
 from baseline import run_offset_fixed_time
 
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +43,7 @@ def run_decentralized(model, n_episodes=5):
 
             a_j1, _ = model.predict(obs_j1, deterministic=True)
             a_j2, _ = model.predict(obs_j2, deterministic=True)
-
+            print(f"step {steps}: a_j1={int(a_j1)}, a_j2={int(a_j2)}")
             obs, reward, done, _, _ = env.step([int(a_j1), int(a_j2)])
 
             for veh in env.conn.vehicle.getIDList():

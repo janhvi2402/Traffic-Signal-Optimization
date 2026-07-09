@@ -4,7 +4,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.utils import get_linear_fn
 
-from PPO_ROUTING.single_env import SumoSingleJunctionEnv
+from single_env import SumoSingleJunctionEnv
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
