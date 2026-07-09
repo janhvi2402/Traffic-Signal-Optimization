@@ -15,7 +15,7 @@ MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
 NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
 
 # --- set True when you want to record a video, False for fast headless eval ---
-RECORD = True
+RECORD = False
 
 # --- helpers ---
 
