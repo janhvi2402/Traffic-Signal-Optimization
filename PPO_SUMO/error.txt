@@ -1,67 +1,552 @@
-
-remote: Enumerating objects: 7, done.
-remote: Counting objects: 100% (7/7), done.
-remote: Compressing objects: 100% (1/1), done.
-remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
-Unpacking objects: 100% (4/4), 338 bytes | 21.00 KiB/s, done.
-From https://github.com/janhvi2402/Traffic-Signal-Optimization
-   517a490..62656d3  main       -> origin/main
-Updating 517a490..62656d3
-error: Your local changes to the following files would be overwritten by merge:
-        Q-learning/test.py
-Please commit your changes or stash them before you merge.
-Aborting
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ git stash
-Saved working directory and index state WIP on main: 517a490 Add
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ git pull
-Updating 517a490..62656d3
-Fast-forward
- Q-learning/test.py | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ pkill -f sumo
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
-Traceback (most recent call last):
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py", line 14, in <module>
-    from common_baseline import run_offset_fixed_time
-ModuleNotFoundError: No module named 'common_baseline'
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
-Traceback (most recent call last):
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py", line 14, in <module>
-    from common_baseline import run_offset_fixed_time
-ModuleNotFoundError: No module named 'common_baseline'
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/Q-learning$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/test.py
-[DEBUG] Script dir      : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning
-[DEBUG] Looking for cfg : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/simulation.sumocfg
-[DEBUG] cfg exists?     : True
-[DEBUG] Looking for qtb : /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/qtable.pkl
-[DEBUG] qtable exists?  : True
-States loaded: 1181
  Retrying in 1 seconds
-Step #3601.00 (4ms ~= 250.00*RT, ~22500.00UPS, TraCI: 3ms, vehicles TOT 2202 ACT 90 BUF 11
- Retrying in 1 seconds
-Step #22619.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13803 ACT 0 BUF 0)               
- Retrying in 1 seconds
-Step #3601.00 (3ms ~= 333.33*RT, ~31333.33UPS, TraCI: 3ms, vehicles TOT 2197 ACT 94 BUF 11
- Retrying in 1 seconds
-Step #22389.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13696 ACT 0 BUF 0)               
- Retrying in 1 seconds
-Step #3601.00 (4ms ~= 250.00*RT, ~23500.00UPS, TraCI: 3ms, vehicles TOT 2177 ACT 94 BUF 11
- Retrying in 1 seconds
-Step #22662.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13766 ACT 0 BUF 0)               
- Retrying in 1 seconds
-Step #3601.00 (3ms ~= 333.33*RT, ~27333.33UPS, TraCI: 3ms, vehicles TOT 2204 ACT 82 BUF 11
- Retrying in 1 seconds
-Step #22222.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 13559 ACT 0 BUF 0)               
- Retrying in 1 seconds
-Step #3601.00 (3ms ~= 333.33*RT, ~27666.67UPS, TraCI: 3ms, vehicles TOT 2177 ACT 83 BUF 11
- Retrying in 1 seconds
-Step #22726.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 13835 ACT 0 BUF 0)               
-
-Metric                        Fixed-time     Q-learning
-───────────────────────────────────────────────────────
-Mean avg wait/step (s)          1226.64s        404.62s
-Std                               46.12s         25.79s
-
-Improvement over fixed-time: 67.0%
-Mean state coverage: 99.9%
-Saved: /home/ssl/Documents/b240009/Traffic-Signal-Optimization/Q-learning/results/qlearning_vs_fixed_unified.json
+step 0: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 1: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 2: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 3: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 4: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 5: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 6: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 7: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 8: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 9: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 10: q_j1=0.00 a_j1=0 | q_j2=0.00 a_j2=0
+step 11: q_j1=0.00 a_j1=0 | q_j2=0.00 a_j2=0
+step 12: q_j1=0.00 a_j1=0 | q_j2=0.00 a_j2=0
+step 13: q_j1=0.00 a_j1=1 | q_j2=0.00 a_j2=1
+step 14: q_j1=0.00 a_j1=1 | q_j2=0.03 a_j2=1
+step 15: q_j1=0.02 a_j1=1 | q_j2=0.03 a_j2=1
+step 16: q_j1=0.02 a_j1=1 | q_j2=0.07 a_j2=1
+step 17: q_j1=0.03 a_j1=1 | q_j2=0.07 a_j2=1
+step 18: q_j1=0.05 a_j1=1 | q_j2=0.10 a_j2=1
+step 19: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 20: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 21: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 22: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 23: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=0
+step 24: q_j1=0.18 a_j1=1 | q_j2=0.18 a_j2=0
+step 25: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=0
+step 26: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 27: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 28: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 29: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 30: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=1
+step 31: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 32: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 33: q_j1=0.15 a_j1=1 | q_j2=0.13 a_j2=1
+step 34: q_j1=0.13 a_j1=1 | q_j2=0.12 a_j2=1
+step 35: q_j1=0.15 a_j1=1 | q_j2=0.08 a_j2=1
+step 36: q_j1=0.13 a_j1=1 | q_j2=0.08 a_j2=0
+step 37: q_j1=0.10 a_j1=1 | q_j2=0.03 a_j2=0
+step 38: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=0
+step 39: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=1
+step 40: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 41: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 42: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 43: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 44: q_j1=0.08 a_j1=1 | q_j2=0.12 a_j2=1
+step 45: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 46: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 47: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 48: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 49: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=0
+step 50: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=0
+step 51: q_j1=0.25 a_j1=1 | q_j2=0.27 a_j2=0
+step 52: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=1
+step 53: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 54: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 55: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=1
+step 56: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 57: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 58: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 59: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 60: q_j1=0.13 a_j1=1 | q_j2=0.10 a_j2=1
+step 61: q_j1=0.10 a_j1=1 | q_j2=0.08 a_j2=1
+step 62: q_j1=0.08 a_j1=0 | q_j2=0.07 a_j2=0
+step 63: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=0
+step 64: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=0
+step 65: q_j1=0.10 a_j1=1 | q_j2=0.07 a_j2=1
+step 66: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 67: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 68: q_j1=0.15 a_j1=1 | q_j2=0.08 a_j2=1
+step 69: q_j1=0.18 a_j1=1 | q_j2=0.10 a_j2=1
+step 70: q_j1=0.15 a_j1=1 | q_j2=0.12 a_j2=1
+step 71: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 72: q_j1=0.18 a_j1=1 | q_j2=0.15 a_j2=1
+step 73: q_j1=0.23 a_j1=1 | q_j2=0.17 a_j2=1
+step 74: q_j1=0.25 a_j1=1 | q_j2=0.18 a_j2=1
+step 75: q_j1=0.27 a_j1=1 | q_j2=0.22 a_j2=0
+step 76: q_j1=0.28 a_j1=1 | q_j2=0.25 a_j2=0
+step 77: q_j1=0.30 a_j1=1 | q_j2=0.25 a_j2=0
+step 78: q_j1=0.30 a_j1=1 | q_j2=0.23 a_j2=1
+step 79: q_j1=0.28 a_j1=1 | q_j2=0.22 a_j2=1
+step 80: q_j1=0.27 a_j1=1 | q_j2=0.23 a_j2=1
+step 81: q_j1=0.27 a_j1=1 | q_j2=0.20 a_j2=1
+step 82: q_j1=0.23 a_j1=1 | q_j2=0.20 a_j2=1
+step 83: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 84: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 85: q_j1=0.13 a_j1=1 | q_j2=0.17 a_j2=1
+step 86: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 87: q_j1=0.07 a_j1=1 | q_j2=0.13 a_j2=1
+step 88: q_j1=0.03 a_j1=0 | q_j2=0.13 a_j2=0
+step 89: q_j1=0.03 a_j1=0 | q_j2=0.10 a_j2=0
+step 90: q_j1=0.00 a_j1=1 | q_j2=0.07 a_j2=0
+step 91: q_j1=0.02 a_j1=1 | q_j2=0.05 a_j2=1
+step 92: q_j1=0.03 a_j1=1 | q_j2=0.08 a_j2=1
+step 93: q_j1=0.05 a_j1=1 | q_j2=0.08 a_j2=1
+step 94: q_j1=0.07 a_j1=1 | q_j2=0.12 a_j2=1
+step 95: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 96: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 97: q_j1=0.13 a_j1=1 | q_j2=0.18 a_j2=1
+step 98: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 99: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 100: q_j1=0.18 a_j1=1 | q_j2=0.18 a_j2=1
+step 101: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=0
+step 102: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=0
+step 103: q_j1=0.27 a_j1=1 | q_j2=0.25 a_j2=0
+step 104: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 105: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=1
+step 106: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=1
+step 107: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 108: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 109: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 110: q_j1=0.22 a_j1=1 | q_j2=0.18 a_j2=1
+step 111: q_j1=0.18 a_j1=1 | q_j2=0.17 a_j2=1
+step 112: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 113: q_j1=0.13 a_j1=1 | q_j2=0.10 a_j2=1
+step 114: q_j1=0.13 a_j1=0 | q_j2=0.07 a_j2=0
+step 115: q_j1=0.12 a_j1=0 | q_j2=0.05 a_j2=0
+step 116: q_j1=0.10 a_j1=0 | q_j2=0.03 a_j2=0
+step 117: q_j1=0.08 a_j1=1 | q_j2=0.02 a_j2=1
+step 118: q_j1=0.08 a_j1=1 | q_j2=0.02 a_j2=1
+step 119: q_j1=0.12 a_j1=1 | q_j2=0.05 a_j2=1
+step 120: q_j1=0.12 a_j1=1 | q_j2=0.07 a_j2=1
+step 121: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 122: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 123: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 124: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 125: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 126: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 127: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=0
+step 128: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=0
+step 129: q_j1=0.23 a_j1=1 | q_j2=0.28 a_j2=0
+step 130: q_j1=0.20 a_j1=1 | q_j2=0.27 a_j2=1
+step 131: q_j1=0.18 a_j1=1 | q_j2=0.23 a_j2=1
+step 132: q_j1=0.18 a_j1=1 | q_j2=0.23 a_j2=1
+step 133: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 134: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 135: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 136: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 137: q_j1=0.10 a_j1=1 | q_j2=0.12 a_j2=1
+step 138: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 139: q_j1=0.10 a_j1=1 | q_j2=0.12 a_j2=1
+step 140: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=0
+step 141: q_j1=0.05 a_j1=1 | q_j2=0.07 a_j2=0
+step 142: q_j1=0.02 a_j1=1 | q_j2=0.05 a_j2=0
+step 143: q_j1=0.03 a_j1=1 | q_j2=0.05 a_j2=1
+step 144: q_j1=0.05 a_j1=1 | q_j2=0.03 a_j2=1
+step 145: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=1
+step 146: q_j1=0.10 a_j1=1 | q_j2=0.07 a_j2=1
+step 147: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 148: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 149: q_j1=0.15 a_j1=1 | q_j2=0.12 a_j2=1
+step 150: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 151: q_j1=0.22 a_j1=1 | q_j2=0.15 a_j2=1
+step 152: q_j1=0.22 a_j1=1 | q_j2=0.17 a_j2=1
+step 153: q_j1=0.23 a_j1=1 | q_j2=0.20 a_j2=0
+step 154: q_j1=0.25 a_j1=1 | q_j2=0.20 a_j2=0
+step 155: q_j1=0.28 a_j1=1 | q_j2=0.23 a_j2=0
+step 156: q_j1=0.25 a_j1=1 | q_j2=0.22 a_j2=1
+step 157: q_j1=0.25 a_j1=1 | q_j2=0.18 a_j2=1
+step 158: q_j1=0.23 a_j1=1 | q_j2=0.18 a_j2=1
+step 159: q_j1=0.22 a_j1=1 | q_j2=0.17 a_j2=1
+step 160: q_j1=0.22 a_j1=1 | q_j2=0.15 a_j2=1
+step 161: q_j1=0.20 a_j1=1 | q_j2=0.17 a_j2=1
+step 162: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 163: q_j1=0.13 a_j1=1 | q_j2=0.15 a_j2=1
+step 164: q_j1=0.10 a_j1=1 | q_j2=0.15 a_j2=1
+step 165: q_j1=0.07 a_j1=1 | q_j2=0.17 a_j2=1
+step 166: q_j1=0.07 a_j1=1 | q_j2=0.13 a_j2=0
+step 167: q_j1=0.03 a_j1=1 | q_j2=0.12 a_j2=0
+step 168: q_j1=0.02 a_j1=1 | q_j2=0.08 a_j2=0
+step 169: q_j1=0.05 a_j1=1 | q_j2=0.10 a_j2=1
+step 170: q_j1=0.05 a_j1=1 | q_j2=0.10 a_j2=1
+step 171: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 172: q_j1=0.08 a_j1=1 | q_j2=0.13 a_j2=1
+step 173: q_j1=0.10 a_j1=1 | q_j2=0.15 a_j2=1
+step 174: q_j1=0.12 a_j1=1 | q_j2=0.17 a_j2=1
+step 175: q_j1=0.13 a_j1=1 | q_j2=0.18 a_j2=1
+step 176: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=1
+step 177: q_j1=0.17 a_j1=1 | q_j2=0.23 a_j2=1
+step 178: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 179: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=0
+step 180: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=0
+step 181: q_j1=0.25 a_j1=1 | q_j2=0.23 a_j2=0
+step 182: q_j1=0.25 a_j1=1 | q_j2=0.23 a_j2=1
+step 183: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=1
+step 184: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=1
+step 185: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 186: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 187: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 188: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 189: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 190: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 191: q_j1=0.08 a_j1=1 | q_j2=0.12 a_j2=1
+step 192: q_j1=0.05 a_j1=0 | q_j2=0.10 a_j2=0
+step 193: q_j1=0.03 a_j1=0 | q_j2=0.07 a_j2=0
+step 194: q_j1=0.03 a_j1=0 | q_j2=0.03 a_j2=0
+step 195: q_j1=0.02 a_j1=1 | q_j2=0.03 a_j2=1
+step 196: q_j1=0.03 a_j1=1 | q_j2=0.03 a_j2=1
+step 197: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=1
+step 198: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=1
+step 199: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 200: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 201: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 202: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 203: q_j1=0.18 a_j1=1 | q_j2=0.17 a_j2=1
+step 204: q_j1=0.22 a_j1=1 | q_j2=0.18 a_j2=1
+step 205: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=0
+step 206: q_j1=0.25 a_j1=1 | q_j2=0.22 a_j2=0
+step 207: q_j1=0.27 a_j1=1 | q_j2=0.25 a_j2=0
+step 208: q_j1=0.27 a_j1=1 | q_j2=0.23 a_j2=1
+step 209: q_j1=0.27 a_j1=1 | q_j2=0.23 a_j2=1
+step 210: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 211: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 212: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 213: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 214: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 215: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 216: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 217: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 218: q_j1=0.10 a_j1=0 | q_j2=0.10 a_j2=0
+step 219: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=0
+step 220: q_j1=0.05 a_j1=1 | q_j2=0.05 a_j2=0
+step 221: q_j1=0.05 a_j1=1 | q_j2=0.05 a_j2=1
+step 222: q_j1=0.05 a_j1=1 | q_j2=0.07 a_j2=1
+step 223: q_j1=0.05 a_j1=1 | q_j2=0.08 a_j2=1
+step 224: q_j1=0.10 a_j1=1 | q_j2=0.12 a_j2=1
+step 225: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 226: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 227: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 228: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 229: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 230: q_j1=0.17 a_j1=1 | q_j2=0.23 a_j2=1
+step 231: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=0
+step 232: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=0
+step 233: q_j1=0.23 a_j1=1 | q_j2=0.28 a_j2=0
+step 234: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 235: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 236: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 237: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 238: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=1
+step 239: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 240: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 241: q_j1=0.17 a_j1=1 | q_j2=0.15 a_j2=1
+step 242: q_j1=0.15 a_j1=1 | q_j2=0.12 a_j2=1
+step 243: q_j1=0.13 a_j1=1 | q_j2=0.10 a_j2=1
+step 244: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=0
+step 245: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=0
+step 246: q_j1=0.05 a_j1=1 | q_j2=0.03 a_j2=0
+step 247: q_j1=0.07 a_j1=1 | q_j2=0.03 a_j2=1
+step 248: q_j1=0.08 a_j1=1 | q_j2=0.05 a_j2=1
+step 249: q_j1=0.10 a_j1=1 | q_j2=0.08 a_j2=1
+step 250: q_j1=0.13 a_j1=1 | q_j2=0.08 a_j2=1
+step 251: q_j1=0.13 a_j1=1 | q_j2=0.10 a_j2=1
+step 252: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 253: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 254: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 255: q_j1=0.22 a_j1=1 | q_j2=0.17 a_j2=1
+step 256: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 257: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=0
+step 258: q_j1=0.25 a_j1=1 | q_j2=0.20 a_j2=0
+step 259: q_j1=0.25 a_j1=1 | q_j2=0.23 a_j2=0
+step 260: q_j1=0.25 a_j1=1 | q_j2=0.23 a_j2=1
+step 261: q_j1=0.25 a_j1=1 | q_j2=0.22 a_j2=1
+step 262: q_j1=0.25 a_j1=1 | q_j2=0.22 a_j2=1
+step 263: q_j1=0.23 a_j1=1 | q_j2=0.20 a_j2=1
+step 264: q_j1=0.22 a_j1=1 | q_j2=0.18 a_j2=1
+step 265: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 266: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 267: q_j1=0.13 a_j1=1 | q_j2=0.18 a_j2=1
+step 268: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 269: q_j1=0.08 a_j1=1 | q_j2=0.13 a_j2=1
+step 270: q_j1=0.07 a_j1=1 | q_j2=0.13 a_j2=0
+step 271: q_j1=0.03 a_j1=1 | q_j2=0.10 a_j2=0
+step 272: q_j1=0.02 a_j1=1 | q_j2=0.07 a_j2=0
+step 273: q_j1=0.00 a_j1=1 | q_j2=0.07 a_j2=1
+step 274: q_j1=0.02 a_j1=1 | q_j2=0.07 a_j2=1
+step 275: q_j1=0.02 a_j1=1 | q_j2=0.12 a_j2=1
+step 276: q_j1=0.03 a_j1=1 | q_j2=0.12 a_j2=1
+step 277: q_j1=0.05 a_j1=1 | q_j2=0.12 a_j2=1
+step 278: q_j1=0.08 a_j1=1 | q_j2=0.13 a_j2=1
+step 279: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 280: q_j1=0.12 a_j1=1 | q_j2=0.17 a_j2=1
+step 281: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=1
+step 282: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 283: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=0
+step 284: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=0
+step 285: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=0
+step 286: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=1
+step 287: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 288: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 289: q_j1=0.18 a_j1=1 | q_j2=0.18 a_j2=1
+step 290: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 291: q_j1=0.15 a_j1=1 | q_j2=0.20 a_j2=1
+step 292: q_j1=0.13 a_j1=1 | q_j2=0.17 a_j2=1
+step 293: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 294: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 295: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 296: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=0
+step 297: q_j1=0.08 a_j1=1 | q_j2=0.08 a_j2=0
+step 298: q_j1=0.03 a_j1=1 | q_j2=0.07 a_j2=0
+step 299: q_j1=0.03 a_j1=1 | q_j2=0.05 a_j2=1
+step 300: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=1
+step 301: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=1
+step 302: q_j1=0.10 a_j1=1 | q_j2=0.12 a_j2=1
+step 303: q_j1=0.08 a_j1=1 | q_j2=0.12 a_j2=1
+step 304: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 305: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 306: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 307: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 308: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=1
+step 309: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=0
+step 310: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=0
+step 311: q_j1=0.25 a_j1=1 | q_j2=0.28 a_j2=0
+step 312: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 313: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 314: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=1
+step 315: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=1
+step 316: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 317: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 318: q_j1=0.18 a_j1=1 | q_j2=0.17 a_j2=1
+step 319: q_j1=0.18 a_j1=1 | q_j2=0.13 a_j2=1
+step 320: q_j1=0.15 a_j1=1 | q_j2=0.10 a_j2=1
+step 321: q_j1=0.15 a_j1=1 | q_j2=0.07 a_j2=1
+step 322: q_j1=0.12 a_j1=1 | q_j2=0.03 a_j2=0
+step 323: q_j1=0.08 a_j1=1 | q_j2=0.02 a_j2=0
+step 324: q_j1=0.03 a_j1=1 | q_j2=0.02 a_j2=0
+step 325: q_j1=0.05 a_j1=1 | q_j2=0.02 a_j2=1
+step 326: q_j1=0.05 a_j1=1 | q_j2=0.02 a_j2=1
+step 327: q_j1=0.03 a_j1=1 | q_j2=0.05 a_j2=1
+step 328: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=1
+step 329: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 330: q_j1=0.12 a_j1=1 | q_j2=0.10 a_j2=1
+step 331: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 332: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 333: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 334: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 335: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=0
+step 336: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=0
+step 337: q_j1=0.27 a_j1=1 | q_j2=0.25 a_j2=0
+step 338: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 339: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 340: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=1
+step 341: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=1
+step 342: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 343: q_j1=0.18 a_j1=1 | q_j2=0.18 a_j2=1
+step 344: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 345: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 346: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 347: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 348: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=0
+step 349: q_j1=0.03 a_j1=1 | q_j2=0.05 a_j2=0
+step 350: q_j1=0.00 a_j1=1 | q_j2=0.03 a_j2=0
+step 351: q_j1=0.00 a_j1=1 | q_j2=0.03 a_j2=1
+step 352: q_j1=0.02 a_j1=1 | q_j2=0.07 a_j2=1
+step 353: q_j1=0.03 a_j1=1 | q_j2=0.08 a_j2=1
+step 354: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 355: q_j1=0.07 a_j1=1 | q_j2=0.12 a_j2=1
+step 356: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 357: q_j1=0.10 a_j1=1 | q_j2=0.15 a_j2=1
+step 358: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=1
+step 359: q_j1=0.18 a_j1=1 | q_j2=0.18 a_j2=1
+step 360: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 361: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=1
+step 362: q_j1=0.22 a_j1=1 | q_j2=0.27 a_j2=1
+step 363: q_j1=0.25 a_j1=1 | q_j2=0.27 a_j2=0
+step 364: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=1
+step 365: q_j1=0.20 a_j1=1 | q_j2=0.25 a_j2=1
+step 366: q_j1=0.20 a_j1=1 | q_j2=0.25 a_j2=1
+step 367: q_j1=0.18 a_j1=1 | q_j2=0.23 a_j2=1
+step 368: q_j1=0.17 a_j1=1 | q_j2=0.22 a_j2=1
+step 369: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 370: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 371: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 372: q_j1=0.13 a_j1=1 | q_j2=0.15 a_j2=1
+step 373: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 374: q_j1=0.12 a_j1=1 | q_j2=0.10 a_j2=0
+step 375: q_j1=0.10 a_j1=1 | q_j2=0.08 a_j2=0
+step 376: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=0
+step 377: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 378: q_j1=0.07 a_j1=1 | q_j2=0.12 a_j2=1
+step 379: q_j1=0.07 a_j1=1 | q_j2=0.13 a_j2=1
+step 380: q_j1=0.08 a_j1=1 | q_j2=0.15 a_j2=1
+step 381: q_j1=0.13 a_j1=1 | q_j2=0.15 a_j2=1
+step 382: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 383: q_j1=0.13 a_j1=1 | q_j2=0.17 a_j2=1
+step 384: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 385: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 386: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 387: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=0
+step 388: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=0
+step 389: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=0
+step 390: q_j1=0.23 a_j1=1 | q_j2=0.28 a_j2=1
+step 391: q_j1=0.20 a_j1=1 | q_j2=0.27 a_j2=1
+step 392: q_j1=0.20 a_j1=1 | q_j2=0.25 a_j2=1
+step 393: q_j1=0.18 a_j1=1 | q_j2=0.23 a_j2=1
+step 394: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 395: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 396: q_j1=0.15 a_j1=1 | q_j2=0.20 a_j2=1
+step 397: q_j1=0.13 a_j1=1 | q_j2=0.18 a_j2=1
+step 398: q_j1=0.10 a_j1=1 | q_j2=0.17 a_j2=1
+step 399: q_j1=0.08 a_j1=1 | q_j2=0.15 a_j2=1
+step 400: q_j1=0.05 a_j1=0 | q_j2=0.15 a_j2=0
+step 401: q_j1=0.03 a_j1=1 | q_j2=0.12 a_j2=0
+step 402: q_j1=0.00 a_j1=1 | q_j2=0.08 a_j2=0
+step 403: q_j1=0.00 a_j1=1 | q_j2=0.08 a_j2=1
+step 404: q_j1=0.02 a_j1=1 | q_j2=0.08 a_j2=1
+step 405: q_j1=0.05 a_j1=1 | q_j2=0.10 a_j2=1
+step 406: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 407: q_j1=0.08 a_j1=1 | q_j2=0.10 a_j2=1
+step 408: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 409: q_j1=0.13 a_j1=1 | q_j2=0.15 a_j2=1
+step 410: q_j1=0.15 a_j1=1 | q_j2=0.20 a_j2=1
+step 411: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
+step 412: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=1
+step 413: q_j1=0.20 a_j1=1 | q_j2=0.23 a_j2=0
+step 414: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=0
+step 415: q_j1=0.25 a_j1=1 | q_j2=0.27 a_j2=0
+step 416: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=1
+step 417: q_j1=0.22 a_j1=1 | q_j2=0.25 a_j2=1
+step 418: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 419: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=1
+step 420: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 421: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 422: q_j1=0.13 a_j1=1 | q_j2=0.17 a_j2=1
+step 423: q_j1=0.12 a_j1=1 | q_j2=0.15 a_j2=1
+step 424: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 425: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 426: q_j1=0.07 a_j1=1 | q_j2=0.07 a_j2=0
+step 427: q_j1=0.03 a_j1=1 | q_j2=0.03 a_j2=0
+step 428: q_j1=0.00 a_j1=1 | q_j2=0.02 a_j2=0
+step 429: q_j1=0.02 a_j1=1 | q_j2=0.03 a_j2=1
+step 430: q_j1=0.03 a_j1=1 | q_j2=0.07 a_j2=1
+step 431: q_j1=0.07 a_j1=1 | q_j2=0.07 a_j2=1
+step 432: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=1
+step 433: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 434: q_j1=0.13 a_j1=1 | q_j2=0.12 a_j2=1
+step 435: q_j1=0.13 a_j1=1 | q_j2=0.15 a_j2=1
+step 436: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 437: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 438: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 439: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=0
+step 440: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=0
+step 441: q_j1=0.28 a_j1=1 | q_j2=0.28 a_j2=0
+step 442: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 443: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 444: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=1
+step 445: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 446: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 447: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 448: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 449: q_j1=0.13 a_j1=1 | q_j2=0.17 a_j2=1
+step 450: q_j1=0.12 a_j1=1 | q_j2=0.17 a_j2=1
+step 451: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 452: q_j1=0.08 a_j1=1 | q_j2=0.12 a_j2=0
+step 453: q_j1=0.07 a_j1=1 | q_j2=0.10 a_j2=0
+step 454: q_j1=0.03 a_j1=1 | q_j2=0.08 a_j2=0
+step 455: q_j1=0.05 a_j1=1 | q_j2=0.07 a_j2=1
+step 456: q_j1=0.05 a_j1=1 | q_j2=0.08 a_j2=1
+step 457: q_j1=0.07 a_j1=1 | q_j2=0.08 a_j2=1
+step 458: q_j1=0.10 a_j1=1 | q_j2=0.08 a_j2=1
+step 459: q_j1=0.08 a_j1=1 | q_j2=0.08 a_j2=1
+step 460: q_j1=0.10 a_j1=1 | q_j2=0.13 a_j2=1
+step 461: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 462: q_j1=0.15 a_j1=1 | q_j2=0.15 a_j2=1
+step 463: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 464: q_j1=0.18 a_j1=1 | q_j2=0.17 a_j2=1
+step 465: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=0
+step 466: q_j1=0.22 a_j1=1 | q_j2=0.18 a_j2=0
+step 467: q_j1=0.23 a_j1=1 | q_j2=0.20 a_j2=0
+step 468: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 469: q_j1=0.22 a_j1=1 | q_j2=0.20 a_j2=1
+step 470: q_j1=0.23 a_j1=1 | q_j2=0.18 a_j2=1
+step 471: q_j1=0.22 a_j1=1 | q_j2=0.17 a_j2=1
+step 472: q_j1=0.20 a_j1=1 | q_j2=0.17 a_j2=1
+step 473: q_j1=0.18 a_j1=1 | q_j2=0.15 a_j2=1
+step 474: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 475: q_j1=0.13 a_j1=1 | q_j2=0.12 a_j2=1
+step 476: q_j1=0.12 a_j1=1 | q_j2=0.10 a_j2=1
+step 477: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 478: q_j1=0.08 a_j1=1 | q_j2=0.08 a_j2=0
+step 479: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=0
+step 480: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=0
+step 481: q_j1=0.05 a_j1=1 | q_j2=0.03 a_j2=1
+step 482: q_j1=0.07 a_j1=1 | q_j2=0.05 a_j2=1
+step 483: q_j1=0.05 a_j1=1 | q_j2=0.05 a_j2=1
+step 484: q_j1=0.10 a_j1=1 | q_j2=0.07 a_j2=1
+step 485: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 486: q_j1=0.12 a_j1=1 | q_j2=0.12 a_j2=1
+step 487: q_j1=0.12 a_j1=1 | q_j2=0.13 a_j2=1
+step 488: q_j1=0.12 a_j1=1 | q_j2=0.17 a_j2=1
+step 489: q_j1=0.15 a_j1=1 | q_j2=0.18 a_j2=1
+step 490: q_j1=0.17 a_j1=1 | q_j2=0.20 a_j2=1
+step 491: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=0
+step 492: q_j1=0.23 a_j1=1 | q_j2=0.27 a_j2=0
+step 493: q_j1=0.25 a_j1=1 | q_j2=0.28 a_j2=0
+step 494: q_j1=0.25 a_j1=1 | q_j2=0.27 a_j2=1
+step 495: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=1
+step 496: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=1
+step 497: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 498: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=1
+step 499: q_j1=0.20 a_j1=1 | q_j2=0.20 a_j2=1
+step 500: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 501: q_j1=0.17 a_j1=1 | q_j2=0.17 a_j2=1
+step 502: q_j1=0.15 a_j1=1 | q_j2=0.13 a_j2=1
+step 503: q_j1=0.12 a_j1=1 | q_j2=0.10 a_j2=1
+step 504: q_j1=0.08 a_j1=0 | q_j2=0.07 a_j2=0
+step 505: q_j1=0.07 a_j1=1 | q_j2=0.03 a_j2=0
+step 506: q_j1=0.07 a_j1=1 | q_j2=0.00 a_j2=0
+step 507: q_j1=0.07 a_j1=1 | q_j2=0.02 a_j2=1
+step 508: q_j1=0.08 a_j1=1 | q_j2=0.02 a_j2=1
+step 509: q_j1=0.10 a_j1=1 | q_j2=0.05 a_j2=1
+step 510: q_j1=0.13 a_j1=1 | q_j2=0.05 a_j2=1
+step 511: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=1
+step 512: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 513: q_j1=0.13 a_j1=1 | q_j2=0.12 a_j2=1
+step 514: q_j1=0.17 a_j1=1 | q_j2=0.15 a_j2=1
+step 515: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 516: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 517: q_j1=0.22 a_j1=1 | q_j2=0.22 a_j2=0
+step 518: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=0
+step 519: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=0
+step 520: q_j1=0.25 a_j1=1 | q_j2=0.23 a_j2=1
+step 521: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=1
+step 522: q_j1=0.20 a_j1=1 | q_j2=0.22 a_j2=1
+step 523: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 524: q_j1=0.17 a_j1=1 | q_j2=0.18 a_j2=1
+step 525: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 526: q_j1=0.20 a_j1=1 | q_j2=0.18 a_j2=1
+step 527: q_j1=0.17 a_j1=1 | q_j2=0.15 a_j2=1
+step 528: q_j1=0.15 a_j1=1 | q_j2=0.13 a_j2=1
+step 529: q_j1=0.13 a_j1=1 | q_j2=0.12 a_j2=1
+step 530: q_j1=0.13 a_j1=0 | q_j2=0.08 a_j2=0
+step 531: q_j1=0.12 a_j1=1 | q_j2=0.08 a_j2=0
+step 532: q_j1=0.07 a_j1=1 | q_j2=0.07 a_j2=0
+step 533: q_j1=0.08 a_j1=1 | q_j2=0.07 a_j2=1
+step 534: q_j1=0.10 a_j1=1 | q_j2=0.08 a_j2=1
+step 535: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 536: q_j1=0.10 a_j1=1 | q_j2=0.10 a_j2=1
+step 537: q_j1=0.13 a_j1=1 | q_j2=0.13 a_j2=1
+step 538: q_j1=0.17 a_j1=1 | q_j2=0.13 a_j2=1
+step 539: q_j1=0.15 a_j1=1 | q_j2=0.17 a_j2=1
+step 540: q_j1=0.18 a_j1=1 | q_j2=0.15 a_j2=1
+step 541: q_j1=0.18 a_j1=1 | q_j2=0.20 a_j2=1
+step 542: q_j1=0.23 a_j1=1 | q_j2=0.22 a_j2=1
+step 543: q_j1=0.23 a_j1=1 | q_j2=0.23 a_j2=0
+step 544: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=0
+step 545: q_j1=0.27 a_j1=1 | q_j2=0.27 a_j2=0
+step 546: q_j1=0.25 a_j1=1 | q_j2=0.27 a_j2=1
+step 547: q_j1=0.25 a_j1=1 | q_j2=0.25 a_j2=1
+step 548: q_j1=0.23 a_j1=1 | q_j2=0.25 a_j2=1
+step 549: q_j1=0.22 a_j1=1 | q_j2=0.23 a_j2=1
+step 550: q_j1=0.18 a_j1=1 | q_j2=0.22 a_j2=1
