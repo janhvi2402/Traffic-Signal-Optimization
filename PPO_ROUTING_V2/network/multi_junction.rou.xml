@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <!-- Vehicle type -->
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.9"/>
+
+    <!-- ============================================================
+         FLOWS — one per external origin, going to every destination.
+         Origin arms:
+           J1 side : W (west), N1 (north1), S1 (south1)
+           J2 side : E (east),  N2 (north2), S2 (south2)
+
+         Routes use the real edge IDs from network.net.xml.
+         Inter-junction edge pair: J1_J2 (eastbound) / J2_J1 (westbound)
+    ============================================================ -->
+
+    <!-- === FROM W (enters J1 westbound) === -->
+    <flow id="W_to_N1"  type="car" from="W_J1" to="J1_N1"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+    <flow id="W_to_S1"  type="car" from="W_J1" to="J1_S1"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+    <flow id="W_to_J2"  type="car" from="W_J1" to="J2_E"   begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="W_to_N2"  type="car" from="W_J1" to="J2_N2"  begin="0" end="3600" probability="0.10" departLane="0" departSpeed="max"/>
+    <flow id="W_to_S2"  type="car" from="W_J1" to="J2_S2"  begin="0" end="3600" probability="0.10" departLane="0" departSpeed="max"/>
+
+    <!-- === FROM N1 (enters J1 from north) === -->
+    <flow id="N1_to_W"  type="car" from="N1_J1" to="J1_W"  begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="N1_to_S1" type="car" from="N1_J1" to="J1_S1" begin="0" end="3600" probability="0.25" departLane="0" departSpeed="max"/>
+    <flow id="N1_to_J2" type="car" from="N1_J1" to="J2_E"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+
+    <!-- === FROM S1 (enters J1 from south) === -->
+    <flow id="S1_to_W"  type="car" from="S1_J1" to="J1_W"  begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="S1_to_N1" type="car" from="S1_J1" to="J1_N1" begin="0" end="3600" probability="0.25" departLane="0" departSpeed="max"/>
+    <flow id="S1_to_J2" type="car" from="S1_J1" to="J2_E"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+
+    <!-- === FROM E (enters J2 eastbound) === -->
+    <flow id="E_to_N2"  type="car" from="E_J2" to="J2_N2"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+    <flow id="E_to_S2"  type="car" from="E_J2" to="J2_S2"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+    <flow id="E_to_J1"  type="car" from="E_J2" to="J1_W"   begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="E_to_N1"  type="car" from="E_J2" to="J1_N1"  begin="0" end="3600" probability="0.10" departLane="0" departSpeed="max"/>
+    <flow id="E_to_S1"  type="car" from="E_J2" to="J1_S1"  begin="0" end="3600" probability="0.10" departLane="0" departSpeed="max"/>
+
+    <!-- === FROM N2 (enters J2 from north) === -->
+    <flow id="N2_to_E"  type="car" from="N2_J2" to="J2_E"  begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="N2_to_S2" type="car" from="N2_J2" to="J2_S2" begin="0" end="3600" probability="0.25" departLane="0" departSpeed="max"/>
+    <flow id="N2_to_J1" type="car" from="N2_J2" to="J1_W"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+
+    <!-- === FROM S2 (enters J2 from south) === -->
+    <flow id="S2_to_E"  type="car" from="S2_J2" to="J2_E"  begin="0" end="3600" probability="0.20" departLane="0" departSpeed="max"/>
+    <flow id="S2_to_N2" type="car" from="S2_J2" to="J2_N2" begin="0" end="3600" probability="0.25" departLane="0" departSpeed="max"/>
+    <flow id="S2_to_J1" type="car" from="S2_J2" to="J1_W"  begin="0" end="3600" probability="0.15" departLane="0" departSpeed="max"/>
+
+</routes>
