@@ -181,50 +181,23 @@ class SumoMultiJunctionEnv(gym.Env):
         total_wait = 0.0
         n_lanes = 0
 
-        ns_q_total = 0.0
-        ew_q_total = 0.0
-        ns_n = 0
-        ew_n = 0
+        for tl in self.TL_IDS:
+            for axis, lanes in self.INCOMING_LANES[tl].items():
+                for lane in lanes:
+                    q = self.conn.lane.getLastStepHaltingNumber(lane)
+                    w = self.conn.lane.getWaitingTime(lane)
 
-        for axis, group in self.INCOMING_LANES.items():
-            for lane in group:
+                    total_queue += q
+                    total_wait += w
+                    n_lanes += 1
 
-                q = self.conn.lane.getLastStepHaltingNumber(lane)
-                w = self.conn.lane.getWaitingTime(lane)
-
-                total_queue += q
-                total_wait += w
-                n_lanes += 1
-
-                if axis == "NS":
-                    ns_q_total += q
-                    ns_n += 1
-                else:
-                    ew_q_total += q
-                    ew_n += 1
-
-        # Average queue penalty
         queue_penalty = -(total_queue / n_lanes) / self.MAX_QUEUE
-
-        # Average waiting-time penalty
         wait_penalty = -(total_wait / n_lanes) / self.MAX_WAIT
 
-        # Weight queue more than waiting time
         reward = (
             0.7 * queue_penalty +
             0.3 * wait_penalty
         )
-
-        # Bonus only when switching helps an imbalanced intersection
-        if self._just_switched:
-            imbalance = abs(
-                (ns_q_total / ns_n) -
-                (ew_q_total / ew_n)
-            ) / self.MAX_QUEUE
-
-            reward += 0.05 * imbalance
-
-        self._just_switched = False
 
         return reward
 
