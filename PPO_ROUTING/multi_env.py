@@ -4,7 +4,6 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-# locate SUMO 
 if "SUMO_HOME" not in os.environ:
     raise EnvironmentError(
         "SUMO_HOME not set. Add 'export SUMO_HOME=/path/to/sumo' to your shell profile."
@@ -15,38 +14,15 @@ import traci
 
 class SumoMultiJunctionEnv(gym.Env):
     """
-    Gymnasium environment wrapping a real SUMO simulation for the
-    2-junction network defined in network.net.xml.
+    2-junction Gymnasium environment.
 
-    Topology (from the net file):
-          N1          N2
-          |            |
-    W ── J1 ────────  J2 ── E
-          |            |
-          S1          S2
+    CHANGED: observation is now 8 features per junction (16 total, was
+    14) to match the updated SumoSingleJunctionEnv — added an explicit
+    NS-EW queue imbalance term at index [7] of each junction's slice.
+    This keeps a single-junction-trained policy's input layout valid
+    when applied decentralized to J1 and J2 here (see run_decentralized).
 
-    Traffic signal structure
-    ─────────────────────────
-    Both J1 and J2 use the same 4-phase programme (16 link indices each).
-    The net file defines:
-        Phase 0 (dur 42): GGggrrrrGGggrrrr  — N↔S green at both junctions
-        Phase 1 (dur  3): yyyyrrrryyyyrrrr  — N↔S yellow
-        Phase 2 (dur 42): rrrrGGggrrrrGGgg  — E↔W green at both junctions
-        Phase 3 (dur  3): rrrryyyyrrrryyyy  — E↔W yellow
-
-    Agent control
-    ─────────────
-    Action space : MultiDiscrete([2, 2])
-        0 = keep current phase
-        1 = request phase switch (triggers yellow → opposite green)
-
-    NOTE: Phase timing is now FULLY agent/env controlled. SUMO's default
-    tlLogic durations are overridden (setPhaseDuration=9999) immediately
-    on every phase change, and both green (MIN_GREEN/MAX_GREEN) and
-    yellow (YELLOW_TIME) durations are tracked and enforced manually in
-    _apply_action. Nothing relies on SUMO's internal program timer.
-
-    Observation (per junction, 7 features × 2 = 14 total)
+    Observation (per junction, 8 features x 2 = 16 total)
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
         [1] mean queue length on EW incoming lanes   (normalised 0-1)
         [2] mean waiting time on NS lanes            (normalised, cap 120 s)
@@ -54,17 +30,11 @@ class SumoMultiJunctionEnv(gym.Env):
         [4] current phase index (0=NS green, 1=EW green)
         [5] time spent in current phase              (normalised, cap 60 s)
         [6] 1 if currently in yellow, else 0
-
-    Reward
-    ──────
-    Negative mean queue length across all incoming lanes of both junctions,
-    normalised by max_queue.  Equivalent signal to the custom env.
+        [7] NS-EW queue imbalance, signed             (normalised, [0,1])
     """
 
-    #  SUMO IDs from network.net.xml 
     TL_IDS = ["J1", "J2"]
 
-    # Incoming lanes per junction (order matches incLanes in net file)
     INCOMING_LANES = {
         "J1": {
             "NS": ["N1_J1_0", "S1_J1_0"],
@@ -76,73 +46,49 @@ class SumoMultiJunctionEnv(gym.Env):
         },
     }
 
-    # Phase indices in the SUMO tlLogic programme
     PHASE_NS_GREEN  = 0
     PHASE_NS_YELLOW = 1
     PHASE_EW_GREEN  = 2
     PHASE_EW_YELLOW = 3
 
-    #  constants 
-    MAX_QUEUE   = 30    # vehicles per lane  (for normalisation)
-    MAX_WAIT    = 120   # seconds            (for normalisation)
-    MAX_PHASE_T = 60    # seconds            (for normalisation)
-    MIN_GREEN   = 10    # minimum green duration before a switch is allowed
-    MAX_GREEN   = 90    # seconds — hard cap so a phase can't run forever
-    YELLOW_TIME = 3      # seconds — matches the net file's yellow duration
+    MAX_QUEUE   = 30
+    MAX_WAIT    = 120
+    MAX_PHASE_T = 60
+    MIN_GREEN   = 10
+    MAX_GREEN   = 90
+    YELLOW_TIME = 3
 
-    def __init__(
-        self,
-        cfg_path    = None,
-        use_gui     = False,
-        max_steps   = 3600,
-        seed        = None,
-        port=8813
-    ):
+    def __init__(self, cfg_path=None, use_gui=False, max_steps=3600, seed=None, port=8813):
         super().__init__()
 
         if cfg_path is None:
-            # default: same directory as this file
             cfg_path = os.path.join(os.path.dirname(__file__), "network", "multi_junction.sumocfg")
         self.cfg_path  = os.path.abspath(cfg_path)
         self.use_gui   = use_gui
         self.max_steps = max_steps
         self._seed     = seed
         self.port = port
-        # spaces
-        self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(14,), dtype=np.float32
-        )
+
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(16,), dtype=np.float32)
         self.action_space = spaces.MultiDiscrete([2, 2])
 
-        # internal state
         self._step_count      = 0
-        self._phase           = {tl: 0 for tl in self.TL_IDS}   # 0=NS, 1=EW (logical)
+        self._phase           = {tl: 0 for tl in self.TL_IDS}
         self._time_in_phase   = {tl: 0 for tl in self.TL_IDS}
         self._in_yellow       = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
+        self._just_switched   = {tl: False for tl in self.TL_IDS}
         self._traci_started   = False
-
-    # helpers
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
-        cmd = [
-            binary,
-            "-c", self.cfg_path,
-            "--no-step-log",
-            "--no-warnings",
-        ]
-        # FIX: --random and --seed are contradictory (--random tells SUMO
-        # to pick its own seed from system time, overriding yours). Only
-        # pass one or the other so per-episode seeds actually take effect.
+        cmd = [binary, "-c", self.cfg_path, "--no-step-log", "--no-warnings"]
         if self._seed is not None:
             safe_seed = int(self._seed) % 2_147_483_647
             cmd += ["--seed", str(safe_seed)]
         else:
             cmd += ["--random"]
 
-        # unique label per instance/port avoids "Connection 'default' is
-        # already active" when train_env and eval_env run at the same time
         self.label = f"sim_{self.port}"
         traci.start(cmd, port=self.port, label=self.label)
         self.conn = traci.getConnection(self.label)
@@ -154,7 +100,6 @@ class SumoMultiJunctionEnv(gym.Env):
             self._traci_started = False
 
     def _get_lane_stat(self, lane_id):
-        """Return (queue_length, waiting_time) for a single lane."""
         q = self.conn.lane.getLastStepHaltingNumber(lane_id)
         w = self.conn.lane.getWaitingTime(lane_id)
         return q, w
@@ -164,18 +109,22 @@ class SumoMultiJunctionEnv(gym.Env):
         for tl in self.TL_IDS:
             lanes = self.INCOMING_LANES[tl]
 
-            # NS lanes
             ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in lanes["NS"]])
-            # EW lanes
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
 
-            obs.append(np.mean(ns_q) / self.MAX_QUEUE)
-            obs.append(np.mean(ew_q) / self.MAX_QUEUE)
+            ns_q_norm = np.mean(ns_q) / self.MAX_QUEUE
+            ew_q_norm = np.mean(ew_q) / self.MAX_QUEUE
+            imbalance = np.clip(ns_q_norm - ew_q_norm, -1.0, 1.0)
+            imbalance_scaled = (imbalance + 1.0) / 2.0
+
+            obs.append(ns_q_norm)
+            obs.append(ew_q_norm)
             obs.append(min(np.mean(ns_w) / self.MAX_WAIT, 1.0))
             obs.append(min(np.mean(ew_w) / self.MAX_WAIT, 1.0))
-            obs.append(float(self._phase[tl]))                               # 0 or 1
+            obs.append(float(self._phase[tl]))
             obs.append(min(self._time_in_phase[tl] / self.MAX_PHASE_T, 1.0))
             obs.append(float(self._in_yellow[tl]))
+            obs.append(imbalance_scaled)
 
         return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
 
@@ -191,8 +140,6 @@ class SumoMultiJunctionEnv(gym.Env):
 
     def _apply_action(self, tl, action):
         if self._in_yellow[tl]:
-            # manual yellow timer — SUMO's own program is frozen (duration=9999),
-            # so we are the only thing advancing yellow -> green now.
             self._time_in_yellow[tl] += 1
             if self._time_in_yellow[tl] >= self.YELLOW_TIME:
                 self._in_yellow[tl]      = False
@@ -201,19 +148,16 @@ class SumoMultiJunctionEnv(gym.Env):
                 self._time_in_yellow[tl] = 0
                 green_phase = self.PHASE_NS_GREEN if self._phase[tl] == 0 else self.PHASE_EW_GREEN
                 self.conn.trafficlight.setPhase(tl, green_phase)
-                self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
-
+                self.conn.trafficlight.setPhaseDuration(tl, 9999)
         else:
             self._time_in_phase[tl] += 1
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
             if (action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN) or force_switch:
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
-                self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
+                self.conn.trafficlight.setPhaseDuration(tl, 9999)
                 self._in_yellow[tl]      = True
                 self._time_in_yellow[tl] = 0
-
-    # Gymnasium API
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -232,7 +176,7 @@ class SumoMultiJunctionEnv(gym.Env):
 
         for tl in self.TL_IDS:
             self.conn.trafficlight.setPhase(tl, self.PHASE_NS_GREEN)
-            self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance from the very first step
+            self.conn.trafficlight.setPhaseDuration(tl, 9999)
 
         self.conn.simulationStep()
 
@@ -257,6 +201,4 @@ class SumoMultiJunctionEnv(gym.Env):
         self._close_sumo()
 
     def render(self, mode="human"):
-        # GUI is enabled at construction time via use_gui=True;
-        # this method is a no-op for headless runs.
         pass
