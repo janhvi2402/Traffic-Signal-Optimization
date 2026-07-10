@@ -2,10 +2,40 @@ import os
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import EvalCallback, BaseCallback, CallbackList
 from stable_baselines3.common.utils import get_linear_fn
 
 from env import SumoTrafficEnv2J
+
+
+class EntropyAnnealCallback(BaseCallback):
+    """
+    Linearly anneal ent_coef from `start` down to `end` over
+    `total_timesteps`. SB3's PPO does NOT support scheduling ent_coef
+    the way it does learning_rate (ent_coef is a flat float arg, not a
+    Schedule) — this callback works around that by mutating
+    model.ent_coef directly at each training step.
+
+    WHY: diagnostics on the previous model showed it had collapsed to
+    voting action=1 every single step for both junctions, regardless
+    of queue state (277/277 switches landing on the identical step,
+    period exactly MIN_GREEN + YELLOW_TIME). That's a policy that
+    stopped exploring before it ever discovered a genuinely reactive
+    strategy. Starting entropy higher (0.05) keeps exploration alive
+    longer early in training so alternative strategies actually get
+    sampled, then decaying to 0.01 lets it converge to something sharp
+    once it has found a better basin than "always switch".
+    """
+    def __init__(self, start=0.05, end=0.01, total_timesteps=500_000, verbose=0):
+        super().__init__(verbose)
+        self.start = start
+        self.end = end
+        self.total_timesteps = total_timesteps
+
+    def _on_step(self):
+        frac = min(self.num_timesteps / self.total_timesteps, 1.0)
+        self.model.ent_coef = self.start + frac * (self.end - self.start)
+        return True
 
 # FIX: anchor all paths to this script's own folder, not the cwd —
 # matches the pattern already used in test.py, so train.py and test.py
@@ -25,7 +55,10 @@ os.makedirs(BEST_DIR, exist_ok=True)  #if models does not exist it creates it,if
 # stays consistent between training and evaluation.
 # e.g. MAX_QUEUE = 10  (based on observed halting counts)
 MAX_QUEUE = None          # None -> falls back to env's MAX_QUEUE_DEFAULT (30)
-SWITCH_PENALTY = 0.05     # cost per agent-initiated switch; see env.py docstring
+SWITCH_PENALTY = 0.15       # cost per agent-initiated switch; raised from 0.05
+WASTED_VOTE_PENALTY = 0.03  # cost per ineligible action=1 vote — closes the
+                             # "always vote 1 for free" loophole; see env.py docstring
+TOTAL_TIMESTEPS = 500_000
 
 # environment factories 
 # SUMO can't run two instances on the same port, so each parallel env
@@ -41,6 +74,7 @@ def make_train_env(seed=0):
             port=8813,
             max_queue=MAX_QUEUE,
             switch_penalty=SWITCH_PENALTY,
+            wasted_vote_penalty=WASTED_VOTE_PENALTY,
         )
     return _init
 
@@ -52,6 +86,7 @@ def make_eval_env(seed=0):
             port=8814,
             max_queue=MAX_QUEUE,
             switch_penalty=SWITCH_PENALTY,
+            wasted_vote_penalty=WASTED_VOTE_PENALTY,
         )
     return _init
 
@@ -83,25 +118,23 @@ model = PPO(
     gamma         = 0.99,
     gae_lambda    = 0.95,
     clip_range    = 0.2,
-    # Bumped 0.01 -> 0.02. The training log showed both junctions voting
-    # "switch" almost every step regardless of their own queue state —
-    # a sign the policy collapsed to a near-deterministic "always try"
-    # strategy before it ever discovered a genuinely reactive one. More
-    # entropy keeps exploration alive longer so that discovery has a
-    # chance to happen. Note: SB3's PPO does NOT support scheduling
-    # ent_coef the way it does learning_rate (it's a flat float, not a
-    # Schedule-typed arg) — if you want it to anneal over training,
-    # you'd need a custom callback that calls model.ent_coef = ... at
-    # intervals. Not added here to keep this change minimal; flag if
-    # you want that added.
-    ent_coef      = 0.02,           # was 0.01
+    # Initial value only — EntropyAnnealCallback overrides this every
+    # step, decaying start=0.05 -> end=0.01 over training (see below).
+    # Set here mainly so the very first rollout (before the callback's
+    # first _on_step) still uses a sane value.
+    ent_coef      = 0.05,
     vf_coef       = 0.75,          # was default 0.5 — give the critic more weight
     max_grad_norm = 0.5,           # add gradient clipping for stability
     target_kl     = 0.03,          # stop updates early if policy shifts too much in one epoch
     verbose       = 1,
 )
 
-model.learn(total_timesteps=500_000, callback=eval_callback) #callbacks- 
+entropy_callback = EntropyAnnealCallback(
+    start=0.05, end=0.01, total_timesteps=TOTAL_TIMESTEPS
+)
+callbacks = CallbackList([eval_callback, entropy_callback])
+
+model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=callbacks)
 
 model.save(os.path.join(MODELS_DIR, "ppo_sumo_2junction"))
 train_env.save(os.path.join(MODELS_DIR, "vec_normalize_sumo.pkl"))

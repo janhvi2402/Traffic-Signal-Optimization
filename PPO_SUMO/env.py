@@ -65,14 +65,25 @@ class SumoTrafficEnv2J(gym.Env):
     ──────
     -(mean queue length across all incoming lanes of both junctions,
       normalised by max_queue)
-    - SWITCH_PENALTY * (number of junctions that just initiated a
+    - SWITCH_PENALTY   * (number of junctions that just initiated a
       yellow transition this step)
+    - WASTED_VOTE_PENALTY * (number of junctions that voted action=1
+      while ineligible — i.e. currently mid-yellow, or before
+      MIN_GREEN has elapsed)
 
-    The switch penalty is new: previously a switch was "free" other
-    than the MIN_GREEN gate, so a policy that always requested a
-    switch was never punished for doing so on steps where it made no
-    difference. This forces the agent to justify a switch with an
-    actual queue benefit instead of defaulting to "always try".
+    WHY the wasted-vote term exists: previously, voting 1 while
+    ineligible cost NOTHING — the env just silently discarded the
+    vote. That made "always vote 1" a strictly dominant strategy: it
+    never cost more than voting 0 until eligible then voting 1, so
+    the policy never had a reason to actually condition on the queue
+    features. Diagnostics on a trained model showed exactly this —
+    277/277 switches on J1 and J2 landing on the identical step, at a
+    period matching MIN_GREEN + YELLOW_TIME exactly, i.e. the agent
+    voting 1 every single step for both junctions regardless of their
+    own state. Penalizing wasted votes closes that loophole; the
+    SWITCH_PENALTY term alone wasn't enough because it only fires
+    when a vote actually gets honored, not when it's spammed for free
+    in between.
     """
 
     #  SUMO IDs from network.net.xml 
@@ -115,10 +126,21 @@ class SumoTrafficEnv2J(gym.Env):
 
     # Cost of actually initiating a phase switch (per junction, per
     # switch event). Tune this relative to the queue term: reward is
-    # in roughly [-1, 0] per step from queue alone, so 0.05 means a
-    # switch has to "buy" at least a modest, sustained queue
-    # improvement to be worth it, rather than being free.
-    SWITCH_PENALTY = 0.05
+    # in roughly [-1, 0] per step from queue alone. Raised 0.05 -> 0.15
+    # because 0.05 wasn't enough on its own to stop the "always
+    # switch" degenerate policy — see WASTED_VOTE_PENALTY below, which
+    # addresses the actual root cause.
+    SWITCH_PENALTY = 0.15
+
+    # Cost of voting action=1 while the vote can't be honored yet
+    # (mid-yellow, or before MIN_GREEN has elapsed). This is the key
+    # fix: without it, spamming action=1 every step is free until the
+    # moment it's actually acted on, so the policy has no incentive to
+    # ever condition on the queue features — it can just always vote 1
+    # and let the MIN_GREEN gate do the work. This penalty makes idle
+    # spamming cost something, forcing the policy to only vote 1 when
+    # it actually wants a switch soon.
+    WASTED_VOTE_PENALTY = 0.03
 
     def __init__(
         self,
@@ -129,6 +151,7 @@ class SumoTrafficEnv2J(gym.Env):
         port=8813,
         max_queue   = None,       # override MAX_QUEUE_DEFAULT if you've calibrated it
         switch_penalty = None,    # override SWITCH_PENALTY if you want to sweep it
+        wasted_vote_penalty = None,  # override WASTED_VOTE_PENALTY if you want to sweep it
     ):
         super().__init__()
 
@@ -142,6 +165,9 @@ class SumoTrafficEnv2J(gym.Env):
         self.port = port
         self.max_queue = max_queue if max_queue is not None else self.MAX_QUEUE_DEFAULT
         self.switch_penalty = switch_penalty if switch_penalty is not None else self.SWITCH_PENALTY
+        self.wasted_vote_penalty = (
+            wasted_vote_penalty if wasted_vote_penalty is not None else self.WASTED_VOTE_PENALTY
+        )
 
         # spaces
         self.observation_space = spaces.Box(
@@ -225,7 +251,7 @@ class SumoTrafficEnv2J(gym.Env):
                 n += 1
         return total / n
 
-    def _get_reward(self, switches_this_step):
+    def _get_reward(self, switches_this_step, wasted_votes_this_step):
         total_queue = 0.0
         n_lanes = 0
         for tl in self.TL_IDS:
@@ -233,16 +259,27 @@ class SumoTrafficEnv2J(gym.Env):
                 for lane in group:
                     total_queue += self.conn.lane.getLastStepHaltingNumber(lane)
                     n_lanes += 1
-        queue_term = -(total_queue / n_lanes) / self.max_queue
+        queue_term  = -(total_queue / n_lanes) / self.max_queue
         switch_term = -self.switch_penalty * switches_this_step
-        return queue_term + switch_term
+        wasted_term = -self.wasted_vote_penalty * wasted_votes_this_step
+        return queue_term + switch_term + wasted_term
 
     def _apply_action(self, tl, action):
-        """Returns True if this call just initiated a yellow transition
-        (i.e. a switch actually happened, not just a vote for one)."""
+        """Returns (switched, wasted_vote):
+          switched     - True if this call just initiated a yellow transition
+                          (i.e. a switch actually happened, not just a vote).
+          wasted_vote  - True if action==1 was cast but couldn't be honored
+                          this step (mid-yellow, or MIN_GREEN not yet met).
+                          This is what used to be free; now it's penalized.
+        """
         switched = False
+        wasted_vote = False
 
         if self._in_yellow[tl]:
+            # Vote is moot — we're already committed to this transition.
+            if action == 1:
+                wasted_vote = True
+
             # manual yellow timer — SUMO's own program is frozen (duration=9999),
             # so we are the only thing advancing yellow -> green now.
             self._time_in_yellow[tl] += 1
@@ -258,18 +295,26 @@ class SumoTrafficEnv2J(gym.Env):
         else:
             self._time_in_phase[tl] += 1
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
-            if (action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN) or force_switch:
+            eligible = self._time_in_phase[tl] >= self.MIN_GREEN
+
+            if action == 1 and not eligible and not force_switch:
+                # Voted to switch too early — this used to be silently
+                # discarded for free. Now it costs a little, so
+                # spamming action=1 every step is no longer a free ride.
+                wasted_vote = True
+
+            if (action == 1 and eligible) or force_switch:
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
                 self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
                 self._in_yellow[tl]      = True
                 self._time_in_yellow[tl] = 0
-                # Only charge the penalty for agent-requested switches, not
-                # ones forced by MAX_GREEN — the agent shouldn't be punished
-                # for a switch it didn't choose.
+                # Only charge the switch penalty for agent-requested switches,
+                # not ones forced by MAX_GREEN — the agent shouldn't be
+                # punished for a switch it didn't choose.
                 switched = (action == 1)
 
-        return switched
+        return switched, wasted_vote
 
     # Gymnasium API
 
@@ -300,16 +345,18 @@ class SumoTrafficEnv2J(gym.Env):
         assert len(action) == 2, "action must be [a_J1, a_J2]"
 
         switches = {}
+        wasted_votes = {}
         for i, tl in enumerate(self.TL_IDS):
-            switches[tl] = self._apply_action(tl, int(action[i]))
+            switches[tl], wasted_votes[tl] = self._apply_action(tl, int(action[i]))
 
         self.conn.simulationStep()
         self._step_count += 1
 
         n_switches = sum(switches.values())
+        n_wasted   = sum(wasted_votes.values())
 
         obs     = self._get_obs()
-        reward  = self._get_reward(n_switches)
+        reward  = self._get_reward(n_switches, n_wasted)
         done    = self._step_count >= self.max_steps
 
         # Per-junction diagnostics — doesn't affect training, just lets you
@@ -317,6 +364,7 @@ class SumoTrafficEnv2J(gym.Env):
         info = {
             "local_queue": {tl: self._get_local_queue(tl) for tl in self.TL_IDS},
             "switched": switches,
+            "wasted_vote": wasted_votes,
         }
 
         return obs, reward, done, False, info

@@ -17,7 +17,8 @@ MODEL_PATH = os.path.join(MODELS_DIR, "ppo_sumo_2junction")
 # Must match whatever you trained with, or obs/reward normalisation
 # will be inconsistent with what the policy learned on.
 MAX_QUEUE = None
-SWITCH_PENALTY = 0.05
+SWITCH_PENALTY = 0.15
+WASTED_VOTE_PENALTY = 0.03
 
 EPISODE_LEN = 3600   # steps to run; set lower for a quicker look
 
@@ -30,6 +31,7 @@ def run_diagnostic(use_gui=False):
                                  # you can run this alongside training if needed
         max_queue=MAX_QUEUE,
         switch_penalty=SWITCH_PENALTY,
+        wasted_vote_penalty=WASTED_VOTE_PENALTY,
         use_gui=use_gui,
         max_steps=EPISODE_LEN,
     )
@@ -37,7 +39,8 @@ def run_diagnostic(use_gui=False):
     model = PPO.load(MODEL_PATH)
 
     obs, _ = env.reset()
-    history = {"J1_q": [], "J2_q": [], "J1_sw": [], "J2_sw": []}
+    history = {"J1_q": [], "J2_q": [], "J1_sw": [], "J2_sw": [],
+               "J1_wasted": [], "J2_wasted": []}
 
     for _ in range(EPISODE_LEN):
         action, _ = model.predict(obs, deterministic=True)
@@ -46,6 +49,8 @@ def run_diagnostic(use_gui=False):
         history["J2_q"].append(info["local_queue"]["J2"])
         history["J1_sw"].append(info["switched"]["J1"])
         history["J2_sw"].append(info["switched"]["J2"])
+        history["J1_wasted"].append(info["wasted_vote"]["J1"])
+        history["J2_wasted"].append(info["wasted_vote"]["J2"])
         if done:
             break
 
@@ -87,10 +92,16 @@ if __name__ == "__main__":
     both_same_step = sum(
         1 for a, b in zip(history["J1_sw"], history["J2_sw"]) if a and b
     )
+    n_j1_wasted = sum(history["J1_wasted"])
+    n_j2_wasted = sum(history["J2_wasted"])
+
     print(f"J1 switches: {n_j1_sw}  |  J2 switches: {n_j2_sw}")
     print(f"Switches on the SAME step: {both_same_step} "
           f"({100 * both_same_step / max(n_j1_sw, n_j2_sw, 1):.1f}% overlap "
           f"of the more active junction)")
+    print(f"J1 wasted votes: {n_j1_wasted}  |  J2 wasted votes: {n_j2_wasted}  "
+          f"(over {len(history['J1_q'])} steps — high counts here mean the "
+          f"policy is still spamming action=1 regardless of eligibility)")
 
     out_path = os.path.join(SCRIPT_DIR, "diagnostic_plot.png")
     plot_history(history, out_path)
