@@ -38,7 +38,13 @@ class SumoTrafficEnv2J(gym.Env):
     ─────────────
     Action space : MultiDiscrete([2, 2])
         0 = keep current phase
-        1 = request phase switch (triggers yellow → opposite green)
+        1 = REQUEST a phase switch. This is only honoured once the
+            junction has held its current phase for >= MIN_GREEN
+            seconds (or forced once MAX_GREEN is hit). Voting 1 too
+            early is silently ignored by the env, which is why a
+            policy that always votes 1 can look "fine" reward-wise
+            unless you explicitly penalise the switch itself (see
+            SWITCH_PENALTY below).
 
     NOTE: Phase timing is now FULLY agent/env controlled. SUMO's default
     tlLogic durations are overridden (setPhaseDuration=9999) immediately
@@ -57,8 +63,16 @@ class SumoTrafficEnv2J(gym.Env):
 
     Reward
     ──────
-    Negative mean queue length across all incoming lanes of both junctions,
-    normalised by max_queue.  Equivalent signal to the custom env.
+    -(mean queue length across all incoming lanes of both junctions,
+      normalised by max_queue)
+    - SWITCH_PENALTY * (number of junctions that just initiated a
+      yellow transition this step)
+
+    The switch penalty is new: previously a switch was "free" other
+    than the MIN_GREEN gate, so a policy that always requested a
+    switch was never punished for doing so on steps where it made no
+    difference. This forces the agent to justify a switch with an
+    actual queue benefit instead of defaulting to "always try".
     """
 
     #  SUMO IDs from network.net.xml 
@@ -83,12 +97,28 @@ class SumoTrafficEnv2J(gym.Env):
     PHASE_EW_YELLOW = 3
 
     #  constants 
-    MAX_QUEUE   = 30    # vehicles per lane  (for normalisation)
+    # MAX_QUEUE was a flat guess (30 veh/lane) before. If your actual
+    # queues rarely exceed ~8-10 veh/lane (check by logging raw
+    # getLastStepHaltingNumber() over a random-policy rollout before
+    # normalising), the observation spends its whole life squeezed
+    # into [0, 0.3] and the network has very little dynamic range to
+    # key decisions off. Recalibrate this from real data if you can;
+    # in the meantime it's exposed as a constructor arg instead of a
+    # hardcoded class constant so you can sweep it without editing
+    # the file.
+    MAX_QUEUE_DEFAULT = 30    # vehicles per lane  (for normalisation)
     MAX_WAIT    = 120   # seconds            (for normalisation)
     MAX_PHASE_T = 60    # seconds            (for normalisation)
     MIN_GREEN   = 10    # minimum green duration before a switch is allowed
     MAX_GREEN   = 90    # seconds — hard cap so a phase can't run forever
     YELLOW_TIME = 3      # seconds — matches the net file's yellow duration
+
+    # Cost of actually initiating a phase switch (per junction, per
+    # switch event). Tune this relative to the queue term: reward is
+    # in roughly [-1, 0] per step from queue alone, so 0.05 means a
+    # switch has to "buy" at least a modest, sustained queue
+    # improvement to be worth it, rather than being free.
+    SWITCH_PENALTY = 0.05
 
     def __init__(
         self,
@@ -96,7 +126,9 @@ class SumoTrafficEnv2J(gym.Env):
         use_gui     = False,
         max_steps   = 3600,
         seed        = None,
-        port=8813
+        port=8813,
+        max_queue   = None,       # override MAX_QUEUE_DEFAULT if you've calibrated it
+        switch_penalty = None,    # override SWITCH_PENALTY if you want to sweep it
     ):
         super().__init__()
 
@@ -108,6 +140,9 @@ class SumoTrafficEnv2J(gym.Env):
         self.max_steps = max_steps
         self._seed     = seed
         self.port = port
+        self.max_queue = max_queue if max_queue is not None else self.MAX_QUEUE_DEFAULT
+        self.switch_penalty = switch_penalty if switch_penalty is not None else self.SWITCH_PENALTY
+
         # spaces
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(14,), dtype=np.float32
@@ -169,8 +204,8 @@ class SumoTrafficEnv2J(gym.Env):
             # EW lanes
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
 
-            obs.append(np.mean(ns_q) / self.MAX_QUEUE)
-            obs.append(np.mean(ew_q) / self.MAX_QUEUE)
+            obs.append(np.mean(ns_q) / self.max_queue)
+            obs.append(np.mean(ew_q) / self.max_queue)
             obs.append(min(np.mean(ns_w) / self.MAX_WAIT, 1.0))
             obs.append(min(np.mean(ew_w) / self.MAX_WAIT, 1.0))
             obs.append(float(self._phase[tl]))                               # 0 or 1
@@ -179,7 +214,18 @@ class SumoTrafficEnv2J(gym.Env):
 
         return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
 
-    def _get_reward(self):
+    def _get_local_queue(self, tl):
+        """Mean queue length across ONE junction's incoming lanes (raw, not normalised).
+        Exposed for diagnostics — lets you check post-fix whether J1 and J2
+        actually start behaving differently instead of mirroring each other."""
+        total, n = 0.0, 0
+        for group in self.INCOMING_LANES[tl].values():
+            for lane in group:
+                total += self.conn.lane.getLastStepHaltingNumber(lane)
+                n += 1
+        return total / n
+
+    def _get_reward(self, switches_this_step):
         total_queue = 0.0
         n_lanes = 0
         for tl in self.TL_IDS:
@@ -187,9 +233,15 @@ class SumoTrafficEnv2J(gym.Env):
                 for lane in group:
                     total_queue += self.conn.lane.getLastStepHaltingNumber(lane)
                     n_lanes += 1
-        return -(total_queue / n_lanes) / self.MAX_QUEUE
+        queue_term = -(total_queue / n_lanes) / self.max_queue
+        switch_term = -self.switch_penalty * switches_this_step
+        return queue_term + switch_term
 
     def _apply_action(self, tl, action):
+        """Returns True if this call just initiated a yellow transition
+        (i.e. a switch actually happened, not just a vote for one)."""
+        switched = False
+
         if self._in_yellow[tl]:
             # manual yellow timer — SUMO's own program is frozen (duration=9999),
             # so we are the only thing advancing yellow -> green now.
@@ -212,6 +264,12 @@ class SumoTrafficEnv2J(gym.Env):
                 self.conn.trafficlight.setPhaseDuration(tl, 9999)   # prevent auto-advance
                 self._in_yellow[tl]      = True
                 self._time_in_yellow[tl] = 0
+                # Only charge the penalty for agent-requested switches, not
+                # ones forced by MAX_GREEN — the agent shouldn't be punished
+                # for a switch it didn't choose.
+                switched = (action == 1)
+
+        return switched
 
     # Gymnasium API
 
@@ -241,17 +299,27 @@ class SumoTrafficEnv2J(gym.Env):
     def step(self, action):
         assert len(action) == 2, "action must be [a_J1, a_J2]"
 
+        switches = {}
         for i, tl in enumerate(self.TL_IDS):
-            self._apply_action(tl, int(action[i]))
+            switches[tl] = self._apply_action(tl, int(action[i]))
 
         self.conn.simulationStep()
         self._step_count += 1
 
+        n_switches = sum(switches.values())
+
         obs     = self._get_obs()
-        reward  = self._get_reward()
+        reward  = self._get_reward(n_switches)
         done    = self._step_count >= self.max_steps
 
-        return obs, reward, done, False, {}
+        # Per-junction diagnostics — doesn't affect training, just lets you
+        # plot/inspect J1 vs J2 behaviour separately after the fact.
+        info = {
+            "local_queue": {tl: self._get_local_queue(tl) for tl in self.TL_IDS},
+            "switched": switches,
+        }
+
+        return obs, reward, done, False, info
 
     def close(self):
         self._close_sumo()
