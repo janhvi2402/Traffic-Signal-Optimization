@@ -1,16 +1,5 @@
 """
 train.py
-
-Now supports:
-  - imbalance_bonus_weight passed through to the env (default 0.0,
-    same as before unless you set IMBALANCE_BONUS_WEIGHT > 0)
-  - a SWITCH_PENALTY sweep: set SWEEP_SWITCH_PENALTIES to a list of
-    values and this will train one model per value, each saved to
-    its own models/sweep_<value>/ folder, so you can compare configs
-    side by side with test_diagnostic_imbalance.py afterward.
-
-Set SWEEP_SWITCH_PENALTIES = None to fall back to a single run using
-SWITCH_PENALTY, same as before.
 """
 
 import os
@@ -24,10 +13,6 @@ from env import SumoTrafficEnv2J
 
 
 class EntropyAnnealCallback(BaseCallback):
-    """
-    Linearly anneal ent_coef from `start` down to `end` over
-    `total_timesteps`. See original docstring — unchanged.
-    """
     def __init__(self, start=0.05, end=0.01, total_timesteps=500_000, verbose=0):
         super().__init__(verbose)
         self.start = start
@@ -48,21 +33,20 @@ lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000
 
-# --- base config (used when SWEEP_SWITCH_PENALTIES is None) ---
-SWITCH_PENALTY = 0.15
+# --- reward config for this run ---
+SWITCH_PENALTY = 0.2
 WASTED_VOTE_PENALTY = 0.03
-IMBALANCE_BONUS_WEIGHT = 0.0   # NEW — set >0 (e.g. 0.03) to reward
-                                # holding green on the busier side
+IMBALANCE_BONUS_WEIGHT = 0.04
+WRONG_DIRECTION_PENALTY = 0.1   # NEW — the key change this run tests
 
-# --- sweep config ---
-# Set to None for a single run using the constants above.
-# Set to a list to train one model per SWITCH_PENALTY value, each
-# combined with WASTED_VOTE_PENALTY and IMBALANCE_BONUS_WEIGHT below.
-SWEEP_SWITCH_PENALTIES = [0.15, 0.3, 0.5]     # NEW
-SWEEP_IMBALANCE_BONUS_WEIGHT = 0.03            # NEW — used only in sweep runs
+# Set True to instead do the 3-way SWITCH_PENALTY sweep from before.
+# Leave False for a single run with the config above, ~1hr.
+RUN_SWEEP = False
+SWEEP_SWITCH_PENALTIES = [0.15, 0.3, 0.5]
 
 
-def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight, port):
+def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
+                    wrong_direction_penalty, port):
     def _init():
         return SumoTrafficEnv2J(
             cfg_path=os.path.join(SCRIPT_DIR, "network.sumocfg"),
@@ -71,12 +55,14 @@ def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_we
             max_queue=MAX_QUEUE,
             switch_penalty=switch_penalty,
             wasted_vote_penalty=wasted_vote_penalty,
-            imbalance_bonus_weight=imbalance_bonus_weight,   # NEW
+            imbalance_bonus_weight=imbalance_bonus_weight,
+            wrong_direction_penalty=wrong_direction_penalty,   # NEW
         )
     return _init
 
 
-def make_eval_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight, port):
+def make_eval_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
+                   wrong_direction_penalty, port):
     def _init():
         return SumoTrafficEnv2J(
             cfg_path=os.path.join(SCRIPT_DIR, "network.sumocfg"),
@@ -85,42 +71,34 @@ def make_eval_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_wei
             max_queue=MAX_QUEUE,
             switch_penalty=switch_penalty,
             wasted_vote_penalty=wasted_vote_penalty,
-            imbalance_bonus_weight=imbalance_bonus_weight,   # NEW
+            imbalance_bonus_weight=imbalance_bonus_weight,
+            wrong_direction_penalty=wrong_direction_penalty,   # NEW
         )
     return _init
 
 
-def run_training(
-    switch_penalty,
-    wasted_vote_penalty,
-    imbalance_bonus_weight,
-    out_dir,
-    train_port,
-    eval_port,
-):
-    """One full training run with a given reward config, saved to out_dir."""
+def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
+                  wrong_direction_penalty, out_dir, train_port, eval_port):
     best_dir = os.path.join(out_dir, "best")
     os.makedirs(best_dir, exist_ok=True)
 
     train_env = make_vec_env(
-        make_train_env(42, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight, train_port),
+        make_train_env(42, switch_penalty, wasted_vote_penalty,
+                        imbalance_bonus_weight, wrong_direction_penalty, train_port),
         n_envs=1,
     )
     train_env = VecNormalize(train_env, norm_obs=False, norm_reward=False)
 
     eval_env = make_vec_env(
-        make_eval_env(0, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight, eval_port),
+        make_eval_env(0, switch_penalty, wasted_vote_penalty,
+                       imbalance_bonus_weight, wrong_direction_penalty, eval_port),
         n_envs=1,
     )
     eval_env = VecNormalize(eval_env, norm_obs=False, norm_reward=False)
 
     eval_callback = EvalCallback(
-        eval_env,
-        best_model_save_path=best_dir,
-        eval_freq=20_000,
-        n_eval_episodes=3,
-        deterministic=True,
-        verbose=1,
+        eval_env, best_model_save_path=best_dir, eval_freq=20_000,
+        n_eval_episodes=3, deterministic=True, verbose=1,
     )
 
     model = PPO(
@@ -141,15 +119,14 @@ def run_training(
         verbose=1,
     )
 
-    entropy_callback = EntropyAnnealCallback(
-        start=0.05, end=0.01, total_timesteps=TOTAL_TIMESTEPS
-    )
+    entropy_callback = EntropyAnnealCallback(start=0.05, end=0.01, total_timesteps=TOTAL_TIMESTEPS)
     callbacks = CallbackList([eval_callback, entropy_callback])
 
     print(f"\n{'='*70}")
     print(f"Training run: switch_penalty={switch_penalty}, "
           f"wasted_vote_penalty={wasted_vote_penalty}, "
-          f"imbalance_bonus_weight={imbalance_bonus_weight}")
+          f"imbalance_bonus_weight={imbalance_bonus_weight}, "
+          f"wrong_direction_penalty={wrong_direction_penalty}")
     print(f"Output -> {out_dir}")
     print(f"{'='*70}\n")
 
@@ -165,22 +142,21 @@ def run_training(
 
 
 if __name__ == "__main__":
-    if SWEEP_SWITCH_PENALTIES is None:
-        # single run, original behavior
+    if not RUN_SWEEP:
+        # single confirmatory run — saves into models/, same layout you
+        # already have, so test.py / test_diagnostic_imbalance.py need
+        # zero path changes to pick it up
         os.makedirs(MODELS_DIR, exist_ok=True)
         run_training(
             switch_penalty=SWITCH_PENALTY,
             wasted_vote_penalty=WASTED_VOTE_PENALTY,
             imbalance_bonus_weight=IMBALANCE_BONUS_WEIGHT,
+            wrong_direction_penalty=WRONG_DIRECTION_PENALTY,
             out_dir=MODELS_DIR,
             train_port=8813,
             eval_port=8814,
         )
     else:
-        # sweep: one run per SWITCH_PENALTY value, own ports so they
-        # don't collide if you ever parallelize this later, and own
-        # output folder so test_diagnostic_imbalance.py can point at
-        # each independently.
         base_port = 8820
         for i, sp in enumerate(SWEEP_SWITCH_PENALTIES):
             out_dir = os.path.join(MODELS_DIR, f"sweep_sp{str(sp).replace('.', '')}")
@@ -188,7 +164,8 @@ if __name__ == "__main__":
             run_training(
                 switch_penalty=sp,
                 wasted_vote_penalty=WASTED_VOTE_PENALTY,
-                imbalance_bonus_weight=SWEEP_IMBALANCE_BONUS_WEIGHT,
+                imbalance_bonus_weight=IMBALANCE_BONUS_WEIGHT,
+                wrong_direction_penalty=WRONG_DIRECTION_PENALTY,
                 out_dir=out_dir,
                 train_port=base_port + i * 2,
                 eval_port=base_port + i * 2 + 1,

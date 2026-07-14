@@ -5,7 +5,6 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-# locate SUMO 
 if "SUMO_HOME" not in os.environ:
     raise EnvironmentError(
         "SUMO_HOME not set. Add 'export SUMO_HOME=/path/to/sumo' to your shell profile."
@@ -16,37 +15,27 @@ import traci
 
 class SumoTrafficEnv2J(gym.Env):
     """
-    Gymnasium environment wrapping a real SUMO simulation for the
-    2-junction network defined in network.net.xml.
+    (docstring unchanged — topology/phase details from original)
 
-    (docstring unchanged from before — see original for topology/phase details)
+    NEW: info dict reports raw NS/EW queue, signed imbalance, and hold
+    duration at switch time.
 
-    NEW: info dict now reports raw per-junction NS/EW queue lengths,
-    signed imbalance (ns_queue - ew_queue), and the hold duration
-    (steps in phase) at the moment a switch actually fires. This is
-    what lets you check, post-hoc, whether the agent's switch timing
-    is actually correlated with which side is busier — or whether
-    it's just cycling at the MIN_GREEN ceiling regardless of state.
+    NEW: imbalance_bonus_weight (default 0.0) — rewards holding green
+    on the side with the larger raw queue.
 
-    NEW: optional imbalance_bonus_weight (default 0.0, backward
-    compatible). When > 0, adds a small positive reward each step a
-    junction's current green phase matches whichever side (NS/EW)
-    currently has the larger raw queue, scaled by the magnitude of
-    the imbalance. This directly rewards "hold green on the busier
-    side" instead of hoping it emerges purely from queue minimization.
+    NEW: wrong_direction_penalty (default 0.0) — penalizes a legal,
+    agent-initiated switch that abandons the side that was still
+    busier. This is the piece that specifically targets "switch the
+    instant MIN_GREEN clears, regardless of state" — SWITCH_PENALTY
+    alone taxes every switch equally, this one only taxes the wrong
+    ones.
     """
 
     TL_IDS = ["J1", "J2"]
 
     INCOMING_LANES = {
-        "J1": {
-            "NS": ["N1_J1_0", "S1_J1_0"],
-            "EW": ["J2_J1_0", "W_J1_0"],
-        },
-        "J2": {
-            "NS": ["N2_J2_0", "S2_J2_0"],
-            "EW": ["E_J2_0",  "J1_J2_0"],
-        },
+        "J1": {"NS": ["N1_J1_0", "S1_J1_0"], "EW": ["J2_J1_0", "W_J1_0"]},
+        "J2": {"NS": ["N2_J2_0", "S2_J2_0"], "EW": ["E_J2_0",  "J1_J2_0"]},
     }
 
     PHASE_NS_GREEN  = 0
@@ -63,10 +52,8 @@ class SumoTrafficEnv2J(gym.Env):
 
     SWITCH_PENALTY = 0.15
     WASTED_VOTE_PENALTY = 0.03
-
-    # NEW: default off. Try 0.02-0.05 if diagnostics show the agent
-    # isn't conditioning on imbalance at all.
     IMBALANCE_BONUS_WEIGHT = 0.0
+    WRONG_DIRECTION_PENALTY = 0.0
 
     def __init__(
         self,
@@ -78,7 +65,8 @@ class SumoTrafficEnv2J(gym.Env):
         max_queue   = None,
         switch_penalty = None,
         wasted_vote_penalty = None,
-        imbalance_bonus_weight = None,   # NEW
+        imbalance_bonus_weight = None,
+        wrong_direction_penalty = None,   # NEW
     ):
         super().__init__()
 
@@ -94,15 +82,17 @@ class SumoTrafficEnv2J(gym.Env):
         self.wasted_vote_penalty = (
             wasted_vote_penalty if wasted_vote_penalty is not None else self.WASTED_VOTE_PENALTY
         )
-        # NEW
         self.imbalance_bonus_weight = (
             imbalance_bonus_weight if imbalance_bonus_weight is not None
             else self.IMBALANCE_BONUS_WEIGHT
         )
-
-        self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(14,), dtype=np.float32
+        # NEW
+        self.wrong_direction_penalty = (
+            wrong_direction_penalty if wrong_direction_penalty is not None
+            else self.WRONG_DIRECTION_PENALTY
         )
+
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(14,), dtype=np.float32)
         self.action_space = spaces.MultiDiscrete([2, 2])
 
         self._step_count      = 0
@@ -111,12 +101,10 @@ class SumoTrafficEnv2J(gym.Env):
         self._in_yellow       = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
         self._traci_started   = False
-
-        # NEW: hold duration captured right before a switch resets time_in_phase.
-        # Read by step() to populate info["hold_duration_at_switch"].
         self._last_hold_duration = {tl: None for tl in self.TL_IDS}
-
-    # helpers
+        # FIX: must exist before the first _get_reward() call, and must
+        # default to False for every tl (not just ones that just switched)
+        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
@@ -126,7 +114,6 @@ class SumoTrafficEnv2J(gym.Env):
             cmd += ["--seed", str(safe_seed)]
         else:
             cmd += ["--random"]
-
         self.label = f"sim_{self.port}"
         traci.start(cmd, port=self.port, label=self.label)
         self.conn = traci.getConnection(self.label)
@@ -142,8 +129,6 @@ class SumoTrafficEnv2J(gym.Env):
         w = self.conn.lane.getWaitingTime(lane_id)
         return q, w
 
-    # NEW: raw (not normalised) NS/EW queue for one junction — used both
-    # for observations-adjacent diagnostics and the imbalance bonus.
     def _get_raw_ns_ew_queue(self, tl):
         lanes = self.INCOMING_LANES[tl]
         ns_q = np.mean([self.conn.lane.getLastStepHaltingNumber(l) for l in lanes["NS"]])
@@ -156,7 +141,6 @@ class SumoTrafficEnv2J(gym.Env):
             lanes = self.INCOMING_LANES[tl]
             ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in lanes["NS"]])
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
-
             obs.append(np.mean(ns_q) / self.max_queue)
             obs.append(np.mean(ew_q) / self.max_queue)
             obs.append(min(np.mean(ns_w) / self.MAX_WAIT, 1.0))
@@ -164,7 +148,6 @@ class SumoTrafficEnv2J(gym.Env):
             obs.append(float(self._phase[tl]))
             obs.append(min(self._time_in_phase[tl] / self.MAX_PHASE_T, 1.0))
             obs.append(float(self._in_yellow[tl]))
-
         return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
 
     def _get_local_queue(self, tl):
@@ -187,34 +170,33 @@ class SumoTrafficEnv2J(gym.Env):
         switch_term = -self.switch_penalty * switches_this_step
         wasted_term = -self.wasted_vote_penalty * wasted_votes_this_step
 
-        # NEW: imbalance bonus — reward holding green on the busier side.
-        # Only applies while NOT in yellow (yellow has no "side" to reward).
         imbalance_term = 0.0
         if self.imbalance_bonus_weight > 0:
             for tl in self.TL_IDS:
                 if self._in_yellow[tl]:
                     continue
                 ns_q, ew_q = self._get_raw_ns_ew_queue(tl)
-                imbalance = ns_q - ew_q          # positive => NS busier
-                on_ns = (self._phase[tl] == 0)   # phase 0 = NS green
-                # Reward sign: if NS busier (imbalance>0) and phase is NS -> positive.
-                # If NS busier but phase is EW -> negative (wrong side).
+                imbalance = ns_q - ew_q
+                on_ns = (self._phase[tl] == 0)
                 signed_alignment = imbalance if on_ns else -imbalance
-                imbalance_term += self.imbalance_bonus_weight * (
-                    signed_alignment / self.max_queue
-                )
+                imbalance_term += self.imbalance_bonus_weight * (signed_alignment / self.max_queue)
 
-        return queue_term + switch_term + wasted_term + imbalance_term
+        wrong_dir_term = -self.wrong_direction_penalty * sum(self._wrong_direction_this_step.values())
+
+        return queue_term + switch_term + wasted_term + imbalance_term + wrong_dir_term
 
     def _apply_action(self, tl, action):
         switched = False
         wasted_vote = False
-        self._last_hold_duration[tl] = None  # NEW: reset each call
+        self._last_hold_duration[tl] = None
+        # FIX: reset every step, not just when a switch happens — otherwise
+        # a True from a previous switch step leaks into every reward calc
+        # until the next switch overwrites it.
+        self._wrong_direction_this_step[tl] = False
 
         if self._in_yellow[tl]:
             if action == 1:
                 wasted_vote = True
-
             self._time_in_yellow[tl] += 1
             if self._time_in_yellow[tl] >= self.YELLOW_TIME:
                 self._in_yellow[tl]      = False
@@ -234,19 +216,26 @@ class SumoTrafficEnv2J(gym.Env):
                 wasted_vote = True
 
             if (action == 1 and eligible) or force_switch:
-                # NEW: capture hold duration BEFORE it gets reset on yellow entry
-                self._last_hold_duration[tl] = self._time_in_phase[tl]
+                wrong_direction = False
+                if action == 1 and not force_switch:
+                    ns_q, ew_q = self._get_raw_ns_ew_queue(tl)
+                    currently_on_ns = (self._phase[tl] == 0)
+                    leaving_busier_side = (currently_on_ns and ns_q > ew_q) or \
+                                          (not currently_on_ns and ew_q > ns_q)
+                    wrong_direction = leaving_busier_side
 
+                self._last_hold_duration[tl] = self._time_in_phase[tl]
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
                 self.conn.trafficlight.setPhaseDuration(tl, 9999)
                 self._in_yellow[tl]      = True
                 self._time_in_yellow[tl] = 0
                 switched = (action == 1)
+                self._wrong_direction_this_step[tl] = wrong_direction
 
+        # FIX: this was missing entirely — without it, step() crashes
+        # trying to unpack None on every call.
         return switched, wasted_vote
-
-    # Gymnasium API
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -260,7 +249,8 @@ class SumoTrafficEnv2J(gym.Env):
         self._time_in_phase  = {tl: 0 for tl in self.TL_IDS}
         self._in_yellow      = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow = {tl: 0 for tl in self.TL_IDS}
-        self._last_hold_duration = {tl: None for tl in self.TL_IDS}  # NEW
+        self._last_hold_duration = {tl: None for tl in self.TL_IDS}
+        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}  # FIX: reset on episode boundary too
 
         self._start_sumo()
 
@@ -290,8 +280,6 @@ class SumoTrafficEnv2J(gym.Env):
         reward  = self._get_reward(n_switches, n_wasted)
         done    = self._step_count >= self.max_steps
 
-        # NEW: raw queue + imbalance per junction, plus hold duration
-        # at the moment of any switch that just fired this step.
         raw_queues = {tl: self._get_raw_ns_ew_queue(tl) for tl in self.TL_IDS}
         imbalance  = {tl: raw_queues[tl][0] - raw_queues[tl][1] for tl in self.TL_IDS}
 
@@ -299,11 +287,12 @@ class SumoTrafficEnv2J(gym.Env):
             "local_queue": {tl: self._get_local_queue(tl) for tl in self.TL_IDS},
             "switched": switches,
             "wasted_vote": wasted_votes,
-            "ns_queue": {tl: raw_queues[tl][0] for tl in self.TL_IDS},   # NEW
-            "ew_queue": {tl: raw_queues[tl][1] for tl in self.TL_IDS},   # NEW
-            "imbalance": imbalance,                                      # NEW
-            "phase": dict(self._phase),                                 # NEW
-            "hold_duration_at_switch": dict(self._last_hold_duration),  # NEW
+            "ns_queue": {tl: raw_queues[tl][0] for tl in self.TL_IDS},
+            "ew_queue": {tl: raw_queues[tl][1] for tl in self.TL_IDS},
+            "imbalance": imbalance,
+            "phase": dict(self._phase),
+            "hold_duration_at_switch": dict(self._last_hold_duration),
+            "wrong_direction": dict(self._wrong_direction_this_step),  # NEW, handy for diagnostics
         }
 
         return obs, reward, done, False, info
