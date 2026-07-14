@@ -19,21 +19,24 @@ def make_train_env(seed=0):
         return SumoSingleJunctionEnv(
             seed=seed,
             port=8815,
-            time_dropout_prob=0.3,   # forces reliance on queue features
             randomize_routes=True,   # domain randomization -- the core fix
+            # time_dropout_prob removed: it collided with the legitimate
+            # 0.0 value at real phase-start and just added label noise
+            # instead of cleanly ablating the timing shortcut. The
+            # directional switch bonus + wasted-vote penalty in
+            # single_env.py now do the real work of discouraging
+            # cadence-based switching.
         )
     return _init
 
 
 def make_eval_env(seed=0):
     def _init():
-        # eval env: keep randomized routes (so eval reflects deployment
-        # conditions) but disable time-feature dropout so we're scoring
-        # the policy's real behavior, not a noised observation
+        # eval env: keep randomized routes so eval reflects deployment
+        # conditions
         return SumoSingleJunctionEnv(
             seed=seed,
             port=8816,
-            time_dropout_prob=0.0,
             randomize_routes=True,
         )
     return _init

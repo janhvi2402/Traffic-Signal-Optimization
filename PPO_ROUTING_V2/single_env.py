@@ -1,6 +1,5 @@
 import os
 import sys
-import random
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
@@ -13,32 +12,58 @@ if "SUMO_HOME" not in os.environ:
 sys.path += [os.path.join(os.environ["SUMO_HOME"], "tools")]
 import traci
 
-from route_gen_single import generate_single_junction_routes
-
 
 class SumoSingleJunctionEnv(gym.Env):
     """
     Single-junction Gymnasium environment.
 
-    CHANGES vs the original version (fixing the shortcut-learning bug
-    where the policy keyed off `time_in_phase` instead of queue state):
+    CHANGES vs the previous version (fixing a second shortcut-learning bug
+    on top of the randomized-routes fix: the policy was still switching
+    at a near-fixed cadence regardless of which side had the queue):
 
-      1. Route file is regenerated with randomized, independently-sampled
-         NS/EW demand on every reset() (see route_gen_single.py). This
-         breaks the fixed mapping between elapsed phase time and queue
-         buildup that let the policy ignore the queue features entirely.
+      1. REMOVED `time_dropout_prob`. The previous implementation zeroed
+         `time_in_phase` (index [5]) on a random subset of steps to try
+         to force reliance on queue features. The problem: 0.0 is also
+         the *legitimate* value at the true start of every phase, and
+         this is a feedforward MLP with no memory -- it cannot
+         distinguish "genuinely just switched" from "feature got
+         dropped at step 40". So on dropped steps the network just saw
+         mislabeled training examples rather than a cleanly ablated
+         feature, which adds noise without removing the shortcut. On
+         the other ~70% of steps the raw, low-variance, highly
+         predictive time signal was still fully available, so PPO could
+         (and did) still converge on it as the dominant feature.
+         If you want a cleaner ablation later, the correct fix is a
+         sentinel/mask feature (e.g. a 9th "time_feature_valid" flag)
+         rather than overloading value 0.0 -- but that changes the
+         observation shape and breaks the 8-feature contract that
+         SumoMultiJunctionEnv depends on for decentralized transfer, so
+         it's left out here on purpose. Do it as a deliberate, separate
+         change if you decide it's worth it.
 
-      2. Observation now has 8 features (was 7): added an explicit
-         NS-EW queue imbalance term at index [7]. This is redundant
-         information (derivable from [0] and [1]) but puts the
-         decision-relevant quantity directly in front of the network
-         instead of requiring it to compute the difference itself.
+      2. FIXED the switch bonus. The old bonus fired on every switch
+         whenever *any* NS/EW imbalance existed post-switch, using
+         abs(imbalance) with no check on which direction the phase
+         actually went. In a randomized-demand env there's essentially
+         always some imbalance, so this was close to a flat "+reward for
+         switching" term -- a direct incentive to switch on cadence
+         instead of need, independent of your `MIN_GREEN`/`MAX_GREEN`
+         mechanics. It's the same class of bug as the WASTED_VOTE issue
+         you already found and fixed on the centralized 2-junction env.
 
-      3. Optional feature dropout on `time_in_phase` (index [5]) during
-         training: with probability `time_dropout_prob`, that feature is
-         zeroed out for the step, forcing the policy to fall back on
-         queue/wait features when the timing shortcut isn't available.
-         Disabled at eval time (set time_dropout_prob=0.0).
+         Now: we snapshot the NS/EW queue state at the moment a switch
+         is *requested* (i.e. right before yellow begins), and once the
+         switch completes we check whether the phase actually moved
+         toward the side that was heavier at request time. Only then is
+         the bonus paid, scaled by how imbalanced it was. Switching away
+         from the heavier side gets a flat SWITCH_PENALTY instead.
+
+      3. ADDED WASTED_VOTE_PENALTY: requesting a switch (action == 1)
+         while still inside MIN_GREEN -- i.e. a vote that can't take
+         effect -- is now penalized, matching the fix already applied on
+         the centralized project. Previously these votes were silently
+         ignored with zero cost, so there was no signal discouraging the
+         agent from voting "switch" on every single step.
 
     Observation (8 features):
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
@@ -52,11 +77,13 @@ class SumoSingleJunctionEnv(gym.Env):
 
     Action space: Discrete(2)
         0 = keep current phase
-        1 = request phase switch (triggers yellow -> opposite green)
+        1 = request phase switch (triggers yellow -> opposite green,
+            but only takes effect once MIN_GREEN has elapsed)
 
     Reward: negative mean queue length across incoming lanes, normalised
-    by max_queue, PLUS a small bonus for switching when it actually
-    resolves a real NS/EW imbalance (see _get_reward).
+    by max_queue, PLUS a small directional bonus for switching toward the
+    heavier side, MINUS a penalty for switching away from it or for
+    voting to switch while ineligible.
     """
 
     TL_ID = "J"
@@ -78,6 +105,13 @@ class SumoSingleJunctionEnv(gym.Env):
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
+    # Reward-shaping constants for the switch decision.
+    SWITCH_BONUS_WEIGHT = 0.05   # scales the reward for a *correct* switch
+    SWITCH_PENALTY       = 0.03  # flat penalty for switching the wrong way
+    WASTED_VOTE_PENALTY  = 0.01  # penalty per step spent voting to switch
+                                  # while still inside MIN_GREEN (can't
+                                  # take effect yet)
+
     def __init__(
         self,
         cfg_path=None,
@@ -86,9 +120,7 @@ class SumoSingleJunctionEnv(gym.Env):
         max_steps=3600,
         seed=None,
         port=8815,
-        time_dropout_prob=0.0,   # set to 0.0 for eval/deployment
         randomize_routes=False,   # set to False to use a fixed route file
-        
     ):
         super().__init__()
 
@@ -106,7 +138,6 @@ class SumoSingleJunctionEnv(gym.Env):
         self.max_steps = max_steps
         self._seed     = seed
         self.port      = port
-        self.time_dropout_prob = time_dropout_prob
         self.randomize_routes  = randomize_routes
         self._episode_count = 0
 
@@ -119,13 +150,21 @@ class SumoSingleJunctionEnv(gym.Env):
         self._in_yellow      = False
         self._time_in_yellow = 0
         self._traci_started  = False
-        self._just_switched  = False
+
+        # switch-bonus bookkeeping
+        self._just_switched         = False
+        self._wasted_vote           = False
+        self._switch_req_ns_q       = None
+        self._switch_req_ew_q       = None
+        self._switch_target_phase   = None
+
+        # for diagnostics (used by the eval script; harmless otherwise)
+        self.last_switch_was_correct = None
 
     # helpers
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
-
 
         route_arg = []
         if self.randomize_routes:
@@ -160,6 +199,12 @@ class SumoSingleJunctionEnv(gym.Env):
         w = self.conn.lane.getWaitingTime(lane_id)
         return q, w
 
+    def _get_axis_queues(self):
+        """Mean halting count on NS lanes and on EW lanes, unnormalized."""
+        ns_q = np.mean([self.conn.lane.getLastStepHaltingNumber(l) for l in self.INCOMING_LANES["NS"]])
+        ew_q = np.mean([self.conn.lane.getLastStepHaltingNumber(l) for l in self.INCOMING_LANES["EW"]])
+        return ns_q, ew_q
+
     def _get_obs(self):
         ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in self.INCOMING_LANES["NS"]])
         ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in self.INCOMING_LANES["EW"]])
@@ -172,8 +217,6 @@ class SumoSingleJunctionEnv(gym.Env):
         imbalance_scaled = (np.clip(imbalance, -1.0, 1.0) + 1.0) / 2.0
 
         time_in_phase_norm = min(self._time_in_phase / self.MAX_PHASE_T, 1.0)
-        if self.time_dropout_prob > 0.0 and random.random() < self.time_dropout_prob:
-            time_in_phase_norm = 0.0
 
         obs = [
             ns_q_norm,
@@ -192,50 +235,52 @@ class SumoSingleJunctionEnv(gym.Env):
         total_wait = 0.0
         n_lanes = 0
 
-        ns_q_total = 0.0
-        ew_q_total = 0.0
-        ns_n = 0
-        ew_n = 0
-
         for axis, group in self.INCOMING_LANES.items():
             for lane in group:
-
                 q = self.conn.lane.getLastStepHaltingNumber(lane)
                 w = self.conn.lane.getWaitingTime(lane)
-
                 total_queue += q
                 total_wait += w
                 n_lanes += 1
 
-                if axis == "NS":
-                    ns_q_total += q
-                    ns_n += 1
-                else:
-                    ew_q_total += q
-                    ew_n += 1
-
-        # Average queue penalty
         queue_penalty = -(total_queue / n_lanes) / self.MAX_QUEUE
+        wait_penalty  = -(total_wait / n_lanes) / self.MAX_WAIT
 
-        # Average waiting-time penalty
-        wait_penalty = -(total_wait / n_lanes) / self.MAX_WAIT
-
-        # Weight queue more than waiting time
         reward = (
             0.7 * queue_penalty +
             0.3 * wait_penalty
         )
 
-        # Bonus only when switching helps an imbalanced intersection
+        # --- directional switch bonus / penalty ---
+        # Evaluated once, at the step the switch actually completes
+        # (yellow -> new green), using the queue snapshot taken at the
+        # moment the switch was *requested*, not the post-switch state.
         if self._just_switched:
-            imbalance = abs(
-                (ns_q_total / ns_n) -
-                (ew_q_total / ew_n)
-            ) / self.MAX_QUEUE
+            ns_req, ew_req = self._switch_req_ns_q, self._switch_req_ew_q
+            imbalance = (ns_req - ew_req) / self.MAX_QUEUE  # signed, NS-heavy positive
 
-            reward += 0.05 * imbalance
+            # phase 0 = NS green, phase 1 = EW green
+            switched_toward_ns = (self._phase == 0)
+            switched_toward_heavier = (
+                (switched_toward_ns and imbalance > 0) or
+                (not switched_toward_ns and imbalance < 0)
+            )
 
-        self._just_switched = False
+            if switched_toward_heavier:
+                reward += self.SWITCH_BONUS_WEIGHT * abs(imbalance)
+                self.last_switch_was_correct = True
+            else:
+                reward -= self.SWITCH_PENALTY
+                self.last_switch_was_correct = False
+
+            self._just_switched = False
+
+        # --- wasted-vote penalty ---
+        # Charged every step the agent votes to switch while still
+        # inside MIN_GREEN, i.e. the vote is a no-op.
+        if self._wasted_vote:
+            reward -= self.WASTED_VOTE_PENALTY
+            self._wasted_vote = False
 
         return reward
 
@@ -253,8 +298,17 @@ class SumoSingleJunctionEnv(gym.Env):
                 self._just_switched = True
         else:
             self._time_in_phase += 1
+            eligible = self._time_in_phase >= self.MIN_GREEN
             force_switch = self._time_in_phase >= self.MAX_GREEN
-            if (action == 1 and self._time_in_phase >= self.MIN_GREEN) or force_switch:
+
+            if action == 1 and not eligible and not force_switch:
+                # agent voted to switch but the vote can't take effect yet
+                self._wasted_vote = True
+
+            if (action == 1 and eligible) or force_switch:
+                # snapshot queue state *before* committing to the switch
+                self._switch_req_ns_q, self._switch_req_ew_q = self._get_axis_queues()
+
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(self.TL_ID, yellow_phase)
                 self.conn.trafficlight.setPhaseDuration(self.TL_ID, 9999)
@@ -275,6 +329,10 @@ class SumoSingleJunctionEnv(gym.Env):
         self._in_yellow      = False
         self._time_in_yellow = 0
         self._just_switched  = False
+        self._wasted_vote    = False
+        self._switch_req_ns_q = None
+        self._switch_req_ew_q = None
+        self.last_switch_was_correct = None
 
         self._start_sumo()
         self.conn.trafficlight.setPhase(self.TL_ID, self.PHASE_NS_GREEN)
