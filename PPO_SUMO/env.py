@@ -17,6 +17,29 @@ class SumoTrafficEnv2J(gym.Env):
     """
     (docstring unchanged — topology/phase details from original)
 
+    NEW (seed rotation): previously, self._seed was set once in __init__
+    and reused for every episode unless reset() was called with an
+    explicit seed. SB3's training loop only passes a seed on the very
+    first reset — every subsequent episode reset (after each 3600-step
+    episode ends) calls reset(seed=None). That meant the ENTIRE 500k-step
+    training run was replaying the identical traffic scenario every
+    episode. This explains a flat ep_rew_mean and low/noisy
+    explained_variance: the true returns had almost no variance across
+    the batch to begin with (same scenario every time), so there was
+    nothing meaningful for the value function to explain, and the policy
+    had no diversity of scenarios to generalize across.
+
+    Fix: the constructor's `seed` argument now seeds an internal RNG
+    (`self._auto_seed_rng`) used to draw a NEW SUMO seed every episode
+    when reset() is called without an explicit seed — which is the
+    normal case during training. This keeps full run-to-run
+    reproducibility (same constructor seed -> same sequence of episode
+    scenarios) while giving every individual episode a different
+    traffic pattern, exactly like test.py already does per-episode via
+    explicit seeds. Eval scripts that construct a fresh env per episode
+    with an explicit seed=ep are unaffected — they still get one
+    deterministic draw from the rotation sequence, same as before.
+
     NEW: info dict reports raw NS/EW queue, signed imbalance, and hold
     duration at switch time.
 
@@ -25,10 +48,7 @@ class SumoTrafficEnv2J(gym.Env):
 
     NEW: wrong_direction_penalty (default 0.0) — penalizes a legal,
     agent-initiated switch that abandons the side that was still
-    busier. This is the piece that specifically targets "switch the
-    instant MIN_GREEN clears, regardless of state" — SWITCH_PENALTY
-    alone taxes every switch equally, this one only taxes the wrong
-    ones.
+    busier.
     """
 
     TL_IDS = ["J1", "J2"]
@@ -66,7 +86,7 @@ class SumoTrafficEnv2J(gym.Env):
         switch_penalty = None,
         wasted_vote_penalty = None,
         imbalance_bonus_weight = None,
-        wrong_direction_penalty = None,   # NEW
+        wrong_direction_penalty = None,
     ):
         super().__init__()
 
@@ -75,7 +95,6 @@ class SumoTrafficEnv2J(gym.Env):
         self.cfg_path  = os.path.abspath(cfg_path)
         self.use_gui   = use_gui
         self.max_steps = max_steps
-        self._seed     = seed
         self.port = port
         self.max_queue = max_queue if max_queue is not None else self.MAX_QUEUE_DEFAULT
         self.switch_penalty = switch_penalty if switch_penalty is not None else self.SWITCH_PENALTY
@@ -86,11 +105,20 @@ class SumoTrafficEnv2J(gym.Env):
             imbalance_bonus_weight if imbalance_bonus_weight is not None
             else self.IMBALANCE_BONUS_WEIGHT
         )
-        # NEW
         self.wrong_direction_penalty = (
             wrong_direction_penalty if wrong_direction_penalty is not None
             else self.WRONG_DIRECTION_PENALTY
         )
+
+        # NEW: `seed` is now the reproducibility seed for the EPISODE
+        # ROTATION sequence, not a fixed single scenario. If None, the
+        # rotation sequence itself is non-reproducible (drawn from OS
+        # entropy) — fine for one-off runs, but pass an explicit seed
+        # (as train.py/test.py already do) if you want reproducible runs.
+        self._base_seed = seed
+        self._auto_seed_rng = np.random.default_rng(seed)
+        self._seed = seed  # current episode's actual SUMO seed; set for real in reset()
+        self._episode_count = 0 
 
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(14,), dtype=np.float32)
         self.action_space = spaces.MultiDiscrete([2, 2])
@@ -102,18 +130,21 @@ class SumoTrafficEnv2J(gym.Env):
         self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
         self._traci_started   = False
         self._last_hold_duration = {tl: None for tl in self.TL_IDS}
-        # FIX: must exist before the first _get_reward() call, and must
-        # default to False for every tl (not just ones that just switched)
         self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
         cmd = [binary, "-c", self.cfg_path, "--no-step-log", "--no-warnings"]
+        # self._seed is now always set by reset() before this is called
+        # (either explicit or auto-rotated), so this always takes the
+        # --seed branch — the --random branch is kept only as a fallback
+        # for the unlikely case reset() hasn't run yet.
         if self._seed is not None:
             safe_seed = int(self._seed) % 2_147_483_647
             cmd += ["--seed", str(safe_seed)]
         else:
             cmd += ["--random"]
+
         self.label = f"sim_{self.port}"
         traci.start(cmd, port=self.port, label=self.label)
         self.conn = traci.getConnection(self.label)
@@ -189,9 +220,6 @@ class SumoTrafficEnv2J(gym.Env):
         switched = False
         wasted_vote = False
         self._last_hold_duration[tl] = None
-        # FIX: reset every step, not just when a switch happens — otherwise
-        # a True from a previous switch step leaks into every reward calc
-        # until the next switch overwrites it.
         self._wrong_direction_this_step[tl] = False
 
         if self._in_yellow[tl]:
@@ -233,8 +261,6 @@ class SumoTrafficEnv2J(gym.Env):
                 switched = (action == 1)
                 self._wrong_direction_this_step[tl] = wrong_direction
 
-        # FIX: this was missing entirely — without it, step() crashes
-        # trying to unpack None on every call.
         return switched, wasted_vote
 
     def reset(self, seed=None, options=None):
@@ -243,6 +269,12 @@ class SumoTrafficEnv2J(gym.Env):
 
         if seed is not None:
             self._seed = seed
+        elif self._episode_count == 0 and self._base_seed is not None:
+            self._seed = self._base_seed
+        else:
+            self._seed = int(self._auto_seed_rng.integers(0, 2_147_483_647))
+
+        self._episode_count += 1
 
         self._step_count     = 0
         self._phase          = {tl: 0 for tl in self.TL_IDS}
@@ -250,7 +282,7 @@ class SumoTrafficEnv2J(gym.Env):
         self._in_yellow      = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow = {tl: 0 for tl in self.TL_IDS}
         self._last_hold_duration = {tl: None for tl in self.TL_IDS}
-        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}  # FIX: reset on episode boundary too
+        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
 
         self._start_sumo()
 
@@ -292,7 +324,8 @@ class SumoTrafficEnv2J(gym.Env):
             "imbalance": imbalance,
             "phase": dict(self._phase),
             "hold_duration_at_switch": dict(self._last_hold_duration),
-            "wrong_direction": dict(self._wrong_direction_this_step),  # NEW, handy for diagnostics
+            "wrong_direction": dict(self._wrong_direction_this_step),
+            "sumo_seed": self._seed,   # NEW — lets you confirm rotation is actually happening
         }
 
         return obs, reward, done, False, info

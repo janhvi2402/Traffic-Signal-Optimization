@@ -1,5 +1,10 @@
 """
 train.py
+
+seed passed to SumoTrafficEnv2J is now a REPRODUCIBILITY seed for the
+per-episode rotation sequence (see env.py), not a fixed single scenario.
+Same seed -> same reproducible sequence of different traffic scenarios
+across episodes, run to run.
 """
 
 import os
@@ -34,13 +39,11 @@ MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000
 
 # --- reward config for this run ---
-SWITCH_PENALTY = 0.2
+SWITCH_PENALTY = 0.3
 WASTED_VOTE_PENALTY = 0.03
-IMBALANCE_BONUS_WEIGHT = 0.00
-WRONG_DIRECTION_PENALTY = 0.1   # NEW — the key change this run tests
+IMBALANCE_BONUS_WEIGHT = 0.0        # dropped — sweep showed it wasn't clearly helping
+WRONG_DIRECTION_PENALTY = 0.15
 
-# Set True to instead do the 3-way SWITCH_PENALTY sweep from before.
-# Leave False for a single run with the config above, ~1hr.
 RUN_SWEEP = False
 SWEEP_SWITCH_PENALTIES = [0.15, 0.3, 0.5]
 
@@ -56,7 +59,7 @@ def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_we
             switch_penalty=switch_penalty,
             wasted_vote_penalty=wasted_vote_penalty,
             imbalance_bonus_weight=imbalance_bonus_weight,
-            wrong_direction_penalty=wrong_direction_penalty,   # NEW
+            wrong_direction_penalty=wrong_direction_penalty,
         )
     return _init
 
@@ -72,7 +75,7 @@ def make_eval_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_wei
             switch_penalty=switch_penalty,
             wasted_vote_penalty=wasted_vote_penalty,
             imbalance_bonus_weight=imbalance_bonus_weight,
-            wrong_direction_penalty=wrong_direction_penalty,   # NEW
+            wrong_direction_penalty=wrong_direction_penalty,
         )
     return _init
 
@@ -97,8 +100,13 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
     eval_env = VecNormalize(eval_env, norm_obs=False, norm_reward=False)
 
     eval_callback = EvalCallback(
-        eval_env, best_model_save_path=best_dir, eval_freq=20_000,
-        n_eval_episodes=3, deterministic=True, verbose=1,
+        eval_env,
+        best_model_save_path=best_dir,
+        eval_freq=20_000,
+        n_eval_episodes=5,   # was 3 — with rotation fixed, these now actually differ,
+                              # so a slightly bigger sample gives a more trustworthy mean
+        deterministic=True,
+        verbose=1,
     )
 
     model = PPO(
@@ -143,9 +151,6 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
 
 if __name__ == "__main__":
     if not RUN_SWEEP:
-        # single confirmatory run — saves into models/, same layout you
-        # already have, so test.py / test_diagnostic_imbalance.py need
-        # zero path changes to pick it up
         os.makedirs(MODELS_DIR, exist_ok=True)
         run_training(
             switch_penalty=SWITCH_PENALTY,
