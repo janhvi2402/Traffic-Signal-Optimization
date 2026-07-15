@@ -36,7 +36,7 @@ TOTAL_TIMESTEPS = 500_000
 # --- reward config for this run ---
 SWITCH_PENALTY = 0.2
 WASTED_VOTE_PENALTY = 0.03
-IMBALANCE_BONUS_WEIGHT = 0.04
+IMBALANCE_BONUS_WEIGHT = 0.00
 WRONG_DIRECTION_PENALTY = 0.1   # NEW — the key change this run tests
 
 # Set True to instead do the 3-way SWITCH_PENALTY sweep from before.
