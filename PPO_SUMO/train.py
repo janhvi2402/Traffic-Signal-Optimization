@@ -8,14 +8,15 @@ across episodes, run to run.
 """
 
 import os
+import sys
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback, CallbackList
 from stable_baselines3.common.utils import get_linear_fn
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
-
 
 class EntropyAnnealCallback(BaseCallback):
     def __init__(self, start=0.05, end=0.01, total_timesteps=500_000, verbose=0):
