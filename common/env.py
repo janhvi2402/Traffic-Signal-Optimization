@@ -15,40 +15,22 @@ import traci
 
 class SumoTrafficEnv2J(gym.Env):
     """
-    (docstring unchanged — topology/phase details from original)
+    (docstring: topology/phase details unchanged from original)
 
-    NEW (seed rotation): previously, self._seed was set once in __init__
-    and reused for every episode unless reset() was called with an
-    explicit seed. SB3's training loop only passes a seed on the very
-    first reset — every subsequent episode reset (after each 3600-step
-    episode ends) calls reset(seed=None). That meant the ENTIRE 500k-step
-    training run was replaying the identical traffic scenario every
-    episode. This explains a flat ep_rew_mean and low/noisy
-    explained_variance: the true returns had almost no variance across
-    the batch to begin with (same scenario every time), so there was
-    nothing meaningful for the value function to explain, and the policy
-    had no diversity of scenarios to generalize across.
+    Seed rotation, imbalance_bonus_weight, wrong_direction_penalty: all
+    unchanged from the previous version — see prior notes.
 
-    Fix: the constructor's `seed` argument now seeds an internal RNG
-    (`self._auto_seed_rng`) used to draw a NEW SUMO seed every episode
-    when reset() is called without an explicit seed — which is the
-    normal case during training. This keeps full run-to-run
-    reproducibility (same constructor seed -> same sequence of episode
-    scenarios) while giving every individual episode a different
-    traffic pattern, exactly like test.py already does per-episode via
-    explicit seeds. Eval scripts that construct a fresh env per episode
-    with an explicit seed=ep are unaffected — they still get one
-    deterministic draw from the rotation sequence, same as before.
-
-    NEW: info dict reports raw NS/EW queue, signed imbalance, and hold
-    duration at switch time.
-
-    NEW: imbalance_bonus_weight (default 0.0) — rewards holding green
-    on the side with the larger raw queue.
-
-    NEW: wrong_direction_penalty (default 0.0) — penalizes a legal,
-    agent-initiated switch that abandons the side that was still
-    busier.
+    NEW: observation now includes an explicit signed imbalance feature
+    per junction (ns_queue - ew_queue, normalised to [-1, 1]), on top of
+    the existing raw ns_queue/ew_queue values. Rationale: the network
+    previously had to implicitly learn to subtract two noisy raw
+    values to detect imbalance. Handing it the difference directly
+    removes one layer of required inference — cheap to add, doesn't
+    change reward or action logic at all. Observation shape: 14 -> 16
+    (8 features x 2 junctions instead of 7 x 2). This means a model
+    trained on the new observation space CANNOT load weights from a
+    model trained on the old 14-dim space — this is a fresh-training
+    change, not a fine-tune.
     """
 
     TL_IDS = ["J1", "J2"]
@@ -110,17 +92,18 @@ class SumoTrafficEnv2J(gym.Env):
             else self.WRONG_DIRECTION_PENALTY
         )
 
-        # NEW: `seed` is now the reproducibility seed for the EPISODE
-        # ROTATION sequence, not a fixed single scenario. If None, the
-        # rotation sequence itself is non-reproducible (drawn from OS
-        # entropy) — fine for one-off runs, but pass an explicit seed
-        # (as train.py/test.py already do) if you want reproducible runs.
         self._base_seed = seed
         self._auto_seed_rng = np.random.default_rng(seed)
-        self._seed = seed  # current episode's actual SUMO seed; set for real in reset()
-        self._episode_count = 0 
+        self._seed = seed
+        self._episode_count = 0
 
-        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(14,), dtype=np.float32)
+        # NEW: shape 14 -> 16, bounds -1..1 to allow the signed imbalance
+        # feature. All other 14 features are still in [0, 1]; np.clip in
+        # _get_obs() keeps them there, only the imbalance slot uses the
+        # wider range.
+        self.observation_space = spaces.Box(
+            low=-1.0, high=1.0, shape=(16,), dtype=np.float32
+        )
         self.action_space = spaces.MultiDiscrete([2, 2])
 
         self._step_count      = 0
@@ -135,16 +118,11 @@ class SumoTrafficEnv2J(gym.Env):
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
         cmd = [binary, "-c", self.cfg_path, "--no-step-log", "--no-warnings"]
-        # self._seed is now always set by reset() before this is called
-        # (either explicit or auto-rotated), so this always takes the
-        # --seed branch — the --random branch is kept only as a fallback
-        # for the unlikely case reset() hasn't run yet.
         if self._seed is not None:
             safe_seed = int(self._seed) % 2_147_483_647
             cmd += ["--seed", str(safe_seed)]
         else:
             cmd += ["--random"]
-
         self.label = f"sim_{self.port}"
         traci.start(cmd, port=self.port, label=self.label)
         self.conn = traci.getConnection(self.label)
@@ -172,14 +150,25 @@ class SumoTrafficEnv2J(gym.Env):
             lanes = self.INCOMING_LANES[tl]
             ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in lanes["NS"]])
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
-            obs.append(np.mean(ns_q) / self.max_queue)
-            obs.append(np.mean(ew_q) / self.max_queue)
+
+            ns_q_mean = float(np.mean(ns_q))
+            ew_q_mean = float(np.mean(ew_q))
+
+            obs.append(np.clip(ns_q_mean / self.max_queue, 0.0, 1.0))
+            obs.append(np.clip(ew_q_mean / self.max_queue, 0.0, 1.0))
             obs.append(min(np.mean(ns_w) / self.MAX_WAIT, 1.0))
             obs.append(min(np.mean(ew_w) / self.MAX_WAIT, 1.0))
             obs.append(float(self._phase[tl]))
             obs.append(min(self._time_in_phase[tl] / self.MAX_PHASE_T, 1.0))
             obs.append(float(self._in_yellow[tl]))
-        return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
+
+            # NEW: explicit signed imbalance feature, normalised to [-1, 1]
+            imbalance_norm = np.clip(
+                (ns_q_mean - ew_q_mean) / self.max_queue, -1.0, 1.0
+            )
+            obs.append(imbalance_norm)
+
+        return np.array(obs, dtype=np.float32)
 
     def _get_local_queue(self, tl):
         total, n = 0.0, 0
@@ -325,7 +314,7 @@ class SumoTrafficEnv2J(gym.Env):
             "phase": dict(self._phase),
             "hold_duration_at_switch": dict(self._last_hold_duration),
             "wrong_direction": dict(self._wrong_direction_this_step),
-            "sumo_seed": self._seed,   # NEW — lets you confirm rotation is actually happening
+            "sumo_seed": self._seed,
         }
 
         return obs, reward, done, False, info
