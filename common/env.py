@@ -15,15 +15,11 @@ import traci
 
 class SumoTrafficEnv2J(gym.Env):
     """
-    (docstring: topology/phase details unchanged from original)
-
-    Seed rotation, imbalance_bonus_weight, wrong_direction_penalty all
-    present. Observation is 14-dim (7 features x 2 junctions) — this is
-    the REVERTED version, matching the model saved in
-    models_baseline_before_wrongdir/ (73.6% improvement, J1=74.9%,
-    J2=56.2% directional agreement). The 16-dim imbalance-feature
-    variant was tested separately and found to hurt J1 performance —
-    see env_16dim_imbalance_feature.py for that version if needed.
+    14-dim observation (7 features x 2 junctions). Includes seed
+    rotation (different traffic scenario per training episode, exact
+    match on first reset for fair test-time comparison), and optional
+    wrong_direction_penalty (penalizes a legal switch that abandons the
+    side that was still busier).
     """
 
     TL_IDS = ["J1", "J2"]
@@ -90,7 +86,6 @@ class SumoTrafficEnv2J(gym.Env):
         self._seed = seed
         self._episode_count = 0
 
-        # REVERTED: back to 14-dim, bounds 0..1 (no imbalance feature)
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(14,), dtype=np.float32
         )
@@ -135,8 +130,6 @@ class SumoTrafficEnv2J(gym.Env):
         return float(ns_q), float(ew_q)
 
     def _get_obs(self):
-        # REVERTED: no imbalance feature, back to the original 7-feature
-        # per-junction layout, clipped to [0, 1]
         obs = []
         for tl in self.TL_IDS:
             lanes = self.INCOMING_LANES[tl]
