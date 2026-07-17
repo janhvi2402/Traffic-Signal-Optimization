@@ -1,5 +1,6 @@
 import os
 import sys
+import csv
 import random
 import numpy as np
 import pickle
@@ -7,6 +8,7 @@ import pickle
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
 QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
+TRAINLOG_PATH = os.path.join(SCRIPT_DIR, "training_log.csv")   # NEW: per-episode log for diagnostics
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -152,6 +154,11 @@ def update_q(state, action, reward, next_state):
 def train():
     global EPSILON, alpha
 
+    # NEW: fresh training log for this run, used by diagnostic.py
+    log_file = open(TRAINLOG_PATH, "w", newline="")
+    log_writer = csv.writer(log_file)
+    log_writer.writerow(["episode", "steps", "total_reward", "n_states", "epsilon", "alpha"])
+
     for episode in range(EPISODES):
 
         traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings"])
@@ -189,15 +196,22 @@ def train():
         EPSILON = max(MIN_EPSILON, EPSILON * EPSILON_DECAY)
         alpha   = max(ALPHA_MIN, alpha * ALPHA_DECAY)
 
+        # NEW: log this episode's stats for later convergence plots
+        log_writer.writerow([episode + 1, steps, total_reward, len(q_table), EPSILON, alpha])
+        log_file.flush()
+
         print(
             f"Ep {episode+1:3d} | Steps: {steps:4d} | Reward: {total_reward:8.2f} | "
             f"States: {len(q_table):4d} | eps: {EPSILON:.3f} | alpha: {alpha:.4f}"
         )
 
+    log_file.close()
+
     with open(QTABLE_PATH, "wb") as f:
         pickle.dump(q_table, f)
 
     print(f"\nTraining complete — qtable.pkl saved. Final state coverage: {len(q_table)} states")
+    print(f"Per-episode log saved to {TRAINLOG_PATH}")
 
 
 if __name__ == "__main__":
