@@ -23,12 +23,14 @@ models/ containing ppo_sumo_2junction.zip + vec_normalize_sumo.pkl.
 """
 
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
