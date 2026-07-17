@@ -1,23 +1,17 @@
 """
 train.py
-
-Same reward config, seed rotation, and wrong_direction_penalty as the
-previous run — nothing about those changed. The only difference this
-run is the observation space itself (see env.py: added explicit
-imbalance feature, 14 -> 16 dims). Saved to a NEW folder so the
-current working model (models/) is untouched and stays available as
-a fallback/comparison point.
+Config: switch_penalty=0.3, wrong_direction_penalty=0.15 — the run that
+previously produced 73.6% wait-time improvement, J1=74.9%/J2=56.2%
+directional agreement. Saves directly to models/.
 """
 
 import os
-import sys
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback, CallbackList
 from stable_baselines3.common.utils import get_linear_fn
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 
@@ -42,16 +36,10 @@ lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000
 
-# Same config as the last (successful) run — only the observation
-# space changed, in env.py.
 SWITCH_PENALTY = 0.3
 WASTED_VOTE_PENALTY = 0.03
 IMBALANCE_BONUS_WEIGHT = 0.0
 WRONG_DIRECTION_PENALTY = 0.15
-
-# NEW: separate output folder — keeps your current working model
-# (models/ppo_sumo_2junction.zip, 73.6% improvement) untouched.
-OUTPUT_FOLDER_NAME = "obs_imbalance_feature"
 
 
 def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
@@ -140,7 +128,6 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
           f"wasted_vote_penalty={wasted_vote_penalty}, "
           f"imbalance_bonus_weight={imbalance_bonus_weight}, "
           f"wrong_direction_penalty={wrong_direction_penalty}")
-    print(f"Observation space: 16-dim (includes explicit imbalance feature)")
     print(f"Output -> {out_dir}")
     print(f"{'='*70}\n")
 
@@ -156,14 +143,13 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
 
 
 if __name__ == "__main__":
-    out_dir = os.path.join(MODELS_DIR, OUTPUT_FOLDER_NAME)
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
     run_training(
         switch_penalty=SWITCH_PENALTY,
         wasted_vote_penalty=WASTED_VOTE_PENALTY,
         imbalance_bonus_weight=IMBALANCE_BONUS_WEIGHT,
         wrong_direction_penalty=WRONG_DIRECTION_PENALTY,
-        out_dir=out_dir,
+        out_dir=MODELS_DIR,
         train_port=8813,
         eval_port=8814,
     )

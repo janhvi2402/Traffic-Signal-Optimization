@@ -1,27 +1,3 @@
-"""
-test_diagnostic_imbalance.py
-
-Runs the imbalance diagnostics (switch rate vs ceiling, hold-duration/
-imbalance correlation, directional agreement at switch time) across
-MULTIPLE trained models in one pass and prints a single comparison
-table + plot.
-
-IMPORTANT CAVEAT (read before interpreting results):
-The sweep_sp* models were trained WITHOUT the seed-rotation fix — each
-was trained on a single repeated SUMO scenario for its entire run. The
-"wrong_dir run" model (models/ root) was trained WITH seed rotation
-fixed AND with wrong_direction_penalty added, both changed in the same
-run. So this table is informative but NOT a clean single-variable
-comparison — an improvement in the new model could come from either
-change. To isolate wrong_direction_penalty specifically, run one more
-config: seed rotation fixed, wrong_direction_penalty=0.0, everything
-else matching the new run.
-
-Configure SWEEP_CONFIGS below to point at whatever folders you have.
-Each entry needs: a label (for the table/plot) and a folder under
-models/ containing ppo_sumo_2junction.zip + vec_normalize_sumo.pkl.
-"""
-
 import os
 import sys
 import numpy as np
@@ -30,7 +6,6 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
@@ -39,10 +14,8 @@ MAX_STEPS   = 3600
 N_EPISODES  = 5
 TL_IDS      = ["J1", "J2"]
 
-# --- configure which models to compare ---
-# label -> folder name under models/. Use "" for the base models/ folder itself.
 SWEEP_CONFIGS = [
-    ("baseline (sp=0.3, wd=0.15, 14-dim obs)", ""),   # "" = models/ root, now restored
+    ("baseline (sp=0.3, wd=0.15)", ""),   # "" = models/ root
 ]
 
 
@@ -167,13 +140,9 @@ def evaluate_config(label, folder):
 
 def print_comparison_table(results):
     results = [r for r in results if r is not None]
-
-    print("\n" + "=" * 100)
-    print("NOTE: sweep_sp* models were trained WITHOUT the seed-rotation fix")
-    print("(single repeated scenario per run). The first row was trained WITH")
-    print("seed rotation fixed AND wrong_direction_penalty added — both changed")
-    print("in the same run, so this is NOT a clean single-variable comparison.")
-    print("=" * 100)
+    if not results:
+        print("\nNo results to show — check [skip] messages above for path issues.\n")
+        return
 
     print("\n" + "=" * 100)
     print("COMPARISON ACROSS CONFIGS")
@@ -188,15 +157,12 @@ def print_comparison_table(results):
                   f"{d['correlation']:>10.3f}{d['mean_hold']:>12.1f}"
                   f"{d['directional_agreement_pct']:>13.1f}%")
     print("=" * 100)
-    print("Watch: as switch_penalty rises, switch % should drop. If")
-    print("directional agreement DOESN'T rise alongside it, the penalty")
-    print("is suppressing switching in general, not making switches smarter.")
-    print("Also watch whether the new run (seed rotation + wrong_direction_penalty)")
-    print("clears 50% (coin flip) more convincingly than the old sweep configs did.")
 
 
 def plot_comparison(results):
     results = [r for r in results if r is not None]
+    if not results:
+        return
     labels = [r["label"] for r in results]
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))

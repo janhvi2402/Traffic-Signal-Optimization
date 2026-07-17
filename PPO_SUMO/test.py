@@ -16,6 +16,7 @@ NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
 
 RECORD = False
 
+
 def make_env(seed=0):
     def _init():
         return SumoTrafficEnv2J(

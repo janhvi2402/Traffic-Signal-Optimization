@@ -1,22 +1,10 @@
-"""
-plot_switch_timing.py
-
-Logs the step index of every switch event per junction across several
-episodes, then plots a histogram of switch timing over the 3600-step
-episode. Answers: is switching clustered in specific time windows
-(reacting to traffic) or spread uniformly (mechanical cycling)?
-
-Runs against your CURRENT model (models/ root) — no retraining needed.
-"""
-
 import os
 import numpy as np
-import sys
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
+
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -103,8 +91,7 @@ def main():
     for tl in TL_IDS:
         counts, _ = np.histogram(all_switch_steps[tl], bins=bins)
         cv = np.std(counts) / np.mean(counts) if np.mean(counts) > 0 else float("nan")
-        print(f"{tl}: coefficient of variation across time bins = {cv:.3f} "
-              f"(near 0 = uniform/mechanical, higher = time-varying/reactive)")
+        print(f"{tl}: coefficient of variation across time bins = {cv:.3f}")
 
 
 if __name__ == "__main__":
