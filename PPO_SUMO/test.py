@@ -8,11 +8,12 @@ from stable_baselines3.common.env_util import make_vec_env
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from baseline import run_offset_fixed_time
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
-NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
+MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "obs_imbalance_feature", "ppo_sumo_2junction")
+NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "obs_imbalance_feature", "vec_normalize_sumo.pkl")
 
 # --- set True when you want to record a video, False for fast headless eval ---
 RECORD = False
