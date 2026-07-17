@@ -1,99 +1,64 @@
-| rollout/                |              |
-|    ep_len_mean          | 3.6e+03      |
-|    ep_rew_mean          | -696         |
-| time/                   |              |
-|    fps                  | 98           |
-|    iterations           | 122          |
-|    time_elapsed         | 5057         |
-|    total_timesteps      | 499712       |
-| train/                  |              |
-|    approx_kl            | 0.0038609847 |
-|    clip_fraction        | 0.0206       |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.778       |
-|    explained_variance   | 0.123        |
-|    learning_rate        | 5.22e-05     |
-|    loss                 | 0.143        |
-|    n_updates            | 484          |
-|    policy_gradient_loss | -0.00297     |
-|    value_loss           | 0.856        |
-------------------------------------------
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-Eval num_timesteps=500000, episode_reward=-664.59 +/- 11.99
-Episode length: 3600.00 +/- 0.00
-------------------------------------------
-| eval/                   |              |
-|    mean_ep_length       | 3.6e+03      |
-|    mean_reward          | -665         |
-| time/                   |              |
-|    total_timesteps      | 500000       |
-| train/                  |              |
-|    approx_kl            | 0.0019515691 |
-|    clip_fraction        | 0.00208      |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.769       |
-|    explained_variance   | 0.113        |
-|    learning_rate        | 5.01e-05     |
-|    loss                 | 0.0394       |
-|    n_updates            | 488          |
-|    policy_gradient_loss | -0.00102     |
-|    value_loss           | 0.789        |
-------------------------------------------
- Retrying in 1 seconds
----------------------------------
-| rollout/           |          |
-|    ep_len_mean     | 3.6e+03  |
-|    ep_rew_mean     | -696     |
-| time/              |          |
-|    fps             | 97       |
-|    iterations      | 123      |
-|    time_elapsed    | 5176     |
-|    total_timesteps | 503808   |
----------------------------------
-Training done -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/models/obs_imbalance_feature/ppo_sumo_2junction.zip
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/plot_switch_timing.py
-/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
-  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
-Traceback (most recent call last):
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/plot_switch_timing.py", line 111, in <module>
-    main()
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/plot_switch_timing.py", line 63, in main
-    base_env = VecNormalize.load(NORMALIZER_PATH, base_env)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/vec_normalize.py", line 319, in load
-    vec_normalize.set_venv(venv)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/vec_normalize.py", line 171, in set_venv
-    utils.check_shape_equal(self.observation_space, venv.observation_space)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/utils.py", line 251, in check_shape_equal
-    assert space1.shape == space2.shape, "spaces must have the same shape"
-AssertionError: spaces must have the same shape
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py
-/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
-  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
-Traceback (most recent call last):
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py", line 32, in <module>
-    from env import SumoTrafficEnv2J
-ModuleNotFoundError: No module named 'env'
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py
 
-Evaluating: wrong_dir run (sp=0.3, wd=0.15) (models/) ...
-/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
-  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
-Traceback (most recent call last):
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py", line 252, in <module>
-    main()
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py", line 244, in main
-    result = evaluate_config(label, folder)
-  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py", line 126, in evaluate_config
-    base_env = VecNormalize.load(norm_path, base_env)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/vec_normalize.py", line 319, in load
-    vec_normalize.set_venv(venv)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/vec_normalize.py", line 171, in set_venv
-    utils.check_shape_equal(self.observation_space, venv.observation_space)
-  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/utils.py", line 251, in check_shape_equal
-    assert space1.shape == space2.shape, "spaces must have the same shape"
-AssertionError: spaces must have the same shape
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/plot_switch_timing.py
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 0 done — J1: 216 switches, J2: 224 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 1 done — J1: 215 switches, J2: 225 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 2 done — J1: 217 switches, J2: 226 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 3 done — J1: 217 switches, J2: 224 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 4 done — J1: 216 switches, J2: 225 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/switch_timing_plot.png
+J1: coefficient of variation across time bins = 0.027 (near 0 = uniform/mechanical, higher = time-varying/reactive)
+J2: coefficient of variation across time bins = 0.047 (near 0 = uniform/mechanical, higher = time-varying/reactive)
+
+
+
+@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py
+
+Evaluating: obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs) (obs_imbalance_feature) ...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+
+====================================================================================================
+NOTE: sweep_sp* models were trained WITHOUT the seed-rotation fix
+(single repeated scenario per run). The first row was trained WITH
+seed rotation fixed AND wrong_direction_penalty added — both changed
+in the same run, so this is NOT a clean single-variable comparison.
+====================================================================================================
+
+====================================================================================================
+COMPARISON ACROSS CONFIGS
+====================================================================================================
+config                          tl    switch %ceil      corr   mean hold  dir. agree %
+----------------------------------------------------------------------------------------------------
+obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)J1           78.6%     0.014        13.5         54.2%
+obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)J2           80.5%    -0.027        13.1         58.5%
+====================================================================================================
+
+
+
+Metric                             Fixed-time            PPO
+────────────────────────────────────────────────────────────
+Mean avg wait/step (s)                955.24s        283.44s
+Std                                    40.34s         18.96s
+
+Improvement over fixed-time: 70.3%
