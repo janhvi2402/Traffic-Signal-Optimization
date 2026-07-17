@@ -42,7 +42,7 @@ TL_IDS      = ["J1", "J2"]
 # --- configure which models to compare ---
 # label -> folder name under models/. Use "" for the base models/ folder itself.
 SWEEP_CONFIGS = [
-    ("obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)", "obs_imbalance_feature"),
+    ("baseline (sp=0.3, wd=0.15, 14-dim obs)", "models_baseline_before_wrongdir"),
 ]
 
 
