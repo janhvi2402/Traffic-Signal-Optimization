@@ -17,20 +17,13 @@ class SumoTrafficEnv2J(gym.Env):
     """
     (docstring: topology/phase details unchanged from original)
 
-    Seed rotation, imbalance_bonus_weight, wrong_direction_penalty: all
-    unchanged from the previous version — see prior notes.
-
-    NEW: observation now includes an explicit signed imbalance feature
-    per junction (ns_queue - ew_queue, normalised to [-1, 1]), on top of
-    the existing raw ns_queue/ew_queue values. Rationale: the network
-    previously had to implicitly learn to subtract two noisy raw
-    values to detect imbalance. Handing it the difference directly
-    removes one layer of required inference — cheap to add, doesn't
-    change reward or action logic at all. Observation shape: 14 -> 16
-    (8 features x 2 junctions instead of 7 x 2). This means a model
-    trained on the new observation space CANNOT load weights from a
-    model trained on the old 14-dim space — this is a fresh-training
-    change, not a fine-tune.
+    Seed rotation, imbalance_bonus_weight, wrong_direction_penalty all
+    present. Observation is 14-dim (7 features x 2 junctions) — this is
+    the REVERTED version, matching the model saved in
+    models_baseline_before_wrongdir/ (73.6% improvement, J1=74.9%,
+    J2=56.2% directional agreement). The 16-dim imbalance-feature
+    variant was tested separately and found to hurt J1 performance —
+    see env_16dim_imbalance_feature.py for that version if needed.
     """
 
     TL_IDS = ["J1", "J2"]
@@ -97,12 +90,9 @@ class SumoTrafficEnv2J(gym.Env):
         self._seed = seed
         self._episode_count = 0
 
-        # NEW: shape 14 -> 16, bounds -1..1 to allow the signed imbalance
-        # feature. All other 14 features are still in [0, 1]; np.clip in
-        # _get_obs() keeps them there, only the imbalance slot uses the
-        # wider range.
+        # REVERTED: back to 14-dim, bounds 0..1 (no imbalance feature)
         self.observation_space = spaces.Box(
-            low=-1.0, high=1.0, shape=(16,), dtype=np.float32
+            low=0.0, high=1.0, shape=(14,), dtype=np.float32
         )
         self.action_space = spaces.MultiDiscrete([2, 2])
 
@@ -145,30 +135,23 @@ class SumoTrafficEnv2J(gym.Env):
         return float(ns_q), float(ew_q)
 
     def _get_obs(self):
+        # REVERTED: no imbalance feature, back to the original 7-feature
+        # per-junction layout, clipped to [0, 1]
         obs = []
         for tl in self.TL_IDS:
             lanes = self.INCOMING_LANES[tl]
             ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in lanes["NS"]])
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
 
-            ns_q_mean = float(np.mean(ns_q))
-            ew_q_mean = float(np.mean(ew_q))
-
-            obs.append(np.clip(ns_q_mean / self.max_queue, 0.0, 1.0))
-            obs.append(np.clip(ew_q_mean / self.max_queue, 0.0, 1.0))
+            obs.append(np.mean(ns_q) / self.max_queue)
+            obs.append(np.mean(ew_q) / self.max_queue)
             obs.append(min(np.mean(ns_w) / self.MAX_WAIT, 1.0))
             obs.append(min(np.mean(ew_w) / self.MAX_WAIT, 1.0))
             obs.append(float(self._phase[tl]))
             obs.append(min(self._time_in_phase[tl] / self.MAX_PHASE_T, 1.0))
             obs.append(float(self._in_yellow[tl]))
 
-            # NEW: explicit signed imbalance feature, normalised to [-1, 1]
-            imbalance_norm = np.clip(
-                (ns_q_mean - ew_q_mean) / self.max_queue, -1.0, 1.0
-            )
-            obs.append(imbalance_norm)
-
-        return np.array(obs, dtype=np.float32)
+        return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
 
     def _get_local_queue(self, tl):
         total, n = 0.0, 0
