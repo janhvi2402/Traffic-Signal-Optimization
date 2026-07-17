@@ -1,17 +1,21 @@
 """
 train.py
-Config: switch_penalty=0.3, wrong_direction_penalty=0.15 — the run that
-previously produced 73.6% wait-time improvement, J1=74.9%/J2=56.2%
-directional agreement. Saves directly to models/.
+Reward config tuned to push queue-density-driven switching:
+SWITCH_PENALTY=0.4, WRONG_DIRECTION_PENALTY=0.25 (both raised from the
+73.6%-improvement run), combined with MIN_GREEN=15 in env.py.
+Seed rotation intact — training sees a different SUMO scenario every
+episode. PPO(seed=42) added so this run is reproducible.
 """
 
 import os
+import sys
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback, CallbackList
 from stable_baselines3.common.utils import get_linear_fn
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 
@@ -36,10 +40,10 @@ lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000
 
-SWITCH_PENALTY = 0.3
+SWITCH_PENALTY = 0.4
 WASTED_VOTE_PENALTY = 0.03
 IMBALANCE_BONUS_WEIGHT = 0.0
-WRONG_DIRECTION_PENALTY = 0.15
+WRONG_DIRECTION_PENALTY = 0.25
 
 
 def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
@@ -117,6 +121,7 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
         vf_coef=0.75,
         max_grad_norm=0.5,
         target_kl=0.03,
+        seed=42,
         verbose=1,
     )
 
@@ -127,7 +132,8 @@ def run_training(switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
     print(f"Training run: switch_penalty={switch_penalty}, "
           f"wasted_vote_penalty={wasted_vote_penalty}, "
           f"imbalance_bonus_weight={imbalance_bonus_weight}, "
-          f"wrong_direction_penalty={wrong_direction_penalty}")
+          f"wrong_direction_penalty={wrong_direction_penalty}, "
+          f"MIN_GREEN={SumoTrafficEnv2J.MIN_GREEN}")
     print(f"Output -> {out_dir}")
     print(f"{'='*70}\n")
 

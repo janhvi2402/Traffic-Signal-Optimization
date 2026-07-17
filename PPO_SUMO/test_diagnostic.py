@@ -6,6 +6,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
@@ -15,7 +16,7 @@ N_EPISODES  = 5
 TL_IDS      = ["J1", "J2"]
 
 SWEEP_CONFIGS = [
-    ("baseline (sp=0.3, wd=0.15)", ""),   # "" = models/ root
+    ("sp=0.4, wd=0.25, MIN_GREEN=15", ""),
 ]
 
 

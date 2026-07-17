@@ -15,11 +15,25 @@ import traci
 
 class SumoTrafficEnv2J(gym.Env):
     """
-    14-dim observation (7 features x 2 junctions). Includes seed
-    rotation (different traffic scenario per training episode, exact
-    match on first reset for fair test-time comparison), and optional
-    wrong_direction_penalty (penalizes a legal switch that abandons the
-    side that was still busier).
+    14-dim observation (7 features x 2 junctions).
+
+    Seed rotation: `seed` passed to the constructor seeds an internal
+    RNG. The FIRST reset() on this env instance uses that seed literally
+    (so fresh-env-per-episode test scripts get exact scenario control).
+    Every reset() AFTER the first draws a NEW SUMO scenario from the
+    rotation RNG — this is what gives a long-lived training env genuine
+    scenario diversity across its ~139 episodes in a 500k-step run,
+    instead of replaying one fixed scenario.
+
+    MIN_GREEN raised 10 -> 15: diagnostics on earlier runs showed the
+    majority of switches landing exactly at the old MIN_GREEN=10 floor,
+    which is unrealistically short for a real signal. Raising the floor
+    removes that option outright.
+
+    WRONG_DIRECTION_PENALTY: penalizes a legal, agent-initiated switch
+    that abandons the side that was still busier — this is the term
+    that specifically targets "switch on the clock" vs "switch because
+    that side is genuinely busier".
     """
 
     TL_IDS = ["J1", "J2"]
@@ -37,14 +51,14 @@ class SumoTrafficEnv2J(gym.Env):
     MAX_QUEUE_DEFAULT = 30
     MAX_WAIT    = 120
     MAX_PHASE_T = 60
-    MIN_GREEN   = 10
+    MIN_GREEN   = 15    # was 10
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    SWITCH_PENALTY = 0.15
+    SWITCH_PENALTY = 0.4             # was 0.3
     WASTED_VOTE_PENALTY = 0.03
     IMBALANCE_BONUS_WEIGHT = 0.0
-    WRONG_DIRECTION_PENALTY = 0.0
+    WRONG_DIRECTION_PENALTY = 0.25   # was 0.15
 
     def __init__(
         self,
