@@ -11,7 +11,7 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from common_baseline import run_offset_fixed_time
+from common import run_offset_fixed_time
 
 GREEN_TIME  = 10
 YELLOW_TIME = 3
@@ -165,6 +165,8 @@ N_EPISODES = 1 if RECORD else 5
 ql_waits = []
 fixed_waits = []
 coverages = []
+ql_arrived = []       # NEW
+ql_steps_list = []    # NEW
 
 for ep in range(N_EPISODES):
     # Fixed-time baseline
@@ -182,6 +184,8 @@ for ep in range(N_EPISODES):
     _, ql_avg_wait, arrived, steps, coverage = run_qlearning_episode(seed=ep)
     ql_waits.append(ql_avg_wait)
     coverages.append(coverage)
+    ql_arrived.append(arrived)     # NEW
+    ql_steps_list.append(steps)    # NEW
 
 fixed_mean = np.mean(fixed_waits)
 ql_mean    = np.mean(ql_waits)
@@ -202,6 +206,12 @@ with open(os.path.join(RESULTS_DIR, "qlearning_vs_fixed_unified.json"), "w") as 
         "qlearning_mean_wait": ql_mean,
         "improvement_pct": improvement,
         "mean_state_coverage": float(np.mean(coverages)),
+        # NEW: per-episode arrays, needed by diagnostic.py for test-time plots
+        "fixed_waits_per_episode": [float(x) for x in fixed_waits],
+        "ql_waits_per_episode": [float(x) for x in ql_waits],
+        "coverage_per_episode": [float(x) for x in coverages],
+        "ql_arrived_per_episode": [int(x) for x in ql_arrived],
+        "ql_steps_per_episode": [int(x) for x in ql_steps_list],
     }, f, indent=2)
 
 print(f"Saved: {os.path.join(RESULTS_DIR, 'qlearning_vs_fixed_unified.json')}")
