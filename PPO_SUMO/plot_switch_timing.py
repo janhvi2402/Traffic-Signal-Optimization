@@ -20,8 +20,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
-NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
+MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "obs_imbalance_feature", "ppo_sumo_2junction")
+NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "obs_imbalance_feature", "vec_normalize_sumo.pkl")
 MAX_STEPS       = 3600
 N_EPISODES      = 5
 TL_IDS          = ["J1", "J2"]
