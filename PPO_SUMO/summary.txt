@@ -1,0 +1,7 @@
+config                          | wait_improve% | J1_dir_agree% | J2_dir_agree% | J1_corr | J2_corr | notes
+baseline (sp=0.15, no fixes)    | ?             | ~64.9         | ~60.9         | 0.627   | 0.174   | single fixed scenario, pre-seed-fix
+sweep sp=0.15 (no seed fix)     | ?             | 74.0          | 78.2          | 0.099   | 0.201   | imbalance_bonus=0.03, near-ceiling switching
+sweep sp=0.3 (no seed fix)      | ?             | 68.9          | 74.2          | -0.296  | -0.008  |
+sweep sp=0.5 (no seed fix)      | ?             | 30.7          | 45.7          | 0.520   | 0.598   | below coin-flip on J2 dir agreement... wait check
+current (sp=0.3, wd=0.15, seed fixed) | 73.6    | 74.9          | 56.2          | 0.469   | -0.003  | best overall; J2 still weak
+obs_imbalance_feature (pending) | ?             | ?             | ?             | ?       | ?       | testing whether explicit imbalance feature helps J2

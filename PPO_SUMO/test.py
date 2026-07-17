@@ -11,8 +11,8 @@ from baseline import run_offset_fixed_time
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH      = os.path.join(SCRIPT_DIR, "models_baseline_before_wrongdir", "ppo_sumo_2junction")
-NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models_baseline_before_wrongdir", "vec_normalize_sumo.pkl")
+MODEL_PATH      = os.path.join(SCRIPT_DIR, "models", "ppo_sumo_2junction")
+NORMALIZER_PATH = os.path.join(SCRIPT_DIR, "models", "vec_normalize_sumo.pkl")
 
 RECORD = False
 

@@ -1,64 +1,18 @@
+cd PPO_SUMO
 
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/plot_switch_timing.py
- Retrying in 1 seconds
- Retrying in 1 seconds
-episode 0 done — J1: 216 switches, J2: 224 switches
- Retrying in 1 seconds
- Retrying in 1 seconds
-episode 1 done — J1: 215 switches, J2: 225 switches
- Retrying in 1 seconds
- Retrying in 1 seconds
-episode 2 done — J1: 217 switches, J2: 226 switches
- Retrying in 1 seconds
- Retrying in 1 seconds
-episode 3 done — J1: 217 switches, J2: 224 switches
- Retrying in 1 seconds
- Retrying in 1 seconds
-episode 4 done — J1: 216 switches, J2: 225 switches
-/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
-  self.window.set_wmclass("matplotlib", "Matplotlib")
+# back up the just-trained 16-dim model first, in case you want it later
+mkdir -p models_imbalance_feature_16dim
+cp models/ppo_sumo_2junction.zip models_imbalance_feature_16dim/
+cp models/vec_normalize_sumo.pkl models_imbalance_feature_16dim/
+cp -r models/best models_imbalance_feature_16dim/best
 
-Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/switch_timing_plot.png
-J1: coefficient of variation across time bins = 0.027 (near 0 = uniform/mechanical, higher = time-varying/reactive)
-J2: coefficient of variation across time bins = 0.047 (near 0 = uniform/mechanical, higher = time-varying/reactive)
+# now restore the working 14-dim model into models/
+cp models_baseline_before_wrongdir/ppo_sumo_2junction.zip models/ppo_sumo_2junction.zip
+cp models_baseline_before_wrongdir/vec_normalize_sumo.pkl models/vec_normalize_sumo.pkl
+cp -r models_baseline_before_wrongdir/best models/best
 
-
-
-@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_SUMO/test_diagnostic.py
-
-Evaluating: obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs) (obs_imbalance_feature) ...
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-
-====================================================================================================
-NOTE: sweep_sp* models were trained WITHOUT the seed-rotation fix
-(single repeated scenario per run). The first row was trained WITH
-seed rotation fixed AND wrong_direction_penalty added — both changed
-in the same run, so this is NOT a clean single-variable comparison.
-====================================================================================================
-
-====================================================================================================
-COMPARISON ACROSS CONFIGS
-====================================================================================================
-config                          tl    switch %ceil      corr   mean hold  dir. agree %
-----------------------------------------------------------------------------------------------------
-obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)J1           78.6%     0.014        13.5         54.2%
-obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)J2           80.5%    -0.027        13.1         58.5%
-====================================================================================================
-
-
-
-Metric                             Fixed-time            PPO
-────────────────────────────────────────────────────────────
-Mean avg wait/step (s)                955.24s        283.44s
-Std                                    40.34s         18.96s
-
-Improvement over fixed-time: 70.3%
+python -c "
+from stable_baselines3 import PPO
+m = PPO.load('models/ppo_sumo_2junction')
+print('obs space:', m.observation_space)
+"
