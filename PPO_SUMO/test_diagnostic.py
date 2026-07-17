@@ -42,13 +42,7 @@ TL_IDS      = ["J1", "J2"]
 # --- configure which models to compare ---
 # label -> folder name under models/. Use "" for the base models/ folder itself.
 SWEEP_CONFIGS = [
-    ("wrong_dir run (sp=0.3, wd=0.15)", ""),            # UPDATED label — models/ now
-                                                           # holds the seed-rotation-fixed,
-                                                           # wrong_direction_penalty run,
-                                                           # NOT the old sp=0.15 baseline
-    ("sweep sp=0.15",                   "sweep_sp015"),  # trained WITHOUT seed rotation fix
-    ("sweep sp=0.3",                    "sweep_sp03"),   # trained WITHOUT seed rotation fix
-    ("sweep sp=0.5",                    "sweep_sp05"),   # trained WITHOUT seed rotation fix
+    ("obs_imbalance_feature (sp=0.3, wd=0.15, 16-dim obs)", "obs_imbalance_feature"),
 ]
 
 
