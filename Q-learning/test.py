@@ -11,7 +11,12 @@ else:
     sys.exit("SUMO_HOME not set")
 
 import traci
-from common import run_offset_fixed_time
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+COMMON_DIR = os.path.join(SCRIPT_DIR, "..", "common")
+sys.path.append(COMMON_DIR)
+
+from baseline import run_offset_fixed_time
 
 GREEN_TIME  = 10
 YELLOW_TIME = 3
