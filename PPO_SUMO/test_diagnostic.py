@@ -16,7 +16,7 @@ N_EPISODES  = 5
 TL_IDS      = ["J1", "J2"]
 
 SWEEP_CONFIGS = [
-    ("sp=0.4, wd=0.25, MIN_GREEN=15", ""),
+    ("sp=0.3, wd=0.2, MIN_GREEN=12", ""),
 ]
 
 

@@ -9,6 +9,7 @@ run a given plot belongs to.
 """
 
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -16,6 +17,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
 
 SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +31,7 @@ BIN_SIZE        = 100
 # NEW: label this run manually if you want a custom note (e.g. which
 # machine, or a short description) — combined automatically with the
 # live reward-config values read from env.py below.
-RUN_LABEL = "sp0.4_wd0.25_mingreen15"   # <-- update this each time you retrain
+RUN_LABEL = "sp0.3_wd0.2_mingreen12"   # <-- update this each time you retrain
 
 
 def make_env(seed):

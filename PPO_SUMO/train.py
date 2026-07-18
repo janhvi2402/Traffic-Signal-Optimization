@@ -40,10 +40,10 @@ lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000
 
-SWITCH_PENALTY = 0.4
+SWITCH_PENALTY = 0.3
 WASTED_VOTE_PENALTY = 0.03
 IMBALANCE_BONUS_WEIGHT = 0.0
-WRONG_DIRECTION_PENALTY = 0.25
+WRONG_DIRECTION_PENALTY = 0.2
 
 
 def make_train_env(seed, switch_penalty, wasted_vote_penalty, imbalance_bonus_weight,
