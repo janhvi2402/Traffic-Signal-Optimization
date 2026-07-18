@@ -7,7 +7,7 @@ env = SumoTrafficEnv2J(
     max_steps=200,
     seed=0,
 )
-
+#no need for this file
 obs, _ = env.reset()
 for step in range(200):
     obs, r, done, _, _ = env.step([0, 0])  # never request switch
