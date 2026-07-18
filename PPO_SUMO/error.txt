@@ -1087,7 +1087,7 @@ Episode length: 3600.00 +/- 0.00
 |    clip_range           | 0.2          |
 |    entropy_loss         | -1.13        |
 |    explained_variance   | 0.234        |
-|    learning_rate        | 0.000153     |
+|    learning_rate        | 0.000153     | 
 |    loss                 | 0.484        |
 |    n_updates            | 288          |
 |    policy_gradient_loss | 5.06e-05     |
