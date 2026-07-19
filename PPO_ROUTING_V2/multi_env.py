@@ -19,32 +19,36 @@ class SumoMultiJunctionEnv(gym.Env):
     it independently to J1 and J2 by splitting the 16-dim obs into two
     8-dim halves (see test.py / diagnostic.py / plot_switch_timing.py).
 
-    Brought in line with centralized env.py's per-junction structure and
-    fixes:
-      - MIN_GREEN = 15 (was 10), matching centralized and single_env.py.
-      - SWITCH_PENALTY = 0.4, WASTED_VOTE_PENALTY = 0.03,
-        WRONG_DIRECTION_PENALTY = 0.25, IMBALANCE_BONUS_WEIGHT = 0.0,
-        same values as centralized/single_env.py -- this env's own
-        _get_reward() is only actually used if you ever train centrally
-        on it, but is kept correct and consistent so "good behavior"
-        means the same thing in both envs.
-      - Per-tl dict structure (self._phase, self._time_in_phase, etc.)
-        and info dict field names (local_queue, switched, wasted_vote,
-        ns_queue, ew_queue, imbalance, phase, hold_duration_at_switch,
-        wrong_direction, sumo_seed) now match centralized env.py's
-        per-tl dicts exactly.
-      - Seed rotation identical scheme to centralized/single_env.py.
+    CHANGED, matching single_env.py's fixes (see that file's docstring
+    for the full diagnosis -- summary: the previous config, aligned to
+    centralized's IMBALANCE_BONUS_WEIGHT=0.0 / fixed MIN_GREEN=15,
+    produced a 0.982 J1-vs-J2 switch-timing correlation and a negative
+    hold-duration/imbalance correlation):
 
-    Deliberately KEPT DIFFERENT from centralized (necessary for the
-    transfer-testing workflow):
-      - 8 features per junction (16 total), not 7 (14 total): includes
-        the signed NS-EW imbalance feature at index [7] of each
-        junction's slice, because that's the observation contract
-        single_env.py's policy was trained on. Splitting obs[0:8] /
-        obs[8:16] only produces valid inputs for that policy if this
-        matches.
-      - randomize_routes=True by default, via route_gen_multi -- same
-        reasoning as single_env.py.
+      - IMBALANCE_BONUS_WEIGHT back on (0.0 -> 0.4), dense per-junction,
+        every step -- same reasoning as single_env.py.
+      - SWITCH_PENALTY lowered (0.4 -> 0.15), WRONG_DIRECTION_PENALTY
+        trimmed (0.25 -> 0.2).
+      - MIN_GREEN is now randomized INDEPENDENTLY PER JUNCTION, per
+        episode (self._min_green["J1"] != self._min_green["J2"] in
+        general) -- this is the direct fix for the 0.982 correlation.
+        With both junctions sharing one fixed MIN_GREEN, they had a
+        shared clock to switch on together regardless of their own
+        (independently randomized) local demand -- that's coordinated
+        by construction, not because either one is reading its own
+        queue. Decorrelating MIN_GREEN removes that shared landmark, so
+        any remaining synchrony has to come from genuinely correlated
+        demand, not the environment's own timing.
+
+    Observation (per junction, 8 features x 2 = 16 total) -- unchanged:
+        [0] mean queue length on NS incoming lanes   (normalised 0-1)
+        [1] mean queue length on EW incoming lanes   (normalised 0-1)
+        [2] mean waiting time on NS lanes            (normalised, cap 120 s)
+        [3] mean waiting time on EW lanes            (normalised, cap 120 s)
+        [4] current phase index (0=NS green, 1=EW green)
+        [5] time spent in current phase              (normalised, cap 60 s)
+        [6] 1 if currently in yellow, else 0
+        [7] NS-EW queue imbalance, signed             (normalised, [0,1])
     """
 
     TL_IDS = ["J1", "J2"]
@@ -62,14 +66,15 @@ class SumoMultiJunctionEnv(gym.Env):
     MAX_QUEUE_DEFAULT = 30
     MAX_WAIT    = 120
     MAX_PHASE_T = 60
-    MIN_GREEN   = 15   # was 10
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    SWITCH_PENALTY           = 0.4
-    WASTED_VOTE_PENALTY      = 0.03
-    IMBALANCE_BONUS_WEIGHT   = 0.0
-    WRONG_DIRECTION_PENALTY  = 0.25
+    MIN_GREEN_RANGE = (10, 20)   # was fixed MIN_GREEN=15, shared by both junctions
+
+    SWITCH_PENALTY           = 0.15
+    WASTED_VOTE_PENALTY      = 0.02
+    IMBALANCE_BONUS_WEIGHT   = 0.4
+    WRONG_DIRECTION_PENALTY  = 0.2
 
     def __init__(
         self,
@@ -85,6 +90,7 @@ class SumoMultiJunctionEnv(gym.Env):
         wasted_vote_penalty=None,
         imbalance_bonus_weight=None,
         wrong_direction_penalty=None,
+        min_green_range=None,
     ):
         super().__init__()
 
@@ -111,6 +117,7 @@ class SumoMultiJunctionEnv(gym.Env):
         self.wrong_direction_penalty = (
             wrong_direction_penalty if wrong_direction_penalty is not None else self.WRONG_DIRECTION_PENALTY
         )
+        self.min_green_range = min_green_range if min_green_range is not None else self.MIN_GREEN_RANGE
 
         self._base_seed = seed
         self._auto_seed_rng = np.random.default_rng(seed)
@@ -125,6 +132,7 @@ class SumoMultiJunctionEnv(gym.Env):
         self._time_in_phase   = {tl: 0 for tl in self.TL_IDS}
         self._in_yellow       = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
+        self._min_green       = {tl: self.min_green_range[0] for tl in self.TL_IDS}
         self._traci_started   = False
         self._last_hold_duration = {tl: None for tl in self.TL_IDS}
         self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
@@ -247,8 +255,9 @@ class SumoMultiJunctionEnv(gym.Env):
                 self.conn.trafficlight.setPhaseDuration(tl, 9999)
         else:
             self._time_in_phase[tl] += 1
+            min_green = self._min_green[tl]
+            eligible = self._time_in_phase[tl] >= min_green
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
-            eligible = self._time_in_phase[tl] >= self.MIN_GREEN
 
             if action == 1 and not eligible and not force_switch:
                 wasted_vote = True
@@ -285,6 +294,13 @@ class SumoMultiJunctionEnv(gym.Env):
             self._seed = int(self._auto_seed_rng.integers(0, 2_147_483_647))
 
         self._episode_count += 1
+
+        # independently randomized MIN_GREEN per junction -- the direct
+        # fix for J1/J2 sharing a synchronized clock
+        lo, hi = self.min_green_range
+        self._min_green = {
+            tl: int(self.np_random.integers(lo, hi + 1)) for tl in self.TL_IDS
+        }
 
         self._step_count     = 0
         self._phase          = {tl: 0 for tl in self.TL_IDS}
@@ -333,6 +349,7 @@ class SumoMultiJunctionEnv(gym.Env):
             "ew_queue": {tl: raw_queues[tl][1] for tl in self.TL_IDS},
             "imbalance": imbalance,
             "phase": dict(self._phase),
+            "min_green": dict(self._min_green),
             "hold_duration_at_switch": dict(self._last_hold_duration),
             "wrong_direction": dict(self._wrong_direction_this_step),
             "sumo_seed": self._seed,

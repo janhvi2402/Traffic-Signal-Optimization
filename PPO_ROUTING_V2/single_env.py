@@ -18,49 +18,59 @@ class SumoSingleJunctionEnv(gym.Env):
     TRAIN on this env. Test the resulting model on SumoMultiJunctionEnv
     (multi_env.py) by splitting the 16-dim obs into two 8-dim halves.
 
-    This brings single_env.py in line 1:1 with the centralized 2-junction
-    env.py's proven fixes, adapted to one junction:
+    REVERTED/CHANGED vs the "aligned to centralized" version, based on
+    diagnostics from that run (mean hold ~20 steps against MIN_GREEN=15,
+    hold-duration/imbalance correlation -0.83, J1-vs-J2 switch-timing
+    correlation 0.982, explained_variance negative for the whole run):
 
-      - MIN_GREEN raised 10 -> 15 (FIXED, not randomized). Same reasoning
-        as centralized: diagnostics showed switches clustering exactly at
-        the old floor: raising it removes that specific escape hatch
-        outright, rather than trying to average it out with a random
-        range.
-      - SWITCH_PENALTY 0.15 -> 0.4, WRONG_DIRECTION_PENALTY (new) = 0.25:
-        same values that measurably improved the centralized run. The old
-        SWITCH_BONUS_WEIGHT (a bonus for switching toward the heavier
-        side) is REMOVED -- diagnosed as a "+reward for switching whenever
-        any imbalance exists" shortcut, since some imbalance is nearly
-        always present under randomized demand. WRONG_DIRECTION_PENALTY
-        replaces it: a flat, symmetric cost for abandoning the side that
-        was still busier, computed the same way centralized does it (a
-        snapshot at the moment a voluntary switch is requested, compared
-        against which side is actually heavier at that moment).
-      - Seed rotation is IDENTICAL to centralized's: `seed` seeds a
-        rotation RNG; the first reset() uses it literally, every
-        subsequent reset() (the normal case during SB3 training) draws a
-        new SUMO seed.
-      - info dict field names now MATCH centralized's exactly
-        (local_queue, switched, wasted_vote, ns_queue, ew_queue,
-        imbalance, phase, hold_duration_at_switch, wrong_direction,
-        sumo_seed) so diagnostic/plotting code is portable between the
-        two projects with minimal changes.
+      1. IMBALANCE_BONUS_WEIGHT back ON (0.0 -> 0.4). Centralized trains
+         directly on the real, fixed 2-junction network and could get by
+         on SWITCH_PENALTY + WRONG_DIRECTION_PENALTY alone. single_env.py
+         trains under domain-randomized routes that change every episode
+         -- a much noisier distribution -- and with IMBALANCE_BONUS_WEIGHT
+         at 0, the ONLY signal tied to "which side is busier" was the
+         sparse, event-only wrong_direction_penalty (fires once, at the
+         instant of a switch). There was nothing rewarding it for HOLDING
+         the correct side step-by-step in between switches, so it fell
+         back to the cheap strategy: become eligible, wait a few steps,
+         switch -- a near-fixed cadence with noise, which is exactly what
+         the negative hold/imbalance correlation showed. This term is now
+         dense (paid every single step, not just at switch), so waiting
+         longer on the genuinely busier side accumulates real reward
+         instead of just avoiding a penalty.
 
-    Deliberately KEPT DIFFERENT from centralized (both are necessary for
-    the single-junction-train / multi-junction-test workflow, not bugs):
-      - randomize_routes=True by default: centralized trains directly on
-        the real 2-junction network and never needed synthetic demand.
-        single_env.py trains on an isolated single junction, so route_gen
-        supplies the domain-randomized demand that stands in for "the
-        rest of the network's traffic arriving here".
-      - Observation is 8 features (not 7): includes an explicit signed
-        NS-EW imbalance feature at index [7]. multi_env.py's 16-dim obs
-        is built by concatenating two of these 8-feature blocks, so this
-        single-junction policy can be applied independently to J1 and J2
-        without retraining -- that split only works if the two envs
-        agree on this 8-feature layout.
+      2. SWITCH_PENALTY lowered 0.4 -> 0.15. At 0.4, with ~150-185
+         switches/episode, switch penalties alone accounted for a large,
+         discontinuous fraction of total episode return (up to ~-74 out
+         of ~-225 mean episode reward) -- a much harder target for the
+         value function to fit than the smooth per-step queue/wait terms,
+         which likely contributed to explained_variance staying negative
+         for the entire 500k-step run. Lowering it reduces that
+         reward-scale mismatch while WRONG_DIRECTION_PENALTY and the
+         restored IMBALANCE_BONUS_WEIGHT still discourage cadence-only
+         switching.
 
-    Observation (8 features):
+      3. MIN_GREEN is RANDOMIZED again (10-20, sampled fresh per episode,
+         NOT observable) instead of the fixed 15 used to match
+         centralized. This directly targets the 0.982 J1-vs-J2
+         switch-timing correlation: two junctions sharing one fixed
+         MIN_GREEN gives them a shared clock they can both switch on
+         regardless of their own (independently randomized) local demand
+         -- looking "coordinated" for free, without either one actually
+         reading its own queue. Removing the fixed floor removes that
+         shortcut. (multi_env.py randomizes it INDEPENDENTLY per junction
+         for the same reason -- see that file.)
+
+      4. WRONG_DIRECTION_PENALTY trimmed slightly, 0.25 -> 0.2, so it and
+         the restored dense imbalance bonus don't double-penalize the
+         same behavior into instability.
+
+    Retrain from scratch with this config -- don't warm-start from the
+    previous checkpoint, since its value function is calibrated to a
+    reward scale (SWITCH_PENALTY=0.4, IMBALANCE_BONUS_WEIGHT=0.0) that no
+    longer matches.
+
+    Observation (8 features) -- unchanged contract:
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
         [1] mean queue length on EW incoming lanes   (normalised 0-1)
         [2] mean waiting time on NS lanes            (normalised, cap 120s)
@@ -86,14 +96,15 @@ class SumoSingleJunctionEnv(gym.Env):
     MAX_QUEUE_DEFAULT = 30
     MAX_WAIT    = 120
     MAX_PHASE_T = 60
-    MIN_GREEN   = 15   # was 10, matching centralized's raised floor
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    SWITCH_PENALTY           = 0.4    # was SWITCH_BONUS_WEIGHT=0.05/SWITCH_PENALTY=0.15
-    WASTED_VOTE_PENALTY      = 0.03   # was 0.01
-    IMBALANCE_BONUS_WEIGHT   = 0.0    # off by default, matching centralized's chosen config
-    WRONG_DIRECTION_PENALTY  = 0.25   # new -- replaces the old switch bonus
+    MIN_GREEN_RANGE = (10, 20)   # was fixed MIN_GREEN=15
+
+    SWITCH_PENALTY           = 0.15   # was 0.4
+    WASTED_VOTE_PENALTY      = 0.02   # was 0.03
+    IMBALANCE_BONUS_WEIGHT   = 0.4    # was 0.0
+    WRONG_DIRECTION_PENALTY  = 0.2    # was 0.25
 
     def __init__(
         self,
@@ -109,6 +120,7 @@ class SumoSingleJunctionEnv(gym.Env):
         wasted_vote_penalty=None,
         imbalance_bonus_weight=None,
         wrong_direction_penalty=None,
+        min_green_range=None,
     ):
         super().__init__()
 
@@ -136,8 +148,9 @@ class SumoSingleJunctionEnv(gym.Env):
         self.wrong_direction_penalty = (
             wrong_direction_penalty if wrong_direction_penalty is not None else self.WRONG_DIRECTION_PENALTY
         )
+        self.min_green_range = min_green_range if min_green_range is not None else self.MIN_GREEN_RANGE
 
-        # seed rotation -- identical scheme to centralized env.py.
+        # seed rotation -- same scheme as before.
         self._base_seed = seed
         self._auto_seed_rng = np.random.default_rng(seed)
         self._seed = seed
@@ -153,6 +166,7 @@ class SumoSingleJunctionEnv(gym.Env):
         self._time_in_yellow = 0
         self._traci_started  = False
 
+        self.MIN_GREEN = self.min_green_range[0]  # placeholder; real value set in reset()
         self._last_hold_duration = None
         self._wrong_direction_this_step = False
 
@@ -252,6 +266,10 @@ class SumoSingleJunctionEnv(gym.Env):
         wait_penalty  = -(total_wait / n_lanes) / self.MAX_WAIT
         reward = 0.7 * queue_penalty + 0.3 * wait_penalty
 
+        # dense, every step: reward for currently holding green on the
+        # side with the larger raw queue. This is what was missing --
+        # with this at 0, nothing rewarded holding correctly BETWEEN
+        # switches, only the instant of the switch itself.
         if self.imbalance_bonus_weight > 0 and not self._in_yellow:
             ns_q, ew_q = self._get_raw_ns_ew_queue()
             raw_imbalance = ns_q - ew_q
@@ -288,8 +306,8 @@ class SumoSingleJunctionEnv(gym.Env):
                 self.conn.trafficlight.setPhaseDuration(self.TL_ID, 9999)
         else:
             self._time_in_phase += 1
-            force_switch = self._time_in_phase >= self.MAX_GREEN
             eligible = self._time_in_phase >= self.MIN_GREEN
+            force_switch = self._time_in_phase >= self.MAX_GREEN
 
             if action == 1 and not eligible and not force_switch:
                 wasted_vote = True
@@ -331,6 +349,9 @@ class SumoSingleJunctionEnv(gym.Env):
 
         self._episode_count += 1
 
+        lo, hi = self.min_green_range
+        self.MIN_GREEN = int(self.np_random.integers(lo, hi + 1))
+
         self._step_count     = 0
         self._phase          = 0
         self._time_in_phase  = 0
@@ -364,6 +385,7 @@ class SumoSingleJunctionEnv(gym.Env):
             "ew_queue": ew_q,
             "imbalance": ns_q - ew_q,
             "phase": self._phase,
+            "min_green": self.MIN_GREEN,
             "hold_duration_at_switch": self._last_hold_duration,
             "wrong_direction": self._wrong_direction_this_step,
             "sumo_seed": self._seed,

@@ -15,18 +15,31 @@ lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 
 TOTAL_TIMESTEPS = 500_000
 
-# reward config -- matches the values that measurably improved the
-# centralized 2-junction run (SWITCH_PENALTY 0.3->0.4,
-# WRONG_DIRECTION_PENALTY 0.15->0.25, MIN_GREEN 10->15 is set directly
-# in single_env.py's class constant, not overridden here)
-SWITCH_PENALTY          = 0.4
-WASTED_VOTE_PENALTY     = 0.03
-IMBALANCE_BONUS_WEIGHT  = 0.0
-WRONG_DIRECTION_PENALTY = 0.25
+# Reward config -- corrected after diagnosing the previous run (mean
+# hold ~20 steps against MIN_GREEN=15, hold/imbalance correlation
+# -0.83, J1-vs-J2 switch-timing correlation 0.982). See single_env.py's
+# docstring for the full reasoning behind each change:
+#   - IMBALANCE_BONUS_WEIGHT restored (0.0 -> 0.4): dense, every-step
+#     signal for holding the genuinely busier side; this was the
+#     missing piece that let the policy fall back to switching on a
+#     bare cadence.
+#   - SWITCH_PENALTY lowered (0.4 -> 0.15): at 0.4 it was large enough
+#     relative to the per-step queue/wait terms to destabilize the
+#     value function (explained_variance was negative the whole run).
+#   - WRONG_DIRECTION_PENALTY trimmed (0.25 -> 0.2) so it doesn't
+#     double-penalize alongside the restored imbalance bonus.
+#   - MIN_GREEN is randomized per episode inside single_env.py itself
+#     (MIN_GREEN_RANGE, not a train.py setting) -- removes the fixed
+#     floor that let J1/J2 share a synchronized switching clock in
+#     multi_env.py.
+SWITCH_PENALTY          = 0.15
+WASTED_VOTE_PENALTY     = 0.02
+IMBALANCE_BONUS_WEIGHT  = 0.4
+WRONG_DIRECTION_PENALTY = 0.2
 
 
 class EntropyAnnealCallback(BaseCallback):
-    def __init__(self, start=0.02, end=0.01, total_timesteps=TOTAL_TIMESTEPS, verbose=0):
+    def __init__(self, start=0.03, end=0.01, total_timesteps=TOTAL_TIMESTEPS, verbose=0):
         super().__init__(verbose)
         self.start = start
         self.end = end
@@ -78,7 +91,11 @@ if __name__ == "__main__":
         deterministic=True,
         verbose=1,
     )
-    entropy_callback = EntropyAnnealCallback(start=0.02, end=0.01, total_timesteps=TOTAL_TIMESTEPS)
+    # slightly higher starting entropy (0.02 -> 0.03) than the previous
+    # run -- retraining from scratch on a changed reward landscape
+    # benefits from a bit more exploration before annealing down, so it
+    # doesn't re-converge onto the same cheap cadence shortcut early
+    entropy_callback = EntropyAnnealCallback(start=0.03, end=0.01, total_timesteps=TOTAL_TIMESTEPS)
     callbacks = CallbackList([eval_callback, entropy_callback])
 
     model = PPO(
@@ -92,7 +109,7 @@ if __name__ == "__main__":
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0.02,   # overridden step-by-step by EntropyAnnealCallback
+        ent_coef=0.03,   # overridden step-by-step by EntropyAnnealCallback
         vf_coef=0.5,
         max_grad_norm=0.5,
         target_kl=0.03,
@@ -105,8 +122,10 @@ if __name__ == "__main__":
           f"wasted_vote_penalty={WASTED_VOTE_PENALTY}, "
           f"imbalance_bonus_weight={IMBALANCE_BONUS_WEIGHT}, "
           f"wrong_direction_penalty={WRONG_DIRECTION_PENALTY}, "
-          f"MIN_GREEN={SumoSingleJunctionEnv.MIN_GREEN}")
+          f"MIN_GREEN_RANGE={SumoSingleJunctionEnv.MIN_GREEN_RANGE}")
     print(f"Output -> {MODELS_DIR}")
+    print("NOTE: retrained from scratch -- do not warm-start from a checkpoint")
+    print("trained under the previous reward config, its value function won't transfer.")
     print(f"{'='*70}\n")
 
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=callbacks)

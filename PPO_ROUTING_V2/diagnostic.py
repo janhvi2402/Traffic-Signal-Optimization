@@ -39,6 +39,7 @@ def run_episode(model, env):
         "switch_agrees_with_imbalance": [],
         "wrong_direction_count": 0,
         "n_switches": 0,
+        "min_green_used": env.MIN_GREEN,   # randomized per episode in reset()
     }
     current_hold_imbalance = []
 
@@ -73,13 +74,14 @@ def run_episode(model, env):
 
 def aggregate(all_logs):
     agg = {"hold_durations": [], "hold_mean_abs_imbalance": [], "agrees": [],
-           "wrong_direction_count": 0, "n_switches": 0}
+           "wrong_direction_count": 0, "n_switches": 0, "min_greens_used": []}
     for log in all_logs:
         agg["hold_durations"].extend(log["hold_durations"])
         agg["hold_mean_abs_imbalance"].extend(log["hold_mean_abs_imbalance"])
         agg["agrees"].extend(log["switch_agrees_with_imbalance"])
         agg["wrong_direction_count"] += log["wrong_direction_count"]
         agg["n_switches"] += log["n_switches"]
+        agg["min_greens_used"].append(log["min_green_used"])
     return agg
 
 
@@ -96,7 +98,11 @@ def main():
               f"{log['wrong_direction_count']} wrong-direction")
 
     agg = aggregate(all_logs)
-    max_switches_possible = MAX_STEPS / (SumoSingleJunctionEnv.MIN_GREEN + SumoSingleJunctionEnv.YELLOW_TIME)
+    mean_min_green = float(np.mean(agg["min_greens_used"]))
+    # ceiling uses the MEAN of the min_green values actually sampled
+    # this run (MIN_GREEN is randomized per episode, not fixed) --
+    # exact per-episode ceilings vary slightly with each episode's draw
+    max_switches_possible = MAX_STEPS / (mean_min_green + SumoSingleJunctionEnv.YELLOW_TIME)
 
     durations  = np.array(agg["hold_durations"])
     imbalances = np.array(agg["hold_mean_abs_imbalance"])
@@ -112,8 +118,10 @@ def main():
     wrong_pct = 100 * agg["wrong_direction_count"] / max(n_switches, 1)
 
     print("\n" + "=" * 70)
-    print(f"SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN={SumoSingleJunctionEnv.MIN_GREEN}, "
+    print(f"SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN_RANGE={SumoSingleJunctionEnv.MIN_GREEN_RANGE}, "
+          f"mean sampled this run={mean_min_green:.1f}, "
           f"switch_penalty={SumoSingleJunctionEnv.SWITCH_PENALTY}, "
+          f"imbalance_bonus_weight={SumoSingleJunctionEnv.IMBALANCE_BONUS_WEIGHT}, "
           f"wrong_direction_penalty={SumoSingleJunctionEnv.WRONG_DIRECTION_PENALTY})")
     print("=" * 70)
     print(f"Total switches across {N_EPISODES} episodes: {n_switches}")

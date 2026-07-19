@@ -72,8 +72,10 @@ def run_decentralized(model, n_episodes=5, collect_divergence=False):
             if steps % 50 == 0:
                 print(
                     f"step {steps}: "
-                    f"q_j1={obs_j1[0]:.2f}/{obs_j1[1]:.2f} imb_j1={obs_j1[7]:.2f} a_j1={a_j1} | "
-                    f"q_j2={obs_j2[0]:.2f}/{obs_j2[1]:.2f} imb_j2={obs_j2[7]:.2f} a_j2={a_j2}"
+                    f"q_j1={obs_j1[0]:.2f}/{obs_j1[1]:.2f} imb_j1={obs_j1[7]:.2f} a_j1={a_j1} "
+                    f"minG_j1={env._min_green['J1']} | "
+                    f"q_j2={obs_j2[0]:.2f}/{obs_j2[1]:.2f} imb_j2={obs_j2[7]:.2f} a_j2={a_j2} "
+                    f"minG_j2={env._min_green['J2']}"
                 )
 
             obs, reward, done, _, info = env.step([a_j1, a_j2])
