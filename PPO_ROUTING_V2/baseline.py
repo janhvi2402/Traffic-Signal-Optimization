@@ -3,6 +3,7 @@ import traci
 J1 = "J1"
 J2 = "J2"
 
+
 def run_offset_fixed_time(cycle_ns=42, cycle_ew=42, yellow=3, max_steps=100000):
     """
     Fixed-time baseline for the multi-junction (J1/J2) network only.

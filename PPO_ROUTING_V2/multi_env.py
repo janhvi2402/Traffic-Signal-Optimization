@@ -15,36 +15,43 @@ import traci
 
 class SumoMultiJunctionEnv(gym.Env):
     """
-    2-junction Gymnasium environment.
+    TEST env: load a SumoSingleJunctionEnv-trained model here and apply
+    it independently to J1 and J2 by splitting the 16-dim obs into two
+    8-dim halves (see test.py / diagnostic.py / plot_switch_timing.py).
 
-    CHANGED: observation is now 8 features per junction (16 total, was
-    14) to match the updated SumoSingleJunctionEnv — added an explicit
-    NS-EW queue imbalance term at index [7] of each junction's slice.
-    This keeps a single-junction-trained policy's input layout valid
-    when applied decentralized to J1 and J2 here (see run_decentralized).
+    Brought in line with centralized env.py's per-junction structure and
+    fixes:
+      - MIN_GREEN = 15 (was 10), matching centralized and single_env.py.
+      - SWITCH_PENALTY = 0.4, WASTED_VOTE_PENALTY = 0.03,
+        WRONG_DIRECTION_PENALTY = 0.25, IMBALANCE_BONUS_WEIGHT = 0.0,
+        same values as centralized/single_env.py -- this env's own
+        _get_reward() is only actually used if you ever train centrally
+        on it, but is kept correct and consistent so "good behavior"
+        means the same thing in both envs.
+      - Per-tl dict structure (self._phase, self._time_in_phase, etc.)
+        and info dict field names (local_queue, switched, wasted_vote,
+        ns_queue, ew_queue, imbalance, phase, hold_duration_at_switch,
+        wrong_direction, sumo_seed) now match centralized env.py's
+        per-tl dicts exactly.
+      - Seed rotation identical scheme to centralized/single_env.py.
 
-    Observation (per junction, 8 features x 2 = 16 total)
-        [0] mean queue length on NS incoming lanes   (normalised 0-1)
-        [1] mean queue length on EW incoming lanes   (normalised 0-1)
-        [2] mean waiting time on NS lanes            (normalised, cap 120 s)
-        [3] mean waiting time on EW lanes            (normalised, cap 120 s)
-        [4] current phase index (0=NS green, 1=EW green)
-        [5] time spent in current phase              (normalised, cap 60 s)
-        [6] 1 if currently in yellow, else 0
-        [7] NS-EW queue imbalance, signed             (normalised, [0,1])
+    Deliberately KEPT DIFFERENT from centralized (necessary for the
+    transfer-testing workflow):
+      - 8 features per junction (16 total), not 7 (14 total): includes
+        the signed NS-EW imbalance feature at index [7] of each
+        junction's slice, because that's the observation contract
+        single_env.py's policy was trained on. Splitting obs[0:8] /
+        obs[8:16] only produces valid inputs for that policy if this
+        matches.
+      - randomize_routes=True by default, via route_gen_multi -- same
+        reasoning as single_env.py.
     """
 
     TL_IDS = ["J1", "J2"]
 
     INCOMING_LANES = {
-        "J1": {
-            "NS": ["N1_J1_0", "S1_J1_0"],
-            "EW": ["J2_J1_0", "W_J1_0"],
-        },
-        "J2": {
-            "NS": ["N2_J2_0", "S2_J2_0"],
-            "EW": ["E_J2_0",  "J1_J2_0"],
-        },
+        "J1": {"NS": ["N1_J1_0", "S1_J1_0"], "EW": ["J2_J1_0", "W_J1_0"]},
+        "J2": {"NS": ["N2_J2_0", "S2_J2_0"], "EW": ["E_J2_0",  "J1_J2_0"]},
     }
 
     PHASE_NS_GREEN  = 0
@@ -52,46 +59,63 @@ class SumoMultiJunctionEnv(gym.Env):
     PHASE_EW_GREEN  = 2
     PHASE_EW_YELLOW = 3
 
-    MAX_QUEUE   = 30
+    MAX_QUEUE_DEFAULT = 30
     MAX_WAIT    = 120
     MAX_PHASE_T = 60
-    MIN_GREEN   = 10
+    MIN_GREEN   = 15   # was 10
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
+    SWITCH_PENALTY           = 0.4
+    WASTED_VOTE_PENALTY      = 0.03
+    IMBALANCE_BONUS_WEIGHT   = 0.0
+    WRONG_DIRECTION_PENALTY  = 0.25
+
     def __init__(
-    self,
-    cfg_path=None,
-    route_out_dir=None,
-    use_gui=False,
-    max_steps=3600,
-    seed=None,
-    port=8813,
-    randomize_routes=False,
+        self,
+        cfg_path=None,
+        route_out_dir=None,
+        use_gui=False,
+        max_steps=3600,
+        seed=None,
+        port=8813,
+        randomize_routes=True,
+        max_queue=None,
+        switch_penalty=None,
+        wasted_vote_penalty=None,
+        imbalance_bonus_weight=None,
+        wrong_direction_penalty=None,
     ):
         super().__init__()
 
         if cfg_path is None:
             cfg_path = os.path.join(os.path.dirname(__file__), "network", "multi_junction.sumocfg")
-        self.cfg_path  = os.path.abspath(cfg_path)
+        self.cfg_path = os.path.abspath(cfg_path)
         if route_out_dir is None:
-            route_out_dir = os.path.join(
-                os.path.dirname(__file__),
-                "network",
-                "_generated"
-            )
-
-        self.route_out_path = os.path.join(
-            route_out_dir,
-            f"multi_routes_{port}.rou.xml"
-        )
+            route_out_dir = os.path.join(os.path.dirname(__file__), "network", "_generated")
+        self.route_out_path = os.path.join(route_out_dir, f"multi_routes_{port}.rou.xml")
 
         self.randomize_routes = randomize_routes
-        self._episode_count = 0
         self.use_gui   = use_gui
         self.max_steps = max_steps
-        self._seed     = seed
         self.port = port
+
+        self.max_queue = max_queue if max_queue is not None else self.MAX_QUEUE_DEFAULT
+        self.switch_penalty = switch_penalty if switch_penalty is not None else self.SWITCH_PENALTY
+        self.wasted_vote_penalty = (
+            wasted_vote_penalty if wasted_vote_penalty is not None else self.WASTED_VOTE_PENALTY
+        )
+        self.imbalance_bonus_weight = (
+            imbalance_bonus_weight if imbalance_bonus_weight is not None else self.IMBALANCE_BONUS_WEIGHT
+        )
+        self.wrong_direction_penalty = (
+            wrong_direction_penalty if wrong_direction_penalty is not None else self.WRONG_DIRECTION_PENALTY
+        )
+
+        self._base_seed = seed
+        self._auto_seed_rng = np.random.default_rng(seed)
+        self._seed = seed
+        self._episode_count = 0
 
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(16,), dtype=np.float32)
         self.action_space = spaces.MultiDiscrete([2, 2])
@@ -101,36 +125,22 @@ class SumoMultiJunctionEnv(gym.Env):
         self._time_in_phase   = {tl: 0 for tl in self.TL_IDS}
         self._in_yellow       = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow  = {tl: 0 for tl in self.TL_IDS}
-        self._just_switched   = {tl: False for tl in self.TL_IDS}
         self._traci_started   = False
+        self._last_hold_duration = {tl: None for tl in self.TL_IDS}
+        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
 
         route_arg = []
-
         if self.randomize_routes:
-
             episode_seed = (self._seed or 0) * 100003 + self._episode_count
-
             generate_multi_junction_routes(
-                self.route_out_path,
-                episode_seed,
-                sim_end=self.max_steps
+                self.route_out_path, episode_seed, sim_end=self.max_steps
             )
+            route_arg = ["--route-files", self.route_out_path]
 
-            route_arg = [
-                "--route-files",
-                self.route_out_path
-            ]
-
-        cmd = [
-            binary,
-            "-c",
-            self.cfg_path,
-            "--no-step-log",
-            "--no-warnings"
-        ] + route_arg
+        cmd = [binary, "-c", self.cfg_path, "--no-step-log", "--no-warnings"] + route_arg
         if self._seed is not None:
             safe_seed = int(self._seed) % 2_147_483_647
             cmd += ["--seed", str(safe_seed)]
@@ -152,6 +162,20 @@ class SumoMultiJunctionEnv(gym.Env):
         w = self.conn.lane.getWaitingTime(lane_id)
         return q, w
 
+    def _get_raw_ns_ew_queue(self, tl):
+        lanes = self.INCOMING_LANES[tl]
+        ns_q = np.mean([self.conn.lane.getLastStepHaltingNumber(l) for l in lanes["NS"]])
+        ew_q = np.mean([self.conn.lane.getLastStepHaltingNumber(l) for l in lanes["EW"]])
+        return float(ns_q), float(ew_q)
+
+    def _get_local_queue(self, tl):
+        total, n = 0.0, 0
+        for group in self.INCOMING_LANES[tl].values():
+            for lane in group:
+                total += self.conn.lane.getLastStepHaltingNumber(lane)
+                n += 1
+        return total / n
+
     def _get_obs(self):
         obs = []
         for tl in self.TL_IDS:
@@ -160,8 +184,8 @@ class SumoMultiJunctionEnv(gym.Env):
             ns_q, ns_w = zip(*[self._get_lane_stat(l) for l in lanes["NS"]])
             ew_q, ew_w = zip(*[self._get_lane_stat(l) for l in lanes["EW"]])
 
-            ns_q_norm = np.mean(ns_q) / self.MAX_QUEUE
-            ew_q_norm = np.mean(ew_q) / self.MAX_QUEUE
+            ns_q_norm = np.mean(ns_q) / self.max_queue
+            ew_q_norm = np.mean(ew_q) / self.max_queue
             imbalance = np.clip(ns_q_norm - ew_q_norm, -1.0, 1.0)
             imbalance_scaled = (imbalance + 1.0) / 2.0
 
@@ -176,33 +200,42 @@ class SumoMultiJunctionEnv(gym.Env):
 
         return np.clip(np.array(obs, dtype=np.float32), 0.0, 1.0)
 
-    def _get_reward(self):
+    def _get_reward(self, switches_this_step, wasted_votes_this_step):
         total_queue = 0.0
-        total_wait = 0.0
         n_lanes = 0
-
         for tl in self.TL_IDS:
-            for axis, lanes in self.INCOMING_LANES[tl].items():
-                for lane in lanes:
-                    q = self.conn.lane.getLastStepHaltingNumber(lane)
-                    w = self.conn.lane.getWaitingTime(lane)
-
-                    total_queue += q
-                    total_wait += w
+            for group in self.INCOMING_LANES[tl].values():
+                for lane in group:
+                    total_queue += self.conn.lane.getLastStepHaltingNumber(lane)
                     n_lanes += 1
+        queue_term  = -(total_queue / n_lanes) / self.max_queue
+        switch_term = -self.switch_penalty * switches_this_step
+        wasted_term = -self.wasted_vote_penalty * wasted_votes_this_step
 
-        queue_penalty = -(total_queue / n_lanes) / self.MAX_QUEUE
-        wait_penalty = -(total_wait / n_lanes) / self.MAX_WAIT
+        imbalance_term = 0.0
+        if self.imbalance_bonus_weight > 0:
+            for tl in self.TL_IDS:
+                if self._in_yellow[tl]:
+                    continue
+                ns_q, ew_q = self._get_raw_ns_ew_queue(tl)
+                imbalance = ns_q - ew_q
+                on_ns = (self._phase[tl] == 0)
+                signed_alignment = imbalance if on_ns else -imbalance
+                imbalance_term += self.imbalance_bonus_weight * (signed_alignment / self.max_queue)
 
-        reward = (
-            0.7 * queue_penalty +
-            0.3 * wait_penalty
-        )
+        wrong_dir_term = -self.wrong_direction_penalty * sum(self._wrong_direction_this_step.values())
 
-        return reward
+        return queue_term + switch_term + wasted_term + imbalance_term + wrong_dir_term
 
     def _apply_action(self, tl, action):
+        switched = False
+        wasted_vote = False
+        self._last_hold_duration[tl] = None
+        self._wrong_direction_this_step[tl] = False
+
         if self._in_yellow[tl]:
+            if action == 1:
+                wasted_vote = True
             self._time_in_yellow[tl] += 1
             if self._time_in_yellow[tl] >= self.YELLOW_TIME:
                 self._in_yellow[tl]      = False
@@ -215,12 +248,30 @@ class SumoMultiJunctionEnv(gym.Env):
         else:
             self._time_in_phase[tl] += 1
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
-            if (action == 1 and self._time_in_phase[tl] >= self.MIN_GREEN) or force_switch:
+            eligible = self._time_in_phase[tl] >= self.MIN_GREEN
+
+            if action == 1 and not eligible and not force_switch:
+                wasted_vote = True
+
+            if (action == 1 and eligible) or force_switch:
+                wrong_direction = False
+                if action == 1 and not force_switch:
+                    ns_q, ew_q = self._get_raw_ns_ew_queue(tl)
+                    currently_on_ns = (self._phase[tl] == 0)
+                    leaving_busier_side = (currently_on_ns and ns_q > ew_q) or \
+                                          (not currently_on_ns and ew_q > ns_q)
+                    wrong_direction = leaving_busier_side
+
+                self._last_hold_duration[tl] = self._time_in_phase[tl]
                 yellow_phase = self.PHASE_NS_YELLOW if self._phase[tl] == 0 else self.PHASE_EW_YELLOW
                 self.conn.trafficlight.setPhase(tl, yellow_phase)
                 self.conn.trafficlight.setPhaseDuration(tl, 9999)
                 self._in_yellow[tl]      = True
                 self._time_in_yellow[tl] = 0
+                switched = (action == 1)
+                self._wrong_direction_this_step[tl] = wrong_direction
+
+        return switched, wasted_vote
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -228,13 +279,20 @@ class SumoMultiJunctionEnv(gym.Env):
 
         if seed is not None:
             self._seed = seed
-            self._episode_count += 1
+        elif self._episode_count == 0 and self._base_seed is not None:
+            self._seed = self._base_seed
+        else:
+            self._seed = int(self._auto_seed_rng.integers(0, 2_147_483_647))
+
+        self._episode_count += 1
 
         self._step_count     = 0
         self._phase          = {tl: 0 for tl in self.TL_IDS}
         self._time_in_phase  = {tl: 0 for tl in self.TL_IDS}
         self._in_yellow      = {tl: False for tl in self.TL_IDS}
         self._time_in_yellow = {tl: 0 for tl in self.TL_IDS}
+        self._last_hold_duration = {tl: None for tl in self.TL_IDS}
+        self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
 
         self._start_sumo()
 
@@ -249,17 +307,38 @@ class SumoMultiJunctionEnv(gym.Env):
     def step(self, action):
         assert len(action) == 2, "action must be [a_J1, a_J2]"
 
+        switches = {}
+        wasted_votes = {}
         for i, tl in enumerate(self.TL_IDS):
-            self._apply_action(tl, int(action[i]))
+            switches[tl], wasted_votes[tl] = self._apply_action(tl, int(action[i]))
 
         self.conn.simulationStep()
         self._step_count += 1
 
-        obs     = self._get_obs()
-        reward  = self._get_reward()
-        done    = self._step_count >= self.max_steps
+        n_switches = sum(switches.values())
+        n_wasted   = sum(wasted_votes.values())
 
-        return obs, reward, done, False, {}
+        obs    = self._get_obs()
+        reward = self._get_reward(n_switches, n_wasted)
+        done   = self._step_count >= self.max_steps
+
+        raw_queues = {tl: self._get_raw_ns_ew_queue(tl) for tl in self.TL_IDS}
+        imbalance  = {tl: raw_queues[tl][0] - raw_queues[tl][1] for tl in self.TL_IDS}
+
+        info = {
+            "local_queue": {tl: self._get_local_queue(tl) for tl in self.TL_IDS},
+            "switched": switches,
+            "wasted_vote": wasted_votes,
+            "ns_queue": {tl: raw_queues[tl][0] for tl in self.TL_IDS},
+            "ew_queue": {tl: raw_queues[tl][1] for tl in self.TL_IDS},
+            "imbalance": imbalance,
+            "phase": dict(self._phase),
+            "hold_duration_at_switch": dict(self._last_hold_duration),
+            "wrong_direction": dict(self._wrong_direction_this_step),
+            "sumo_seed": self._seed,
+        }
+
+        return obs, reward, done, False, info
 
     def close(self):
         self._close_sumo()
