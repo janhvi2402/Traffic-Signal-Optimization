@@ -4,19 +4,25 @@ plot_switch_timing_qlearning.py
 Q-learning counterpart to plot_switch_timing.py (the PPO version).
 
 Runs several evaluation episodes using the trained qtable.pkl
-(same policy/greedy-action logic as test.py), logs the simulation
-step at which each junction switches phase, and plots a histogram
-of switch timing over the episode for J1 and J2.
+(same greedy-action logic as test.py), and instead of just plotting
+*when* switches happen, digs into *why*:
 
-The plot title is labeled with the actual hyperparameters pulled
-live from train.py (ALPHA/GAMMA/EPSILON schedule, EPISODES, GREEN_TIME,
-YELLOW_TIME) so you never lose track of which trained policy a given
-plot belongs to -- same idea as the PPO script pulling switch_penalty /
-wrong_direction_penalty / MIN_GREEN off the loaded env instance.
-
-Also reports, per junction, the average number of simulation steps
-between consecutive switches (i.e. how often the light actually
-changes phase under the learned policy).
+  1. Real hold duration per switch (steps between consecutive
+     switches of the same junction, computed WITHIN each episode --
+     pooling across episodes without resetting at episode boundaries
+     silently corrupts this number, since step counters restart at 0
+     each episode).
+  2. Flip-flop rate: % of switches that happen at the theoretical
+     minimum interval (YELLOW_TIME + GREEN_TIME) -- i.e. the agent
+     switches back again on the very next decision. A high rate here
+     means the policy is toggling on a fixed rhythm rather than
+     holding green while a queue clears.
+  3. Premature-switch rate: at the moment of each switch, was the arm
+     LOSING green still more congested (higher halted count) than the
+     arm GAINING green? If this happens often, the agent is not
+     conditioning on queue imbalance -- it's switching on a
+     timer-like/shortcut pattern that happened to correlate with
+     reward during training.
 
 Run from the Q-learning project root:
     python plot_switch_timing_qlearning.py
@@ -46,17 +52,15 @@ SUMOCFG_PATH = os.path.join(SCRIPT_DIR, "simulation.sumocfg")
 QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 
 # Pull the ACTUAL training hyperparameters off train.py rather than
-# retyping them here -- avoids the label silently drifting out of sync
-# with what the loaded qtable.pkl was actually trained with.
+# retyping them -- keeps the label from drifting out of sync with
+# whatever qtable.pkl this run is actually analyzing.
 import train as trainmod
 
 N_EPISODES = 5
 BIN_SIZE   = 100
 TL_IDS     = ["J1", "J2"]
+MIN_INTERVAL = trainmod.YELLOW_TIME + trainmod.GREEN_TIME   # fastest possible switch-back
 
-# NEW: label this run manually if you want a custom note (e.g. which
-# qtable checkpoint or bucket scheme) -- combined automatically with
-# the live hyperparameters read from train.py below.
 RUN_LABEL = "qlearning_v1"   # <-- update this each time you retrain
 
 
@@ -98,14 +102,32 @@ def get_state(j1_phase, j2_phase):
     )
 
 
+def get_arm_queues(tl_phase, which):
+    """Raw (unbucketed) halted counts for the currently-green / currently-red
+    arm of a junction, given its phase. Used to check queue-justification
+    of switches, independent of the coarse bucket() the policy trains on."""
+    if which == "J1":
+        if tl_phase == 0:
+            green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
+            red   = get_halted("W_J1_0")  + get_halted("J2_J1_0")
+        else:
+            green = get_halted("W_J1_0")  + get_halted("J2_J1_0")
+            red   = get_halted("N1_J1_0") + get_halted("S1_J1_0")
+    else:
+        if tl_phase == 0:
+            green = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+            red   = get_halted("J1_J2_0") + get_halted("E_J2_0")
+        else:
+            green = get_halted("J1_J2_0") + get_halted("E_J2_0")
+            red   = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+    return green, red
+
+
 def run_episode(q_table, seed):
-    """
-    Same control loop as test.py's run_qlearning_episode, but instead
-    of accumulating wait-time stats it records the sim_steps index at
-    the moment each junction is *decided* to switch (i.e. right before
-    the yellow phase begins), so switch timing lines up with real
-    simulation time rather than decision-cycle count.
-    """
+    """Same control loop as test.py's run_qlearning_episode, but records,
+    for every switch decision: the sim step, and the green/red arm queue
+    counts of that junction at the moment the switch was decided (i.e.
+    right before the yellow phase begins)."""
     traci.start(["sumo", "-c", SUMOCFG_PATH, "--no-warnings", "--seed", str(seed)])
     traci.simulationStep()
 
@@ -117,7 +139,7 @@ def run_episode(q_table, seed):
     traci.trafficlight.setPhaseDuration(trainmod.J2, 9999)
 
     sim_steps = 0
-    switch_steps = {"J1": [], "J2": []}
+    switch_events = {"J1": [], "J2": []}   # list of dicts: step, green_q, red_q
 
     while traci.simulation.getMinExpectedNumber() > 0:
         state = get_state(j1_phase, j2_phase)
@@ -131,11 +153,13 @@ def run_episode(q_table, seed):
         j2_switching = (j2_new != j2_phase)
 
         if j1_switching:
-            switch_steps["J1"].append(sim_steps)
+            g, r = get_arm_queues(j1_phase, "J1")
+            switch_events["J1"].append({"step": sim_steps, "green_q": g, "red_q": r})
             traci.trafficlight.setPhase(trainmod.J1, trainmod.YELLOW_PHASE[j1_phase])
             traci.trafficlight.setPhaseDuration(trainmod.J1, 9999)
         if j2_switching:
-            switch_steps["J2"].append(sim_steps)
+            g, r = get_arm_queues(j2_phase, "J2")
+            switch_events["J2"].append({"step": sim_steps, "green_q": g, "red_q": r})
             traci.trafficlight.setPhase(trainmod.J2, trainmod.YELLOW_PHASE[j2_phase])
             traci.trafficlight.setPhaseDuration(trainmod.J2, 9999)
 
@@ -155,15 +179,7 @@ def run_episode(q_table, seed):
             sim_steps += 1
 
     traci.close()
-    return switch_steps, sim_steps
-
-
-def mean_switch_interval(steps):
-    """Average number of sim steps between consecutive switches."""
-    if len(steps) < 2:
-        return float("nan")
-    diffs = np.diff(sorted(steps))
-    return float(np.mean(diffs))
+    return switch_events, sim_steps
 
 
 def main():
@@ -178,72 +194,119 @@ def main():
         f"epsilon_start={trainmod.EPSILON}, epsilon_decay={trainmod.EPSILON_DECAY}, "
         f"min_epsilon={trainmod.MIN_EPSILON}\n"
         f"episodes={trainmod.EPISODES}, green_time={trainmod.GREEN_TIME}, "
-        f"yellow_time={trainmod.YELLOW_TIME}, states_learned={len(q_table)}"
+        f"yellow_time={trainmod.YELLOW_TIME}, states_learned={len(q_table)}, "
+        f"min_possible_interval={MIN_INTERVAL} steps"
     )
 
-    all_switch_steps = {tl: [] for tl in TL_IDS}
-    per_episode_intervals = {tl: [] for tl in TL_IDS}
+    all_switch_steps  = {tl: [] for tl in TL_IDS}   # for the timing histogram (pooled ok, event *counts* aren't affected by episode resets)
+    all_hold_durations = {tl: [] for tl in TL_IDS}  # correctly computed WITHIN-episode diffs only
+    all_events         = {tl: [] for tl in TL_IDS}  # full event dicts, for premature-switch check
     max_sim_steps = 0
 
     for ep in range(N_EPISODES):
-        switch_steps, sim_steps = run_episode(q_table, seed=ep)
+        switch_events, sim_steps = run_episode(q_table, seed=ep)
         max_sim_steps = max(max_sim_steps, sim_steps)
         for tl in TL_IDS:
-            all_switch_steps[tl].extend(switch_steps[tl])
-            per_episode_intervals[tl].append(mean_switch_interval(switch_steps[tl]))
-        print(f"episode {ep} done — J1: {len(switch_steps['J1'])} switches, "
-              f"J2: {len(switch_steps['J2'])} switches, sim_steps={sim_steps}")
+            events = switch_events[tl]
+            all_switch_steps[tl].extend(e["step"] for e in events)
+            all_events[tl].extend(events)
+            # hold durations: diffs WITHIN this episode only -- never across
+            # the episode boundary, since step counters reset to 0 each episode
+            steps_this_ep = [e["step"] for e in events]
+            if len(steps_this_ep) >= 2:
+                all_hold_durations[tl].extend(np.diff(steps_this_ep).tolist())
+        print(f"episode {ep} done — J1: {len(switch_events['J1'])} switches, "
+              f"J2: {len(switch_events['J2'])} switches, sim_steps={sim_steps}")
 
     bins = np.arange(0, max_sim_steps + BIN_SIZE, BIN_SIZE)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    fig, axes = plt.subplots(2, 1, figsize=(12, 9), sharex=True)
+    fig, axes = plt.subplots(3, 2, figsize=(14, 13))
     fig.suptitle(
-        f"Switch timing (Q-learning) — {RUN_LABEL}\n{config_str}\ngenerated {timestamp}",
+        f"Switch timing & policy sanity (Q-learning) — {RUN_LABEL}\n{config_str}\ngenerated {timestamp}",
         fontsize=10,
     )
 
-    avg_interval_overall = {}
-    for ax, tl in zip(axes, TL_IDS):
-        steps = all_switch_steps[tl]
-        ax.hist(steps, bins=bins, color="steelblue", edgecolor="white")
-        ax.set_title(f"{tl}: switch timing across episode (n={len(steps)} "
-                      f"switches over {N_EPISODES} episodes)")
-        ax.set_ylabel("switch count per 100-step bin")
-        if steps:
-            counts, _ = np.histogram(steps, bins=bins)
-            peak_bin = bins[np.argmax(counts)]
-            avg_interval = mean_switch_interval(steps)
-            avg_interval_overall[tl] = avg_interval
-            ax.axvline(peak_bin, color="red", linestyle="--", linewidth=1,
-                       label=f"peak bin: step {peak_bin}-{peak_bin+BIN_SIZE}")
-            ax.axvline(0, color="none")  # keep axis anchored at 0
-            ax.text(0.98, 0.92, f"avg switch interval ≈ {avg_interval:.1f} steps",
-                     transform=ax.transAxes, ha="right", va="top", fontsize=9,
-                     bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
-            ax.legend()
-        else:
-            avg_interval_overall[tl] = float("nan")
+    insights = []
 
-    axes[-1].set_xlabel("simulation step within episode")
-    plt.tight_layout(rect=[0, 0, 1, 0.90])
+    for col, tl in enumerate(TL_IDS):
+        steps = all_switch_steps[tl]
+        holds = np.array(all_hold_durations[tl])
+        events = all_events[tl]
+
+        # (row 0) timing histogram, as before
+        ax = axes[0, col]
+        ax.hist(steps, bins=bins, color="steelblue", edgecolor="white")
+        ax.set_title(f"{tl}: switch timing (n={len(steps)} switches / {N_EPISODES} eps)")
+        ax.set_xlabel("simulation step within episode")
+        ax.set_ylabel("switch count per 100-step bin")
+
+        # (row 1) hold-duration histogram -- the actually meaningful one
+        ax = axes[1, col]
+        if len(holds) > 0:
+            max_hold = int(holds.max())
+            hbins = np.arange(0, max_hold + trainmod.GREEN_TIME, trainmod.GREEN_TIME)
+            ax.hist(holds, bins=hbins, color="darkorange", edgecolor="white")
+            ax.axvline(MIN_INTERVAL, color="crimson", linestyle="--",
+                       label=f"min possible = {MIN_INTERVAL}")
+            ax.axvline(np.median(holds), color="navy", linestyle="-",
+                       label=f"median = {np.median(holds):.0f}")
+            ax.legend(fontsize=8)
+        ax.set_title(f"{tl}: hold duration between switches (real, per-episode)")
+        ax.set_xlabel("steps held before next switch")
+        ax.set_ylabel("count")
+
+        # (row 2) summary text panel
+        ax = axes[2, col]
+        ax.axis("off")
+        if len(holds) > 0 and len(events) > 0:
+            flip_flop_rate = 100 * np.mean(holds == MIN_INTERVAL)
+            near_min_rate  = 100 * np.mean(holds <= MIN_INTERVAL + trainmod.GREEN_TIME)  # min or one cycle over
+            premature = np.array([e["green_q"] > e["red_q"] for e in events])
+            premature_rate = 100 * premature.mean()
+            mean_green_q = np.mean([e["green_q"] for e in events])
+            mean_red_q   = np.mean([e["red_q"] for e in events])
+
+            summary = (
+                f"Mean hold duration : {holds.mean():.1f} steps  (median {np.median(holds):.0f})\n"
+                f"Min possible hold  : {MIN_INTERVAL} steps\n"
+                f"Flip-flop rate     : {flip_flop_rate:.1f}%  (switches back at min interval)\n"
+                f"Near-min hold rate : {near_min_rate:.1f}%  (<= min + 1 cycle)\n\n"
+                f"Mean queue on arm LOSING green at switch : {mean_green_q:.1f}\n"
+                f"Mean queue on arm GAINING green at switch: {mean_red_q:.1f}\n"
+                f"Premature-switch rate : {premature_rate:.1f}%\n"
+                f"  (switched away while losing-green arm\n"
+                f"   still MORE congested than gaining arm)"
+            )
+            ax.text(0.02, 0.95, summary, va="top", ha="left", fontsize=9.5, family="monospace")
+
+            insights.append(
+                f"{tl}: mean hold {holds.mean():.1f} steps, flip-flop rate {flip_flop_rate:.1f}%, "
+                f"premature-switch rate {premature_rate:.1f}%."
+            )
+            if flip_flop_rate > 30:
+                insights.append(
+                    f"  WARNING ({tl}): >{flip_flop_rate:.0f}% of switches happen at the minimum "
+                    f"possible interval -- policy looks like it's toggling on a fixed rhythm "
+                    f"rather than holding green while a queue clears."
+                )
+            if premature_rate > 40:
+                insights.append(
+                    f"  WARNING ({tl}): {premature_rate:.0f}% of switches abandon the more-congested "
+                    f"arm -- the policy does not appear to be conditioning on queue imbalance."
+                )
+        else:
+            ax.text(0.5, 0.5, "not enough switch events", ha="center", va="center")
+
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
 
     out_filename = f"switch_timing_plot_qlearning_{RUN_LABEL}_{timestamp}.png"
     out_path = os.path.join(SCRIPT_DIR, out_filename)
     plt.savefig(out_path, dpi=120)
     print(f"\nSaved plot -> {out_path}")
 
-    print(f"\nConfig: {config_str}")
-    for tl in TL_IDS:
-        steps = all_switch_steps[tl]
-        counts, _ = np.histogram(steps, bins=bins)
-        cv = np.std(counts) / np.mean(counts) if np.mean(counts) > 0 else float("nan")
-        print(f"{tl}: coefficient of variation across time bins = {cv:.3f}")
-        print(f"{tl}: mean switch interval (pooled over {N_EPISODES} episodes) "
-              f"= {avg_interval_overall[tl]:.1f} sim steps")
-        print(f"{tl}: mean switch interval per episode = "
-              f"{np.nanmean(per_episode_intervals[tl]):.1f} sim steps "
-              f"(± {np.nanstd(per_episode_intervals[tl]):.1f})")
+    print(f"\nConfig: {config_str}\n")
+    print("\n".join(insights))
 
 
 if __name__ == "__main__":
