@@ -1,154 +1,44 @@
-    ep_len_mean          | 3.6e+03      |
-|    ep_rew_mean          | -225         |
-| time/                   |              |
-|    fps                  | 302          |
-|    iterations           | 243          |
-|    time_elapsed         | 1643         |
-|    total_timesteps      | 497664       |
-| train/                  |              |
-|    approx_kl            | 0.0012084881 |
-|    clip_fraction        | 0.0125       |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.0651      |
-|    explained_variance   | -0.884       |
-|    learning_rate        | 5.22e-05     |
-|    loss                 | 0.0348       |
-|    n_updates            | 2418         |
-|    policy_gradient_loss | -0.000864    |
-|    value_loss           | 0.112        |
-------------------------------------------
-----------------------------------------
-| rollout/                |            |
-|    ep_len_mean          | 3.6e+03    |
-|    ep_rew_mean          | -225       |
-| time/                   |            |
-|    fps                  | 303        |
-|    iterations           | 244        |
-|    time_elapsed         | 1647       |
-|    total_timesteps      | 499712     |
-| train/                  |            |
-|    approx_kl            | 0.00057476 |
-|    clip_fraction        | 0.00762    |
-|    clip_range           | 0.2        |
-|    entropy_loss         | -0.0607    |
-|    explained_variance   | -0.802     |
-|    learning_rate        | 5.12e-05   |
-|    loss                 | 0.131      |
-|    n_updates            | 2428       |
-|    policy_gradient_loss | -0.000445  |
-|    value_loss           | 0.273      |
-----------------------------------------
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-Eval num_timesteps=500000, episode_reward=-181.45 +/- 70.41
-Episode length: 3600.00 +/- 0.00
-------------------------------------------
-| eval/                   |              |
-|    mean_ep_length       | 3.6e+03      |
-|    mean_reward          | -181         |
-| time/                   |              |
-|    total_timesteps      | 500000       |
-| train/                  |              |
-|    approx_kl            | 0.0004828907 |
-|    clip_fraction        | 0.00161      |
-|    clip_range           | 0.2          |
-|    entropy_loss         | -0.0622      |
-|    explained_variance   | -0.56        |
-|    learning_rate        | 5.01e-05     |
-|    loss                 | 0.011        |
-|    n_updates            | 2438         |
-|    policy_gradient_loss | -0.000484    |
-|    value_loss           | 0.0878       |
-------------------------------------------
- Retrying in 1 seconds
----------------------------------
-| rollout/           |          |
-|    ep_len_mean     | 3.6e+03  |
-|    ep_rew_mean     | -218     |
-| time/              |          |
-|    fps             | 298      |
-|    iterations      | 245      |
-|    time_elapsed    | 1679     |
-|    total_timesteps | 501760   |
----------------------------------
-Training done -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/models/ppo_single_junction.zip
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/diagnostic.py
- Retrying in 1 seconds
-episode 0 done -- 162 switches, 0 wrong-direction
- Retrying in 1 seconds
-episode 1 done -- 132 switches, 0 wrong-direction
- Retrying in 1 seconds
-episode 2 done -- 185 switches, 0 wrong-direction
- Retrying in 1 seconds
-episode 3 done -- 152 switches, 0 wrong-direction
- Retrying in 1 seconds
-episode 4 done -- 149 switches, 0 wrong-direction
+Metric                                  Fixed-time  Decentralized PPO
+----------------------------------------------------------------------
+Mean avg wait/step (s)                     955.24s            455.79s
+Std                                         40.34s             53.82s
+
+Improvement over fixed-time: 52.3%
+
+step 3500: q_j1=0.15/0.15 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.10/0.25 imb_j2=0.43 a_j2=1 minG_j2=17
+step 3550: q_j1=0.18/0.07 imb_j1=0.56 a_j1=1 minG_j1=19 | q_j2=0.23/0.07 imb_j2=0.58 a_j2=1 minG_j2=17
+J1/J2 same-action rate: 99.9%  (near 100% is only a problem together with a low local correlation below -- see next lines)
+Correlation(|J1 raw imbalance|, J1 switch-vote): 0.129
+Correlation(|J2 raw imbalance|, J2 switch-vote): 0.119
+
+Steps where J1/J2 imbalance direction disagrees: 1792
+J1/J2 action agreement rate on THOSE steps: 100.0%
+  -> should be noticeably LOWER than the overall same-action rate above.
+     If it's still ~equal, the policy is ignoring local imbalance direction.
+
 
 ======================================================================
-SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN=15, switch_penalty=0.4, wrong_direction_penalty=0.25)
+SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN_RANGE=(10, 20), mean sampled this run=12.4, switch_penalty=0.15, imbalance_bonus_weight=0.4, wrong_direction_penalty=0.2)
 ======================================================================
-Total switches across 5 episodes: 780
+Total switches across 5 episodes: 912
 Switch rate vs physical ceiling:       78.0%
-Mean hold duration:                    20.0 steps
-Hold-duration / imbalance correlation: -0.830
+Mean hold duration:                    16.7 steps
+Hold-duration / imbalance correlation: -0.496
   -> positive => held longer when its side was genuinely busier
-Directional agreement at switch:       74.0%
+Directional agreement at switch:       71.1%
   -> should be well above 50% if the policy is using queue state
 Wrong-direction rate:                  0.0%
   -> should be low -- this is exactly what wrong_direction_penalty targets
 ======================================================================
-ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/plot_switching _time.py"
-Collecting single-junction switch timing...
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-  780 switches across 5 episodes
-Collecting decentralized transfer (J1/J2) switch timing...
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
- Retrying in 1 seconds
-  J1: 996 switches, J2: 995 switches
-/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
-  self.window.set_wmclass("matplotlib", "Matplotlib")
 
-Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.4_wd0.25_mingreen15_20260719_1457.png
 
-Config: switch_penalty=0.4, wrong_direction_penalty=0.25, wasted_vote_penalty=0.03, imbalance_bonus_weight=0.0, MIN_GREEN=15
-single: coefficient of variation across time bins = 0.044
-J1: coefficient of variation across time bins = 0.073
-J2: coefficient of variation across time bins = 0.080
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.15_wd0.2_ibw0.4_mingreen10-20_20260719_1643.png
 
-J1 vs J2 switch-timing-profile correlation: 0.982
+Config: switch_penalty=0.15, wrong_direction_penalty=0.2, wasted_vote_penalty=0.02, imbalance_bonus_weight=0.4, MIN_GREEN_RANGE=(10, 20)
+single: coefficient of variation across time bins = 0.042
+J1: coefficient of variation across time bins = 0.055
+J2: coefficient of variation across time bins = 0.029
+
+J1 vs J2 switch-timing-profile correlation: 0.307
   -> very high (near 1.0) suggests both junctions are switching on the
      same schedule regardless of their own local demand
-
-
- Retrying in 1 seconds
- Retrying in 1 seconds
-Metric                                  Fixed-time  Decentralized PPO
-----------------------------------------------------------------------
-Mean avg wait/step (s)                     955.24s            334.63s
-Std                                         40.34s             13.19s
-
-Improvement over fixed-time: 65.0%
-
-
-
-     step 3500: q_j1=0.30/0.08 imb_j1=0.61 a_j1=1 | q_j2=0.28/0.02 imb_j2=0.63 a_j2=1
-step 3550: q_j1=0.10/0.27 imb_j1=0.42 a_j1=1 | q_j2=0.10/0.32 imb_j2=0.39 a_j2=1
-J1/J2 same-action rate: 99.6%  (near 100% is only a problem together with a low local correlation below -- see next lines)
-Correlation(|J1 raw imbalance|, J1 switch-vote): 0.105
-Correlation(|J2 raw imbalance|, J2 switch-vote): 0.117
-
-Steps where J1/J2 imbalance direction disagrees: 492
-J1/J2 action agreement rate on THOSE steps: 100.0%
-  -> should be noticeably LOWER than the overall same-action rate above.
-     If it's still ~equal, the policy is ignoring local imbalance direction.
