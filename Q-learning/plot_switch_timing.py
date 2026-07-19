@@ -4,28 +4,25 @@ plot_switch_timing_qlearning.py
 Q-learning counterpart to plot_switch_timing.py (the PPO version).
 
 Runs several evaluation episodes using the trained qtable.pkl
-(same greedy-action logic as test.py), and digs into *why* switches
-happen when they do:
+(same greedy-action logic as test.py), and instead of just plotting
+*when* switches happen, digs into *why*:
 
   1. Real hold duration per switch (steps between consecutive
      switches of the same junction, computed WITHIN each episode --
-     never pooled across an episode boundary, since step counters
-     reset to 0 each episode).
-  2. Flip-flop rate: % of switches at the theoretical minimum
-     interval (YELLOW_TIME + GREEN_TIME) -- i.e. switched back on the
-     very next decision.
+     pooling across episodes without resetting at episode boundaries
+     silently corrupts this number, since step counters restart at 0
+     each episode).
+  2. Flip-flop rate: % of switches that happen at the theoretical
+     minimum interval (YELLOW_TIME + GREEN_TIME) -- i.e. the agent
+     switches back again on the very next decision. A high rate here
+     means the policy is toggling on a fixed rhythm rather than
+     holding green while a queue clears.
   3. Premature-switch rate: at the moment of each switch, was the arm
-     LOSING green still more congested than the arm GAINING green?
-  4. NEW -- does hold length track queue density? For every hold,
-     pairs the queue that was WAITING when the phase started (i.e.
-     the backlog the junction just switched onto) with how long that
-     phase was then held before switching away again. Buckets by that
-     starting backlog (same bucket() thresholds as training) and
-     reports mean hold duration per bucket, plus the Pearson
-     correlation between starting backlog and hold length. If a
-     learned, queue-responsive policy exists, hold duration should
-     rise with starting backlog; if it's flat, the agent isn't
-     actually using queue size to decide how long to hold.
+     LOSING green still more congested (higher halted count) than the
+     arm GAINING green? If this happens often, the agent is not
+     conditioning on queue imbalance -- it's switching on a
+     timer-like/shortcut pattern that happened to correlate with
+     reward during training.
 
 Run from the Q-learning project root:
     python plot_switch_timing_qlearning.py
@@ -57,13 +54,12 @@ QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 # Pull the ACTUAL training hyperparameters off train.py rather than
 # retyping them -- keeps the label from drifting out of sync with
 # whatever qtable.pkl this run is actually analyzing.
-import train as trainmod
+import model as trainmod
 
 N_EPISODES = 5
 BIN_SIZE   = 100
 TL_IDS     = ["J1", "J2"]
 MIN_INTERVAL = trainmod.YELLOW_TIME + trainmod.GREEN_TIME   # fastest possible switch-back
-N_BUCKETS = 7   # bucket() returns 0..6
 
 RUN_LABEL = "qlearning_v1"   # <-- update this each time you retrain
 
@@ -108,7 +104,8 @@ def get_state(j1_phase, j2_phase):
 
 def get_arm_queues(tl_phase, which):
     """Raw (unbucketed) halted counts for the currently-green / currently-red
-    arm of a junction, given its phase."""
+    arm of a junction, given its phase. Used to check queue-justification
+    of switches, independent of the coarse bucket() the policy trains on."""
     if which == "J1":
         if tl_phase == 0:
             green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
@@ -201,13 +198,9 @@ def main():
         f"min_possible_interval={MIN_INTERVAL} steps"
     )
 
-    all_switch_steps   = {tl: [] for tl in TL_IDS}
-    all_hold_durations = {tl: [] for tl in TL_IDS}
-    all_events         = {tl: [] for tl in TL_IDS}
-    # NEW: (initial_backlog, hold_duration, final_backlog) triples, paired
-    # WITHIN each episode only -- initial_backlog is the red_q logged at the
-    # PREVIOUS switch (the queue this phase inherited when it turned green).
-    hold_vs_backlog = {tl: [] for tl in TL_IDS}
+    all_switch_steps  = {tl: [] for tl in TL_IDS}   # for the timing histogram (pooled ok, event *counts* aren't affected by episode resets)
+    all_hold_durations = {tl: [] for tl in TL_IDS}  # correctly computed WITHIN-episode diffs only
+    all_events         = {tl: [] for tl in TL_IDS}  # full event dicts, for premature-switch check
     max_sim_steps = 0
 
     for ep in range(N_EPISODES):
@@ -217,24 +210,18 @@ def main():
             events = switch_events[tl]
             all_switch_steps[tl].extend(e["step"] for e in events)
             all_events[tl].extend(events)
-
+            # hold durations: diffs WITHIN this episode only -- never across
+            # the episode boundary, since step counters reset to 0 each episode
             steps_this_ep = [e["step"] for e in events]
             if len(steps_this_ep) >= 2:
                 all_hold_durations[tl].extend(np.diff(steps_this_ep).tolist())
-
-            for i in range(1, len(events)):
-                initial_backlog = events[i - 1]["red_q"]   # queue this phase inherited
-                hold_duration   = events[i]["step"] - events[i - 1]["step"]
-                final_backlog   = events[i]["green_q"]     # residual queue when it ended
-                hold_vs_backlog[tl].append((initial_backlog, hold_duration, final_backlog))
-
         print(f"episode {ep} done — J1: {len(switch_events['J1'])} switches, "
               f"J2: {len(switch_events['J2'])} switches, sim_steps={sim_steps}")
 
     bins = np.arange(0, max_sim_steps + BIN_SIZE, BIN_SIZE)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    fig, axes = plt.subplots(4, 2, figsize=(14, 17))
+    fig, axes = plt.subplots(3, 2, figsize=(14, 13))
     fig.suptitle(
         f"Switch timing & policy sanity (Q-learning) — {RUN_LABEL}\n{config_str}\ngenerated {timestamp}",
         fontsize=10,
@@ -246,16 +233,15 @@ def main():
         steps = all_switch_steps[tl]
         holds = np.array(all_hold_durations[tl])
         events = all_events[tl]
-        triples = hold_vs_backlog[tl]
 
-        # (row 0) timing histogram
+        # (row 0) timing histogram, as before
         ax = axes[0, col]
         ax.hist(steps, bins=bins, color="steelblue", edgecolor="white")
         ax.set_title(f"{tl}: switch timing (n={len(steps)} switches / {N_EPISODES} eps)")
         ax.set_xlabel("simulation step within episode")
         ax.set_ylabel("switch count per 100-step bin")
 
-        # (row 1) hold-duration histogram
+        # (row 1) hold-duration histogram -- the actually meaningful one
         ax = axes[1, col]
         if len(holds) > 0:
             max_hold = int(holds.max())
@@ -270,78 +256,33 @@ def main():
         ax.set_xlabel("steps held before next switch")
         ax.set_ylabel("count")
 
-        # (row 2) NEW -- mean hold duration by starting-backlog bucket
+        # (row 2) summary text panel
         ax = axes[2, col]
-        if len(triples) > 0:
-            init_q  = np.array([t[0] for t in triples], dtype=float)
-            hold_d  = np.array([t[1] for t in triples], dtype=float)
-            buckets = np.array([bucket(q) for q in init_q])
-
-            means, stds, counts = [], [], []
-            for b in range(N_BUCKETS):
-                mask = buckets == b
-                if mask.sum() > 0:
-                    means.append(hold_d[mask].mean())
-                    stds.append(hold_d[mask].std())
-                    counts.append(int(mask.sum()))
-                else:
-                    means.append(np.nan)
-                    stds.append(0)
-                    counts.append(0)
-
-            x = np.arange(N_BUCKETS)
-            bars = ax.bar(x, means, yerr=stds, color="seagreen", capsize=3, edgecolor="black")
-            ax.axhline(MIN_INTERVAL, color="crimson", linestyle="--", linewidth=1,
-                       label=f"min possible = {MIN_INTERVAL}")
-            for xi, m, c in zip(x, means, counts):
-                if not np.isnan(m):
-                    ax.text(xi, m + (stds[x.tolist().index(xi)] if not np.isnan(stds[x.tolist().index(xi)]) else 0) + 1,
-                             f"n={c}", ha="center", fontsize=7)
-            ax.set_xticks(x)
-            ax.set_xlabel("starting-backlog bucket (queue this phase inherited)\n0=empty ... 6=25+ vehicles")
-            ax.set_ylabel("mean hold duration (steps)")
-            ax.legend(fontsize=8)
-
-            # Pearson correlation between raw starting backlog and hold length
-            if np.std(init_q) > 0 and np.std(hold_d) > 0:
-                corr = float(np.corrcoef(init_q, hold_d)[0, 1])
-            else:
-                corr = float("nan")
-        else:
-            corr = float("nan")
-        ax.set_title(f"{tl}: does hold length track starting backlog?")
-
-        # (row 3) summary text panel
-        ax = axes[3, col]
         ax.axis("off")
         if len(holds) > 0 and len(events) > 0:
             flip_flop_rate = 100 * np.mean(holds == MIN_INTERVAL)
-            near_min_rate  = 100 * np.mean(holds <= MIN_INTERVAL + trainmod.GREEN_TIME)
+            near_min_rate  = 100 * np.mean(holds <= MIN_INTERVAL + trainmod.GREEN_TIME)  # min or one cycle over
             premature = np.array([e["green_q"] > e["red_q"] for e in events])
             premature_rate = 100 * premature.mean()
             mean_green_q = np.mean([e["green_q"] for e in events])
             mean_red_q   = np.mean([e["red_q"] for e in events])
-            mean_hold_green_s = holds.mean() - trainmod.YELLOW_TIME
 
             summary = (
                 f"Mean hold duration : {holds.mean():.1f} steps  (median {np.median(holds):.0f})\n"
-                f"  -> ~{mean_hold_green_s:.1f}s of actual GREEN time before switching away\n"
                 f"Min possible hold  : {MIN_INTERVAL} steps\n"
                 f"Flip-flop rate     : {flip_flop_rate:.1f}%  (switches back at min interval)\n"
                 f"Near-min hold rate : {near_min_rate:.1f}%  (<= min + 1 cycle)\n\n"
-                f"Mean queue LOSING green at switch : {mean_green_q:.1f}\n"
-                f"Mean queue GAINING green at switch: {mean_red_q:.1f}\n"
-                f"Premature-switch rate : {premature_rate:.1f}%\n\n"
-                f"Corr(starting backlog, hold length): r = {corr:.2f}\n"
-                f"  (near 0 = hold length is NOT queue-responsive;\n"
-                f"   positive = holds longer when it inherits a bigger queue)"
+                f"Mean queue on arm LOSING green at switch : {mean_green_q:.1f}\n"
+                f"Mean queue on arm GAINING green at switch: {mean_red_q:.1f}\n"
+                f"Premature-switch rate : {premature_rate:.1f}%\n"
+                f"  (switched away while losing-green arm\n"
+                f"   still MORE congested than gaining arm)"
             )
             ax.text(0.02, 0.95, summary, va="top", ha="left", fontsize=9.5, family="monospace")
 
             insights.append(
-                f"{tl}: mean hold {holds.mean():.1f} steps (~{mean_hold_green_s:.1f}s green), "
-                f"flip-flop rate {flip_flop_rate:.1f}%, premature-switch rate {premature_rate:.1f}%, "
-                f"corr(backlog, hold)={corr:.2f}."
+                f"{tl}: mean hold {holds.mean():.1f} steps, flip-flop rate {flip_flop_rate:.1f}%, "
+                f"premature-switch rate {premature_rate:.1f}%."
             )
             if flip_flop_rate > 30:
                 insights.append(
@@ -349,16 +290,15 @@ def main():
                     f"possible interval -- policy looks like it's toggling on a fixed rhythm "
                     f"rather than holding green while a queue clears."
                 )
-            if not np.isnan(corr) and abs(corr) < 0.15:
+            if premature_rate > 40:
                 insights.append(
-                    f"  WARNING ({tl}): correlation between starting backlog and hold length is "
-                    f"essentially flat (r={corr:.2f}) -- hold duration does not appear to be "
-                    f"driven by how congested the arm was when it got the green."
+                    f"  WARNING ({tl}): {premature_rate:.0f}% of switches abandon the more-congested "
+                    f"arm -- the policy does not appear to be conditioning on queue imbalance."
                 )
         else:
             ax.text(0.5, 0.5, "not enough switch events", ha="center", va="center")
 
-    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
 
     out_filename = f"switch_timing_plot_qlearning_{RUN_LABEL}_{timestamp}.png"
     out_path = os.path.join(SCRIPT_DIR, out_filename)
