@@ -1,395 +1,154 @@
-Step 1952 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 1953 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 1954 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 1955 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 1956 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 1957 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 1958 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 1959 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 1960 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 1961 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 1962 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 1963 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 1964 | NS=0.00 EW=0.18 Imb=0.41 Action=0
-Step 1965 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 1966 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 1967 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 1968 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 1969 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 1970 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 1971 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 1972 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 1973 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 1974 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 1975 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 1976 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 1977 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 1978 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 1979 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 1980 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 1981 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 1982 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 1983 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 1984 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 1985 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 1986 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 1987 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 1988 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 1989 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 1990 | NS=0.00 EW=0.18 Imb=0.41 Action=0
-Step 1991 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 1992 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 1993 | NS=0.02 EW=0.23 Imb=0.39 Action=1
-Step 1994 | NS=0.02 EW=0.20 Imb=0.41 Action=1
-Step 1995 | NS=0.02 EW=0.20 Imb=0.41 Action=1
-Step 1996 | NS=0.02 EW=0.18 Imb=0.42 Action=1
-Step 1997 | NS=0.02 EW=0.17 Imb=0.43 Action=1
-Step 1998 | NS=0.02 EW=0.15 Imb=0.43 Action=1
-Step 1999 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2000 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2001 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2002 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2003 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2004 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2005 | NS=0.03 EW=0.00 Imb=0.52 Action=0
-Step 2006 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 2007 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2008 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2009 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2010 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2011 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2012 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2013 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2014 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2015 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2016 | NS=0.00 EW=0.20 Imb=0.40 Action=0
-Step 2017 | NS=0.00 EW=0.22 Imb=0.39 Action=0
-Step 2018 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2019 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2020 | NS=0.02 EW=0.22 Imb=0.40 Action=1
-Step 2021 | NS=0.02 EW=0.20 Imb=0.41 Action=1
-Step 2022 | NS=0.02 EW=0.18 Imb=0.42 Action=1
-Step 2023 | NS=0.02 EW=0.17 Imb=0.43 Action=1
-Step 2024 | NS=0.02 EW=0.17 Imb=0.43 Action=1
-Step 2025 | NS=0.02 EW=0.15 Imb=0.43 Action=1
-Step 2026 | NS=0.02 EW=0.12 Imb=0.45 Action=1
-Step 2027 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2028 | NS=0.03 EW=0.07 Imb=0.48 Action=1
-Step 2029 | NS=0.03 EW=0.05 Imb=0.49 Action=0
-Step 2030 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2031 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2032 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2033 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2034 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2035 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2036 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2037 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2038 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2039 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2040 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2041 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2042 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2043 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2044 | NS=0.00 EW=0.30 Imb=0.35 Action=1
-Step 2045 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2046 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2047 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2048 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2049 | NS=0.02 EW=0.23 Imb=0.39 Action=1
-Step 2050 | NS=0.03 EW=0.20 Imb=0.42 Action=1
-Step 2051 | NS=0.03 EW=0.17 Imb=0.43 Action=1
-Step 2052 | NS=0.03 EW=0.13 Imb=0.45 Action=1
-Step 2053 | NS=0.03 EW=0.12 Imb=0.46 Action=1
-Step 2054 | NS=0.03 EW=0.08 Imb=0.47 Action=1
-Step 2055 | NS=0.03 EW=0.05 Imb=0.49 Action=0
-Step 2056 | NS=0.03 EW=0.03 Imb=0.50 Action=0
-Step 2057 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2058 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2059 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2060 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2061 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2062 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2063 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2064 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2065 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2066 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2067 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2068 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2069 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2070 | NS=0.00 EW=0.28 Imb=0.36 Action=1
-Step 2071 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2072 | NS=0.00 EW=0.28 Imb=0.36 Action=1
-Step 2073 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2074 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2075 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2076 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2077 | NS=0.02 EW=0.17 Imb=0.43 Action=1
-Step 2078 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2079 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2080 | NS=0.02 EW=0.08 Imb=0.47 Action=1
-Step 2081 | NS=0.02 EW=0.05 Imb=0.48 Action=0
-Step 2082 | NS=0.02 EW=0.02 Imb=0.50 Action=0
-Step 2083 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2084 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 2085 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 2086 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2087 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2088 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2089 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2090 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2091 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2092 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2093 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2094 | NS=0.00 EW=0.18 Imb=0.41 Action=0
-Step 2095 | NS=0.00 EW=0.20 Imb=0.40 Action=0
-Step 2096 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2097 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2098 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2099 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2100 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2101 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2102 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2103 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2104 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2105 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2106 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2107 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2108 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2109 | NS=0.02 EW=0.02 Imb=0.50 Action=0
-Step 2110 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2111 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2112 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2113 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2114 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2115 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2116 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2117 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2118 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2119 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2120 | NS=0.00 EW=0.20 Imb=0.40 Action=0
-Step 2121 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2122 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2123 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2124 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2125 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2126 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2127 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2128 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2129 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2130 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2131 | NS=0.02 EW=0.12 Imb=0.45 Action=1
-Step 2132 | NS=0.02 EW=0.08 Imb=0.47 Action=1
-Step 2133 | NS=0.02 EW=0.05 Imb=0.48 Action=0
-Step 2134 | NS=0.02 EW=0.02 Imb=0.50 Action=0
-Step 2135 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2136 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2137 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2138 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2139 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2140 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2141 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2142 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2143 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2144 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2145 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2146 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2147 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2148 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2149 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2150 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2151 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2152 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2153 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2154 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2155 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2156 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2157 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2158 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2159 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2160 | NS=0.02 EW=0.02 Imb=0.50 Action=0
-Step 2161 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2162 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2163 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2164 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2165 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2166 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2167 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 2168 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2169 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2170 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2171 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2172 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2173 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2174 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2175 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2176 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2177 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2178 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2179 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2180 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2181 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2182 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2183 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2184 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2185 | NS=0.02 EW=0.05 Imb=0.48 Action=0
-Step 2186 | NS=0.03 EW=0.03 Imb=0.50 Action=0
-Step 2187 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2188 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2189 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2190 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2191 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2192 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2193 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2194 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2195 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2196 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2197 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2198 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2199 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2200 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2201 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2202 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2203 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2204 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2205 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2206 | NS=0.02 EW=0.18 Imb=0.42 Action=1
-Step 2207 | NS=0.02 EW=0.15 Imb=0.43 Action=1
-Step 2208 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2209 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2210 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2211 | NS=0.02 EW=0.07 Imb=0.47 Action=0
-Step 2212 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2213 | NS=0.03 EW=0.02 Imb=0.51 Action=0
-Step 2214 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2215 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2216 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2217 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2218 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 2219 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2220 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2221 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2222 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2223 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2224 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2225 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2226 | NS=0.00 EW=0.28 Imb=0.36 Action=1
-Step 2227 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2228 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2229 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2230 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2231 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2232 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2233 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2234 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2235 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2236 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2237 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2238 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2239 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2240 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2241 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2242 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2243 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2244 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2245 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 2246 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 2247 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2248 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2249 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2250 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2251 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2252 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2253 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2254 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2255 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2256 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2257 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2258 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2259 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2260 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2261 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2262 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2263 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2264 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2265 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2266 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2267 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2268 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2269 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2270 | NS=0.00 EW=0.12 Imb=0.44 Action=1
-Step 2271 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2272 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2273 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2274 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2275 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2276 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2277 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2278 | NS=0.00 EW=0.28 Imb=0.36 Action=1
-Step 2279 | NS=0.00 EW=0.28 Imb=0.36 Action=1
-Step 2280 | NS=0.00 EW=0.27 Imb=0.37 Action=1
-Step 2281 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2282 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2283 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2284 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2285 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2286 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2287 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2288 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2289 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2290 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 2291 | NS=0.00 EW=0.00 Imb=0.50 Action=0
-Step 2292 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2293 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2294 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2295 | NS=0.00 EW=0.05 Imb=0.47 Action=0
-Step 2296 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2297 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2298 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2299 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2300 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2301 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2302 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2303 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2304 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2305 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2306 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2307 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2308 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2309 | NS=0.00 EW=0.20 Imb=0.40 Action=1
-Step 2310 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2311 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2312 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2313 | NS=0.00 EW=0.10 Imb=0.45 Action=1
-Step 2314 | NS=0.00 EW=0.07 Imb=0.47 Action=1
-Step 2315 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2316 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2317 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2318 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2319 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2320 | NS=0.00 EW=0.03 Imb=0.48 Action=0
-Step 2321 | NS=0.00 EW=0.07 Imb=0.47 Action=0
-Step 2322 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2323 | NS=0.00 EW=0.08 Imb=0.46 Action=1
-Step 2324 | NS=0.00 EW=0.13 Imb=0.43 Action=1
-Step 2325 | NS=0.00 EW=0.15 Imb=0.43 Action=1
-Step 2326 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2327 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2328 | NS=0.00 EW=0.18 Imb=0.41 Action=0
-Step 2329 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2330 | NS=0.00 EW=0.25 Imb=0.38 Action=1
-Step 2331 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2332 | NS=0.00 EW=0.23 Imb=0.38 Action=1
-Step 2333 | NS=0.00 EW=0.22 Imb=0.39 Action=1
-Step 2334 | NS=0.00 EW=0.18 Imb=0.41 Action=1
-Step 2335 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2336 | NS=0.00 EW=0.17 Imb=0.42 Action=1
-Step 2337 | NS=0.02 EW=0.15 Imb=0.43 Action=1
-Step 2338 | NS=0.02 EW=0.13 Imb=0.44 Action=1
-Step 2339 | NS=0.02 EW=0.10 Imb=0.46 Action=1
-Step 2340 | NS=0.02 EW=0.07 Imb=0.47 Action=1
-Step 2341 | NS=0.02 EW=0.05 Imb=0.48 Action=0
-Step 2342 | NS=0.02 EW=0.03 Imb=0.49 Action=0
-Step 2343 | NS=0.02 EW=0.00 Imb=0.51 Action=0
-Step 2344 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2345 | NS=0.00 EW=0.02 Imb=0.49 Action=0
-Step 2346 | NS=0.00 EW=0.05 Imb=0.47 Action=0
+    ep_len_mean          | 3.6e+03      |
+|    ep_rew_mean          | -225         |
+| time/                   |              |
+|    fps                  | 302          |
+|    iterations           | 243          |
+|    time_elapsed         | 1643         |
+|    total_timesteps      | 497664       |
+| train/                  |              |
+|    approx_kl            | 0.0012084881 |
+|    clip_fraction        | 0.0125       |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -0.0651      |
+|    explained_variance   | -0.884       |
+|    learning_rate        | 5.22e-05     |
+|    loss                 | 0.0348       |
+|    n_updates            | 2418         |
+|    policy_gradient_loss | -0.000864    |
+|    value_loss           | 0.112        |
+------------------------------------------
+----------------------------------------
+| rollout/                |            |
+|    ep_len_mean          | 3.6e+03    |
+|    ep_rew_mean          | -225       |
+| time/                   |            |
+|    fps                  | 303        |
+|    iterations           | 244        |
+|    time_elapsed         | 1647       |
+|    total_timesteps      | 499712     |
+| train/                  |            |
+|    approx_kl            | 0.00057476 |
+|    clip_fraction        | 0.00762    |
+|    clip_range           | 0.2        |
+|    entropy_loss         | -0.0607    |
+|    explained_variance   | -0.802     |
+|    learning_rate        | 5.12e-05   |
+|    loss                 | 0.131      |
+|    n_updates            | 2428       |
+|    policy_gradient_loss | -0.000445  |
+|    value_loss           | 0.273      |
+----------------------------------------
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Eval num_timesteps=500000, episode_reward=-181.45 +/- 70.41
+Episode length: 3600.00 +/- 0.00
+------------------------------------------
+| eval/                   |              |
+|    mean_ep_length       | 3.6e+03      |
+|    mean_reward          | -181         |
+| time/                   |              |
+|    total_timesteps      | 500000       |
+| train/                  |              |
+|    approx_kl            | 0.0004828907 |
+|    clip_fraction        | 0.00161      |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -0.0622      |
+|    explained_variance   | -0.56        |
+|    learning_rate        | 5.01e-05     |
+|    loss                 | 0.011        |
+|    n_updates            | 2438         |
+|    policy_gradient_loss | -0.000484    |
+|    value_loss           | 0.0878       |
+------------------------------------------
+ Retrying in 1 seconds
+---------------------------------
+| rollout/           |          |
+|    ep_len_mean     | 3.6e+03  |
+|    ep_rew_mean     | -218     |
+| time/              |          |
+|    fps             | 298      |
+|    iterations      | 245      |
+|    time_elapsed    | 1679     |
+|    total_timesteps | 501760   |
+---------------------------------
+Training done -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/models/ppo_single_junction.zip
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/diagnostic.py
+ Retrying in 1 seconds
+episode 0 done -- 162 switches, 0 wrong-direction
+ Retrying in 1 seconds
+episode 1 done -- 132 switches, 0 wrong-direction
+ Retrying in 1 seconds
+episode 2 done -- 185 switches, 0 wrong-direction
+ Retrying in 1 seconds
+episode 3 done -- 152 switches, 0 wrong-direction
+ Retrying in 1 seconds
+episode 4 done -- 149 switches, 0 wrong-direction
+
+======================================================================
+SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN=15, switch_penalty=0.4, wrong_direction_penalty=0.25)
+======================================================================
+Total switches across 5 episodes: 780
+Switch rate vs physical ceiling:       78.0%
+Mean hold duration:                    20.0 steps
+Hold-duration / imbalance correlation: -0.830
+  -> positive => held longer when its side was genuinely busier
+Directional agreement at switch:       74.0%
+  -> should be well above 50% if the policy is using queue state
+Wrong-direction rate:                  0.0%
+  -> should be low -- this is exactly what wrong_direction_penalty targets
+======================================================================
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/plot_switching _time.py"
+Collecting single-junction switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  780 switches across 5 episodes
+Collecting decentralized transfer (J1/J2) switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  J1: 996 switches, J2: 995 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.4_wd0.25_mingreen15_20260719_1457.png
+
+Config: switch_penalty=0.4, wrong_direction_penalty=0.25, wasted_vote_penalty=0.03, imbalance_bonus_weight=0.0, MIN_GREEN=15
+single: coefficient of variation across time bins = 0.044
+J1: coefficient of variation across time bins = 0.073
+J2: coefficient of variation across time bins = 0.080
+
+J1 vs J2 switch-timing-profile correlation: 0.982
+  -> very high (near 1.0) suggests both junctions are switching on the
+     same schedule regardless of their own local demand
+
+
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Metric                                  Fixed-time  Decentralized PPO
+----------------------------------------------------------------------
+Mean avg wait/step (s)                     955.24s            334.63s
+Std                                         40.34s             13.19s
+
+Improvement over fixed-time: 65.0%
+
+
+
+     step 3500: q_j1=0.30/0.08 imb_j1=0.61 a_j1=1 | q_j2=0.28/0.02 imb_j2=0.63 a_j2=1
+step 3550: q_j1=0.10/0.27 imb_j1=0.42 a_j1=1 | q_j2=0.10/0.32 imb_j2=0.39 a_j2=1
+J1/J2 same-action rate: 99.6%  (near 100% is only a problem together with a low local correlation below -- see next lines)
+Correlation(|J1 raw imbalance|, J1 switch-vote): 0.105
+Correlation(|J2 raw imbalance|, J2 switch-vote): 0.117
+
+Steps where J1/J2 imbalance direction disagrees: 492
+J1/J2 action agreement rate on THOSE steps: 100.0%
+  -> should be noticeably LOWER than the overall same-action rate above.
+     If it's still ~equal, the policy is ignoring local imbalance direction.
