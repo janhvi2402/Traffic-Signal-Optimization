@@ -23,6 +23,18 @@ print(f"Experiments loaded: {len(results)}")
 
 os.makedirs("plots", exist_ok=True)
 
+# NEW: defaults for the three params added by the relative-action /
+# min-green-floor / reward-shaping changes to train.py. Every fixed={...}
+# filter below now pins these explicitly -- without pinning them, runs with
+# different switch_penalty/wrong_direction_penalty/min_green_cycles would
+# get silently lumped together into what looks like a clean alpha/gamma/etc
+# sensitivity curve, when really the penalty settings are also varying.
+# If your sweep harness uses different defaults than train.py's, change
+# these three values to match.
+DEFAULT_MIN_GREEN_CYCLES        = 1
+DEFAULT_SWITCH_PENALTY          = 0.5
+DEFAULT_WRONG_DIRECTION_PENALTY = 1.0
+
 
 # ================================================================
 # HELPERS
@@ -36,6 +48,12 @@ def filter_results(fixed: dict):
     for r in results:
         match = True
         for k, v in fixed.items():
+            if k not in r:
+                # NEW: older result_*.json files (from before the reward-shaping
+                # changes) won't have these keys at all -- skip them here rather
+                # than crash, so old and new sweep files don't get silently mixed.
+                match = False
+                continue
             if isinstance(v, float):
                 if abs(r[k] - v) > 1e-9:
                     match = False
@@ -106,31 +124,75 @@ def joint_plot(vary_key1, vary_key2, label1, label2, fixed, filename, title):
 
 # ================================================================
 # INDIVIDUAL SENSITIVITY PLOTS
+# NEW: min_green_cycles / switch_penalty / wrong_direction_penalty pinned
+# in every fixed={} filter below so these plots aren't contaminated by
+# un-pinned variation in the new reward-shaping params.
 # ================================================================
 
+COMMON_FIXED = {
+    "green_time": 10,
+    "yellow_time": 3,
+    "epsilon_decay": 0.98,
+    "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+    "switch_penalty": DEFAULT_SWITCH_PENALTY,
+    "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY,
+}
+
 single_plot("alpha", "Alpha (Learning Rate)",
-    fixed={"gamma":0.95,"episodes":150,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
+    fixed={**COMMON_FIXED, "gamma": 0.95, "episodes": 150},
     color="steelblue", filename="01_alpha", title="Alpha Sensitivity")
 
 single_plot("gamma", "Gamma (Discount Factor)",
-    fixed={"alpha":0.1,"episodes":150,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
+    fixed={**COMMON_FIXED, "alpha": 0.1, "episodes": 150},
     color="green", filename="02_gamma", title="Gamma Sensitivity")
 
 single_plot("episodes", "Training Episodes",
-    fixed={"alpha":0.1,"gamma":0.95,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
+    fixed={**COMMON_FIXED, "alpha": 0.1, "gamma": 0.95},
     color="orange", filename="03_episodes", title="Episodes Sensitivity")
 
 single_plot("green_time", "Green Time (steps)",
-    fixed={"alpha":0.1,"gamma":0.95,"episodes":150,"yellow_time":3,"epsilon_decay":0.98},
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "yellow_time": 3,
+           "epsilon_decay": 0.98, "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+           "switch_penalty": DEFAULT_SWITCH_PENALTY,
+           "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY},
     color="purple", filename="04_green_time", title="Green Time Sensitivity")
 
 single_plot("yellow_time", "Yellow Time (steps)",
-    fixed={"alpha":0.1,"gamma":0.95,"episodes":150,"green_time":10,"epsilon_decay":0.98},
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "epsilon_decay": 0.98, "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+           "switch_penalty": DEFAULT_SWITCH_PENALTY,
+           "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY},
     color="brown", filename="05_yellow_time", title="Yellow Time Sensitivity")
 
 single_plot("epsilon_decay", "Epsilon Decay",
-    fixed={"alpha":0.1,"gamma":0.95,"episodes":150,"green_time":10,"yellow_time":3},
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "yellow_time": 3, "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+           "switch_penalty": DEFAULT_SWITCH_PENALTY,
+           "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY},
     color="teal", filename="06_decay", title="Epsilon Decay Sensitivity")
+
+# NEW: sensitivity plots for the three added reward/env params
+single_plot("min_green_cycles", "Min Green (cycles)",
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "yellow_time": 3, "epsilon_decay": 0.98,
+           "switch_penalty": DEFAULT_SWITCH_PENALTY,
+           "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY},
+    color="crimson", filename="07_min_green_cycles", title="Min Green Cycles Sensitivity")
+
+single_plot("switch_penalty", "Switch Penalty",
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "yellow_time": 3, "epsilon_decay": 0.98,
+           "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+           "wrong_direction_penalty": DEFAULT_WRONG_DIRECTION_PENALTY},
+    color="darkcyan", filename="08_switch_penalty", title="Switch Penalty Sensitivity")
+
+single_plot("wrong_direction_penalty", "Wrong-Direction Penalty",
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "yellow_time": 3, "epsilon_decay": 0.98,
+           "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES,
+           "switch_penalty": DEFAULT_SWITCH_PENALTY},
+    color="darkgoldenrod", filename="09_wrong_direction_penalty",
+    title="Wrong-Direction Penalty Sensitivity")
 
 
 # ================================================================
@@ -138,16 +200,26 @@ single_plot("epsilon_decay", "Epsilon Decay",
 # ================================================================
 
 joint_plot("alpha", "gamma", "Alpha", "Gamma",
-    fixed={"episodes":150,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
-    filename="07_alpha_gamma", title="Alpha + Gamma Joint")
+    fixed={**COMMON_FIXED, "episodes": 150},
+    filename="10_alpha_gamma", title="Alpha + Gamma Joint")
 
 joint_plot("gamma", "episodes", "Gamma", "Episodes",
-    fixed={"alpha":0.1,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
-    filename="08_gamma_episodes", title="Gamma + Episodes Joint")
+    fixed={**COMMON_FIXED, "alpha": 0.1},
+    filename="11_gamma_episodes", title="Gamma + Episodes Joint")
 
 joint_plot("alpha", "episodes", "Alpha", "Episodes",
-    fixed={"gamma":0.95,"green_time":10,"yellow_time":3,"epsilon_decay":0.98},
-    filename="09_alpha_episodes", title="Alpha + Episodes Joint")
+    fixed={**COMMON_FIXED, "gamma": 0.95},
+    filename="12_alpha_episodes", title="Alpha + Episodes Joint")
+
+# NEW: joint plot for the two reward-shaping penalties -- useful to see
+# whether they trade off against each other (e.g. does a low switch_penalty
+# need a higher wrong_direction_penalty to compensate, or vice versa)
+joint_plot("switch_penalty", "wrong_direction_penalty",
+    "Switch Penalty", "Wrong-Direction Penalty",
+    fixed={"alpha": 0.1, "gamma": 0.95, "episodes": 150, "green_time": 10,
+           "yellow_time": 3, "epsilon_decay": 0.98,
+           "min_green_cycles": DEFAULT_MIN_GREEN_CYCLES},
+    filename="13_switch_wrongdir_joint", title="Switch Penalty + Wrong-Direction Penalty Joint")
 
 
 # ================================================================
@@ -156,7 +228,10 @@ joint_plot("alpha", "episodes", "Alpha", "Episodes",
 
 all_sorted = sorted(results, key=lambda x: x["avg_wait_per_step"])
 labels     = [
-    f"α={r['alpha']} γ={r['gamma']} ep={r['episodes']}\ngt={r['green_time']} d={r['epsilon_decay']}"
+    f"α={r['alpha']} γ={r['gamma']} ep={r['episodes']}\n"
+    f"gt={r['green_time']} d={r['epsilon_decay']}\n"
+    f"mg={r.get('min_green_cycles', '?')} sp={r.get('switch_penalty', '?')} "
+    f"wp={r.get('wrong_direction_penalty', '?')}"
     for r in all_sorted
 ]
 avg_waits  = [r["avg_wait_per_step"] for r in all_sorted]
@@ -174,11 +249,11 @@ for bar, w in zip(bars, avg_waits):
 ax.set_ylabel("Avg Wait per Step (s)")
 ax.set_title("All Experiments vs Baseline (green = beats baseline)")
 ax.legend()
-ax.tick_params(axis="x", labelsize=7)
+ax.tick_params(axis="x", labelsize=6)
 fig.tight_layout()
-fig.savefig("plots/10_overall.png", dpi=150)
+fig.savefig("plots/14_overall.png", dpi=150)
 plt.close()
-print("Saved plots/10_overall.png")
+print("Saved plots/14_overall.png")
 
 
 # ================================================================
@@ -186,24 +261,29 @@ print("Saved plots/10_overall.png")
 # ================================================================
 
 lines = []
-lines.append("=" * 80)
+lines.append("=" * 90)
 lines.append("EXPERIMENT SUMMARY")
-lines.append("=" * 80)
-lines.append(f"{'Config':<50} {'Avg Wait':>10} {'Improvement':>12}")
-lines.append("-" * 80)
-lines.append(f"{'Baseline (Fixed Timing)':<50} {BASELINE_AVG:>10.2f} {'—':>12}")
+lines.append("=" * 90)
+lines.append(f"{'Config':<70} {'Avg Wait':>10} {'Improvement':>12}")
+lines.append("-" * 90)
+lines.append(f"{'Baseline (Fixed Timing)':<70} {BASELINE_AVG:>10.2f} {'—':>12}")
 
 for r in all_sorted:
     label = (f"scenario={r.get('scenario','medium')} "
-         f"a={r['alpha']} g={r['gamma']} ep={r['episodes']}")
+         f"a={r['alpha']} g={r['gamma']} ep={r['episodes']} "
+         f"mg={r.get('min_green_cycles', '?')} "
+         f"sp={r.get('switch_penalty', '?')} wp={r.get('wrong_direction_penalty', '?')}")
     pct = improvement(r["avg_wait_per_step"])
-    lines.append(f"{label:<50} {r['avg_wait_per_step']:>10.2f} {pct:>+11.1f}%")
+    lines.append(f"{label:<70} {r['avg_wait_per_step']:>10.2f} {pct:>+11.1f}%")
 
-lines.append("=" * 80)
+lines.append("=" * 90)
 best = all_sorted[0]
 lines.append(f"\nBEST CONFIG:")
 lines.append(f"  alpha={best['alpha']}, gamma={best['gamma']}, episodes={best['episodes']}")
 lines.append(f"  green={best['green_time']}, yellow={best['yellow_time']}, decay={best['epsilon_decay']}")
+lines.append(f"  min_green_cycles={best.get('min_green_cycles', '?')}, "
+             f"switch_penalty={best.get('switch_penalty', '?')}, "
+             f"wrong_direction_penalty={best.get('wrong_direction_penalty', '?')}")
 lines.append(f"  Avg Wait   : {best['avg_wait_per_step']:.2f}s")
 lines.append(f"  Improvement: {improvement(best['avg_wait_per_step']):+.1f}% over baseline")
 

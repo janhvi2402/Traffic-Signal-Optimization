@@ -21,10 +21,18 @@ from baseline import run_offset_fixed_time
 GREEN_TIME  = 10
 YELLOW_TIME = 3
 
+# NEW: must match train.py exactly — the junction can't switch again
+# before it's held for this many green cycles. GREEN_TIME=10 steps = 10s,
+# so MIN_GREEN_CYCLES=1 enforces a 10-second minimum green.
+MIN_GREEN_CYCLES = 1
+
 J1 = "J1"
 J2 = "J2"
 
-ACTION_SPACE = [(0, 0), (0, 2), (2, 0), (2, 2)]
+# NEW: relative actions (0=stay, 1=switch) per junction — must match
+# train.py exactly, or the trained Q-table's action indices won't mean
+# the same thing here.
+ACTION_SPACE = [(0, 0), (0, 1), (1, 0), (1, 1)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
 # --- set True when you want to record a video, False for fast headless eval ---
@@ -70,30 +78,49 @@ def bucket(x):
     else:          return 6
 
 
+def bucket_hold(cycles):
+    """NEW: must stay identical to bucket_hold() in train.py."""
+    if cycles == 0:   return 0
+    elif cycles == 1: return 1
+    elif cycles == 2: return 2
+    else:             return 3
+
+
 def get_halted(lane_id):
     return traci.lane.getLastStepHaltingNumber(lane_id)
 
 
-def get_state(j1_phase, j2_phase):
-    if j1_phase == 0:
-        j1_green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
-        j1_red   = get_halted("W_J1_0")  + get_halted("J2_J1_0")
+def get_arm_queues(which, phase):
+    """NEW: raw halted counts for the currently-green / currently-red arm
+    of a junction — must match train.py's version."""
+    if which == "J1":
+        if phase == 0:
+            green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
+            red   = get_halted("W_J1_0")  + get_halted("J2_J1_0")
+        else:
+            green = get_halted("W_J1_0")  + get_halted("J2_J1_0")
+            red   = get_halted("N1_J1_0") + get_halted("S1_J1_0")
     else:
-        j1_green = get_halted("W_J1_0")  + get_halted("J2_J1_0")
-        j1_red   = get_halted("N1_J1_0") + get_halted("S1_J1_0")
+        if phase == 0:
+            green = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+            red   = get_halted("J1_J2_0") + get_halted("E_J2_0")
+        else:
+            green = get_halted("J1_J2_0") + get_halted("E_J2_0")
+            red   = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+    return green, red
 
-    if j2_phase == 0:
-        j2_green = get_halted("N2_J2_0") + get_halted("S2_J2_0")
-        j2_red   = get_halted("J1_J2_0") + get_halted("E_J2_0")
-    else:
-        j2_green = get_halted("J1_J2_0") + get_halted("E_J2_0")
-        j2_red   = get_halted("N2_J2_0") + get_halted("S2_J2_0")
+
+def get_state(j1_phase, j2_phase, j1_hold, j2_hold):
+    j1_green, j1_red = get_arm_queues("J1", j1_phase)
+    j2_green, j2_red = get_arm_queues("J2", j2_phase)
 
     return (
         bucket(j1_green), bucket(j1_red),
         bucket(j2_green), bucket(j2_red),
         j1_phase // 2,
         j2_phase // 2,
+        bucket_hold(j1_hold),   # NEW
+        bucket_hold(j2_hold),   # NEW
     )
 
 
@@ -111,6 +138,8 @@ def run_qlearning_episode(seed):
 
     j1_phase = 0
     j2_phase = 0
+    j1_hold  = 0   # NEW
+    j2_hold  = 0   # NEW
     traci.trafficlight.setPhase(J1, j1_phase)
     traci.trafficlight.setPhaseDuration(J1, 9999)
     traci.trafficlight.setPhase(J2, j2_phase)
@@ -123,7 +152,7 @@ def run_qlearning_episode(seed):
     total_decisions = 0
 
     while traci.simulation.getMinExpectedNumber() > 0:
-        state = get_state(j1_phase, j2_phase)
+        state = get_state(j1_phase, j2_phase, j1_hold, j2_hold)
         total_decisions += 1
         if state in q_table:
             action_idx = int(np.argmax(q_table[state]))
@@ -131,16 +160,23 @@ def run_qlearning_episode(seed):
             unseen_states += 1
             action_idx = 0
 
-        j1_new, j2_new = ACTION_SPACE[action_idx]
+        j1_choice, j2_choice = ACTION_SPACE[action_idx]
+        # NEW: same MIN_GREEN_CYCLES mask used during training — a chosen
+        # "switch" only actually happens if the junction has held long enough.
+        j1_switching = bool(j1_choice) and (j1_hold >= MIN_GREEN_CYCLES)
+        j2_switching = bool(j2_choice) and (j2_hold >= MIN_GREEN_CYCLES)
 
-        if j1_new != j1_phase:
+        j1_new = (2 - j1_phase) if j1_switching else j1_phase
+        j2_new = (2 - j2_phase) if j2_switching else j2_phase
+
+        if j1_switching:
             traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_phase])
             traci.trafficlight.setPhaseDuration(J1, 9999)
-        if j2_new != j2_phase:
+        if j2_switching:
             traci.trafficlight.setPhase(J2, YELLOW_PHASE[j2_phase])
             traci.trafficlight.setPhaseDuration(J2, 9999)
 
-        if j1_new != j1_phase or j2_new != j2_phase:
+        if j1_switching or j2_switching:
             for _ in range(YELLOW_TIME):
                 traci.simulationStep()
                 sim_steps += 1
@@ -153,6 +189,8 @@ def run_qlearning_episode(seed):
         traci.trafficlight.setPhase(J2, j2_new)
         traci.trafficlight.setPhaseDuration(J2, 9999)
         j1_phase, j2_phase = j1_new, j2_new
+        j1_hold = 0 if j1_switching else j1_hold + 1   # NEW
+        j2_hold = 0 if j2_switching else j2_hold + 1   # NEW
 
         for _ in range(GREEN_TIME):
             traci.simulationStep()
@@ -170,16 +208,13 @@ N_EPISODES = 1 if RECORD else 5
 ql_waits = []
 fixed_waits = []
 coverages = []
-ql_arrived = []       # NEW
-ql_steps_list = []    # NEW
+ql_arrived = []
+ql_steps_list = []
 
 for ep in range(N_EPISODES):
     # Fixed-time baseline
     traci.start(_sumo_cmd(ep))
     traci.simulationStep()
-    # max_steps set high so the real stopping condition is "network fully cleared"
-    # (same criterion run_qlearning_episode uses), not an arbitrary step cap.
-    # This keeps the two runs comparable instead of truncating one early.
     _, fixed_avg_wait, _, fixed_steps = run_offset_fixed_time(max_steps=100000)
     print(f"[DEBUG] Episode {ep}: fixed-time ran {fixed_steps} steps before clearing")
     traci.close()
@@ -189,8 +224,8 @@ for ep in range(N_EPISODES):
     _, ql_avg_wait, arrived, steps, coverage = run_qlearning_episode(seed=ep)
     ql_waits.append(ql_avg_wait)
     coverages.append(coverage)
-    ql_arrived.append(arrived)     # NEW
-    ql_steps_list.append(steps)    # NEW
+    ql_arrived.append(arrived)
+    ql_steps_list.append(steps)
 
 fixed_mean = np.mean(fixed_waits)
 ql_mean    = np.mean(ql_waits)
@@ -211,7 +246,6 @@ with open(os.path.join(RESULTS_DIR, "qlearning_vs_fixed_unified.json"), "w") as 
         "qlearning_mean_wait": ql_mean,
         "improvement_pct": improvement,
         "mean_state_coverage": float(np.mean(coverages)),
-        # NEW: per-episode arrays, needed by diagnostic.py for test-time plots
         "fixed_waits_per_episode": [float(x) for x in fixed_waits],
         "ql_waits_per_episode": [float(x) for x in ql_waits],
         "coverage_per_episode": [float(x) for x in coverages],
