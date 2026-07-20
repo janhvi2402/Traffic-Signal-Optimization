@@ -1,0 +1,11 @@
+AUTO-GENERATED DIAGNOSTIC INSIGHTS
+============================================================
+
+- Q-table covers 9183 distinct states.
+- Greedy policy is spread across all 4 actions (most-picked action accounts for 33.3% of states) — no single action dominates, so the policy is not degenerate.
+- Median decision confidence (Q-value spread) is 1.96.
+- Switch-probability-vs-imbalance plot decreases as expected: the agent is less likely to switch away from a junction that is currently serving its congested arm, supporting that it is conditioning on queue state rather than a fixed timer.
+- Mean reward/step improved from -39.686 (first half of training) to -39.646 (second half).
+- Q-table grew to 9183 states by the end of training; 1138 of those were discovered in the second half (growth largely plateaued, suggesting adequate coverage).
+- Across 5 test episodes, Q-learning improved average wait time by +8.2% over fixed-time (range -2.5% to +13.5%).
+- Mean test-time state coverage was 99.5%, i.e. the fraction of decisions where the visited state had been seen in training.
