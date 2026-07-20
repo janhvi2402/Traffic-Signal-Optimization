@@ -24,40 +24,51 @@ ALPHA_MIN     = 0.02
 ALPHA_DECAY   = 0.995      # decay per episode — prevents late-training oscillation
 GAMMA         = 0.95
 EPSILON       = 1.0
-EPSILON_DECAY = 0.98
+
+# State space is 8^4 (queue buckets) * 2*2 (phase feats) * 4*4 (hold
+# buckets, see bucket_hold below) = 262,144 possible keys -- far fewer
+# will actually be visited, but this is bigger than a 300-episode /
+# 0.98-decay schedule was tuned for, so decay is slowed and episode count
+# raised moderately (not as aggressively as the earlier 600-episode
+# attempt, since GREEN_TIME=5 already doubles the number of decision
+# points sampled per episode compared to GREEN_TIME=10).
+EPSILON_DECAY = 0.985
 MIN_EPSILON   = 0.05
+# CHANGED: 450 -> 500. bucket_hold went from 3 values to 4 (see below, fixes
+# a state-aliasing bug), which grew the nominal state space ~1.8x -- small
+# bump to give the table a bit more room to converge.
+EPISODES    = 500
 
-EPISODES    = 300
-GREEN_TIME  = 10
+# GREEN_TIME halved from the original 10s -> 5s. The win is granularity:
+# hold durations beyond the min-green floor now extend in 5s steps
+# (10, 15, 20, 25...) instead of 10s jumps, giving the agent finer control
+# for matching hold length to queue size. Reward is normalized by
+# GREEN_TIME (see get_reward/apply_action), so switch/direction penalties
+# end up the same effective magnitude per switch regardless of this value
+# -- verified below, not a source of drift.
+GREEN_TIME  = 5
 YELLOW_TIME = 3
+# MIN_GREEN_CYCLES=2 * GREEN_TIME(5) = 10s minimum green -- same floor as
+# the very first version of this project. A junction with an empty arm can
+# still switch away at 10s; this does NOT force a longer wait just because
+# the state representation elsewhere got richer.
+MIN_GREEN_CYCLES = 2
 
-# NEW: minimum number of full green cycles a junction must hold before it's
-# allowed to switch again. GREEN_TIME=10 steps already equals 10 seconds of
-# sim time, so MIN_GREEN_CYCLES=1 enforces a 10-second minimum green — the
-# junction can't switch again until at least one full cycle has elapsed.
-# Without this, nothing stops the agent from switching back on the very
-# next decision, so it never experiences (or gets reward feedback from)
-# holding longer than one cycle even when the queue is still heavy.
-MIN_GREEN_CYCLES = 1   # 1 cycle * GREEN_TIME(10) = 10s minimum green
-
-# NEW: reward-shaping constants, kept small relative to the -total_halted
-# term (which can easily be 10-30+ across 8 lanes) so they nudge behavior
-# rather than dominate the queue signal. SWITCH_PENALTY discourages
-# flip-flopping outright; WRONG_DIRECTION_PENALTY specifically discourages
-# switching away from the arm that's still more congested than the arm
-# gaining green. Tune these up if the agent still flip-flops too much, or
-# down if it starts refusing to switch even when it clearly should.
+# Reward-shaping constants, kept small relative to the -total_halted term.
+# SWITCH_PENALTY is a flat tax on churn; WRONG_DIRECTION_PENALTY is
+# multiplied by the bucketed size of the abandoned queue (see get_reward)
+# so abandoning a big backlog costs more than abandoning a small one --
+# this is the main lever that should make hold duration track queue size.
 SWITCH_PENALTY           = 0.5
-WRONG_DIRECTION_PENALTY  = 1.0
+WRONG_DIRECTION_PENALTY  = 1.0   # multiplied by bucket(abandoned queue), see get_reward
 
 J1 = "J1"
 J2 = "J2"
 
-# NEW: actions are now RELATIVE per junction (0 = stay, 1 = switch) instead
-# of absolute target phases. This removes the old failure mode where a
-# zero-initialized Q-table's argmax tie-break (always index 0) silently
-# forced phase (0,0) regardless of current phase — with stay=0, a tie now
-# defaults to holding the current phase instead of forcing a switch.
+# Actions are RELATIVE per junction (0 = stay, 1 = switch) instead of
+# absolute target phases -- with stay=0, a zero-initialized Q-table's
+# argmax tie-break defaults to holding the current phase, not forcing a
+# switch.
 ACTION_SPACE = [(0, 0), (0, 1), (1, 0), (1, 1)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
@@ -72,30 +83,39 @@ def bucket(x):
     If they diverge, the Q-table's state keys won't match what test.py
     looks up, and every state will silently fall through as "unseen".
 
-    Thresholds tuned to this project's route file (~0.6-0.7 veh/sec
-    per entry arm, ~3.8 veh/sec network-wide) — queues regularly exceed
-    12 vehicles under this demand, so the old 5-bucket version collapsed
-    most of the congested / interesting range into a single bucket.
+    Sanity-checked against network.net.xml: every arm this sums is a
+    single-lane edge of length ~92.80m (or 85.60m for the two
+    inter-junction links), so at SUMO's default ~7.5m/vehicle spacing a
+    green/red arm-pair sum tops out around 23-24 vehicles. These 8
+    buckets (0, 1-2, 3-5, 6-8, 9-11, 12-15, 16-20, 21+) cover that full
+    range with the finest resolution in the 3-15 zone where most
+    switch/hold decisions actually happen.
     """
     if x == 0:     return 0
     elif x <= 2:   return 1
     elif x <= 5:   return 2
-    elif x <= 9:   return 3
-    elif x <= 15:  return 4
-    elif x <= 25:  return 5
-    else:          return 6
+    elif x <= 8:   return 3
+    elif x <= 11:  return 4
+    elif x <= 15:  return 5
+    elif x <= 20:  return 6
+    else:          return 7
 
 
 def bucket_hold(cycles):
     """
-    NEW: bucket how many green cycles the current phase has already been
-    held for, so the state can distinguish "just switched" from "been
-    holding a while" — must stay IDENTICAL to the copy in test.py.
+    CHANGED: was 3 values (<=floor, <=floor+2, >floor+2). That collapsed
+    hold=0, hold=1, AND hold=MIN_GREEN_CYCLES into a single bucket 0 --
+    but hold < MIN_GREEN_CYCLES is a state where "switch" is masked into a
+    no-op regardless of what the agent picks, while hold == MIN_GREEN_CYCLES
+    is the first cycle where switching actually does something. Merging
+    those muddies the Q-values right at the moment the decision starts to
+    matter. Now split into 4: forced-stay / floor-just-reached / extended
+    a bit / extended a lot. MUST stay IDENTICAL to the copy in test.py.
     """
-    if cycles == 0:   return 0
-    elif cycles == 1: return 1
-    elif cycles == 2: return 2
-    else:             return 3
+    if cycles < MIN_GREEN_CYCLES:         return 0   # forced to stay, floor not reached
+    elif cycles == MIN_GREEN_CYCLES:      return 1   # floor just reached, free to act
+    elif cycles <= MIN_GREEN_CYCLES + 2:  return 2   # extended a bit past floor
+    else:                                  return 3   # extended a lot
 
 
 def get_halted(lane_id):
@@ -103,7 +123,7 @@ def get_halted(lane_id):
 
 
 def get_arm_queues(which, phase):
-    """NEW: raw (unbucketed) halted counts for the currently-green / currently-red
+    """Raw (unbucketed) halted counts for the currently-green / currently-red
     arm of a junction, given its phase. Factored out of get_state so reward
     shaping (get_reward) can reuse it for the wrong-direction check."""
     if which == "J1":
@@ -132,23 +152,24 @@ def get_state(j1_phase, j2_phase, j1_hold, j2_hold):
         bucket(j2_green), bucket(j2_red),
         j1_phase // 2,
         j2_phase // 2,
-        bucket_hold(j1_hold),   # NEW
-        bucket_hold(j2_hold),   # NEW
+        bucket_hold(j1_hold),
+        bucket_hold(j2_hold),
     )
 
 
-def get_reward(j1_switched, j2_switched, j1_wrong_dir, j2_wrong_dir):
+def get_reward(j1_switched, j2_switched, j1_wrong_dir, j2_wrong_dir,
+                j1_abandoned_bucket, j2_abandoned_bucket):
     """
     Normalized by GREEN_TIME so reward scale is comparable across
-    different gt configs (raw cumulative halted count would otherwise
-    scale with gt, making runs with different gt structurally
-    incomparable).
+    different gt configs.
 
-    NEW: subtracts SWITCH_PENALTY per switch (discourages flip-flopping),
-    plus WRONG_DIRECTION_PENALTY if the switch abandoned the arm that was
-    still more congested than the arm gaining green. This directly targets
-    the flat hold-duration-vs-backlog behaviour and ~72% flip-flop rate
-    seen in diagnostics.
+    WRONG_DIRECTION_PENALTY is multiplied by the bucketed size of the
+    queue that was abandoned (0-7), instead of applied as a flat constant:
+    abandoning a small residual queue is cheap, abandoning a heavy backlog
+    is expensive. This is the mechanism meant to teach "hold longer when
+    the queue you're serving is still big". Because this constant is added
+    every step of the cycle loop and the total is divided by GREEN_TIME at
+    the end, its effective per-switch magnitude is invariant to GREEN_TIME.
     """
     total_halted = 0
     for lane in [
@@ -161,11 +182,11 @@ def get_reward(j1_switched, j2_switched, j1_wrong_dir, j2_wrong_dir):
     if j1_switched:
         reward -= SWITCH_PENALTY
         if j1_wrong_dir:
-            reward -= WRONG_DIRECTION_PENALTY
+            reward -= WRONG_DIRECTION_PENALTY * j1_abandoned_bucket
     if j2_switched:
         reward -= SWITCH_PENALTY
         if j2_wrong_dir:
-            reward -= WRONG_DIRECTION_PENALTY
+            reward -= WRONG_DIRECTION_PENALTY * j2_abandoned_bucket
     return reward
 
 
@@ -179,12 +200,9 @@ def choose_action(state):
 
 def apply_action(action_idx, j1_cur, j2_cur, j1_hold, j2_hold):
     """
-    NEW: actions are relative (0=stay,1=switch) and masked by
-    MIN_GREEN_CYCLES — a junction can only actually switch if the agent
-    chose to AND it has held long enough. This forces the agent to sample
-    longer holds during training instead of always taking the fastest
-    possible switch, and gives get_reward the info it needs for the
-    direction-correctness penalty.
+    Actions are relative (0=stay,1=switch) and masked by MIN_GREEN_CYCLES —
+    a junction can only actually switch if the agent chose to AND it has
+    held long enough.
     """
     j1_choice, j2_choice = ACTION_SPACE[action_idx]
 
@@ -194,17 +212,22 @@ def apply_action(action_idx, j1_cur, j2_cur, j1_hold, j2_hold):
     j1_new = (2 - j1_cur) if j1_switching else j1_cur   # 0<->2
     j2_new = (2 - j2_cur) if j2_switching else j2_cur
 
-    # NEW: check, at the moment of switching, whether the arm losing green
-    # was still MORE congested than the arm gaining it (raw counts, used
-    # only for reward shaping — not part of the Q-table state).
+    # Check, at the moment of switching, whether the arm losing green was
+    # still MORE congested than the arm gaining it, and how big that
+    # abandoned queue was (bucketed). Used only for reward shaping — not
+    # part of the Q-table state.
     j1_wrong_dir = False
     j2_wrong_dir = False
+    j1_abandoned_bucket = 0
+    j2_abandoned_bucket = 0
     if j1_switching:
         g, r = get_arm_queues("J1", j1_cur)
         j1_wrong_dir = g > r
+        j1_abandoned_bucket = bucket(g)
     if j2_switching:
         g, r = get_arm_queues("J2", j2_cur)
         j2_wrong_dir = g > r
+        j2_abandoned_bucket = bucket(g)
 
     if j1_switching:
         traci.trafficlight.setPhase(J1, YELLOW_PHASE[j1_cur])
@@ -225,7 +248,10 @@ def apply_action(action_idx, j1_cur, j2_cur, j1_hold, j2_hold):
     cycle_reward = 0
     for _ in range(GREEN_TIME):
         traci.simulationStep()
-        cycle_reward += get_reward(j1_switching, j2_switching, j1_wrong_dir, j2_wrong_dir)
+        cycle_reward += get_reward(
+            j1_switching, j2_switching, j1_wrong_dir, j2_wrong_dir,
+            j1_abandoned_bucket, j2_abandoned_bucket
+        )
 
     return cycle_reward / GREEN_TIME, j1_new, j2_new, j1_switching, j2_switching
 
@@ -254,7 +280,7 @@ def train():
 
         j1_phase = 0
         j2_phase = 0
-        j1_hold  = 0   # NEW: cycles the current phase has been held
+        j1_hold  = 0   # cycles the current phase has been held
         j2_hold  = 0
         traci.trafficlight.setPhase(J1, j1_phase)
         traci.trafficlight.setPhaseDuration(J1, 9999)
@@ -274,8 +300,8 @@ def train():
 
             j1_phase = j1_new
             j2_phase = j2_new
-            j1_hold  = 0 if j1_switched else j1_hold + 1   # NEW
-            j2_hold  = 0 if j2_switched else j2_hold + 1   # NEW
+            j1_hold  = 0 if j1_switched else j1_hold + 1
+            j2_hold  = 0 if j2_switched else j2_hold + 1
 
             next_state = get_state(j1_phase, j2_phase, j1_hold, j2_hold)
 

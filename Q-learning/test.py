@@ -18,20 +18,20 @@ sys.path.append(COMMON_DIR)
 
 from baseline import run_offset_fixed_time
 
-GREEN_TIME  = 10
+# Must match train.py exactly.
+GREEN_TIME  = 5
 YELLOW_TIME = 3
 
-# NEW: must match train.py exactly — the junction can't switch again
-# before it's held for this many green cycles. GREEN_TIME=10 steps = 10s,
-# so MIN_GREEN_CYCLES=1 enforces a 10-second minimum green.
-MIN_GREEN_CYCLES = 1
+# Must match train.py exactly. GREEN_TIME=5 steps = 5s, so
+# MIN_GREEN_CYCLES=2 enforces a 10-second minimum green.
+MIN_GREEN_CYCLES = 2
 
 J1 = "J1"
 J2 = "J2"
 
-# NEW: relative actions (0=stay, 1=switch) per junction — must match
-# train.py exactly, or the trained Q-table's action indices won't mean
-# the same thing here.
+# Relative actions (0=stay, 1=switch) per junction — must match train.py
+# exactly, or the trained Q-table's action indices won't mean the same
+# thing here.
 ACTION_SPACE = [(0, 0), (0, 1), (1, 0), (1, 1)]
 YELLOW_PHASE = {0: 1, 2: 3}
 
@@ -72,18 +72,24 @@ def bucket(x):
     if x == 0:     return 0
     elif x <= 2:   return 1
     elif x <= 5:   return 2
-    elif x <= 9:   return 3
-    elif x <= 15:  return 4
-    elif x <= 25:  return 5
-    else:          return 6
+    elif x <= 8:   return 3
+    elif x <= 11:  return 4
+    elif x <= 15:  return 5
+    elif x <= 20:  return 6
+    else:          return 7
 
 
 def bucket_hold(cycles):
-    """NEW: must stay identical to bucket_hold() in train.py."""
-    if cycles == 0:   return 0
-    elif cycles == 1: return 1
-    elif cycles == 2: return 2
-    else:             return 3
+    """
+    CHANGED: was 3 values, now 4 — separates "forced to stay" (hold below
+    the min-green floor, switch is masked to a no-op) from "floor just
+    reached" (first cycle where switching actually does something).
+    MUST stay identical to bucket_hold() in train.py.
+    """
+    if cycles < MIN_GREEN_CYCLES:         return 0
+    elif cycles == MIN_GREEN_CYCLES:      return 1
+    elif cycles <= MIN_GREEN_CYCLES + 2:  return 2
+    else:                                  return 3
 
 
 def get_halted(lane_id):
@@ -91,8 +97,8 @@ def get_halted(lane_id):
 
 
 def get_arm_queues(which, phase):
-    """NEW: raw halted counts for the currently-green / currently-red arm
-    of a junction — must match train.py's version."""
+    """Raw halted counts for the currently-green / currently-red arm of a
+    junction — must match train.py's version."""
     if which == "J1":
         if phase == 0:
             green = get_halted("N1_J1_0") + get_halted("S1_J1_0")
@@ -119,8 +125,8 @@ def get_state(j1_phase, j2_phase, j1_hold, j2_hold):
         bucket(j2_green), bucket(j2_red),
         j1_phase // 2,
         j2_phase // 2,
-        bucket_hold(j1_hold),   # NEW
-        bucket_hold(j2_hold),   # NEW
+        bucket_hold(j1_hold),
+        bucket_hold(j2_hold),
     )
 
 
@@ -138,8 +144,8 @@ def run_qlearning_episode(seed):
 
     j1_phase = 0
     j2_phase = 0
-    j1_hold  = 0   # NEW
-    j2_hold  = 0   # NEW
+    j1_hold  = 0
+    j2_hold  = 0
     traci.trafficlight.setPhase(J1, j1_phase)
     traci.trafficlight.setPhaseDuration(J1, 9999)
     traci.trafficlight.setPhase(J2, j2_phase)
@@ -161,7 +167,7 @@ def run_qlearning_episode(seed):
             action_idx = 0
 
         j1_choice, j2_choice = ACTION_SPACE[action_idx]
-        # NEW: same MIN_GREEN_CYCLES mask used during training — a chosen
+        # Same MIN_GREEN_CYCLES mask used during training — a chosen
         # "switch" only actually happens if the junction has held long enough.
         j1_switching = bool(j1_choice) and (j1_hold >= MIN_GREEN_CYCLES)
         j2_switching = bool(j2_choice) and (j2_hold >= MIN_GREEN_CYCLES)
@@ -189,8 +195,8 @@ def run_qlearning_episode(seed):
         traci.trafficlight.setPhase(J2, j2_new)
         traci.trafficlight.setPhaseDuration(J2, 9999)
         j1_phase, j2_phase = j1_new, j2_new
-        j1_hold = 0 if j1_switching else j1_hold + 1   # NEW
-        j2_hold = 0 if j2_switching else j2_hold + 1   # NEW
+        j1_hold = 0 if j1_switching else j1_hold + 1
+        j2_hold = 0 if j2_switching else j2_hold + 1
 
         for _ in range(GREEN_TIME):
             traci.simulationStep()
