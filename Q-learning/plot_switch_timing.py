@@ -22,8 +22,7 @@ Digs into *why* switches happen when they do:
      with how long that phase was then held before switching away again.
      Buckets by that starting backlog and reports mean hold duration per
      bucket, plus the Pearson correlation between starting backlog and
-     hold length. This is the number to compare against the pre-fix
-     baseline (which came out ~0 for both junctions).
+     hold length.
 
 Run from the Q-learning project root:
     python plot_switch_timing_qlearning.py
@@ -54,21 +53,28 @@ QTABLE_PATH  = os.path.join(SCRIPT_DIR, "qtable.pkl")
 
 # Pull the ACTUAL training hyperparameters off train.py rather than
 # retyping them -- keeps the label from drifting out of sync with
-# whatever qtable.pkl this run is actually analyzing. Also reuses
-# train.py's ACTION_SPACE / MIN_GREEN_CYCLES / bucket / bucket_hold /
-# get_arm_queues / get_state directly, so this script can never silently
-# drift out of sync with how the table was actually trained.
+# whatever qtable.pkl this run is actually analyzing.
+#
+# IMPORTANT: this imports a module literally named "train" (train.py in
+# this same folder). If your training script is actually named
+# something else (e.g. model.py), change the import below to match --
+# otherwise this will raise ModuleNotFoundError, or worse, silently
+# import a stale/different file of the same name from elsewhere on
+# sys.path.
 import model as trainmod
 
 N_EPISODES = 5
 BIN_SIZE   = 100
 TL_IDS     = ["J1", "J2"]
-# NEW: minimum possible interval is now governed by the min-green floor,
-# not just one yellow+green cycle.
 MIN_INTERVAL = trainmod.MIN_GREEN_CYCLES * trainmod.GREEN_TIME + trainmod.YELLOW_TIME
-N_BUCKETS = 7   # bucket() returns 0..6
+# CHANGED: 7 -> 8, must match trainmod.bucket()'s return range exactly
+# (0..7 after the resolution fix). Leaving this at 7 silently drops every
+# switch whose starting backlog fell in bucket 7 (the biggest-queue
+# bucket) from the "hold length vs backlog" panel instead of erroring --
+# exactly the switches most relevant to the duration-sensitivity question.
+N_BUCKETS = 8   # bucket() returns 0..7
 
-RUN_LABEL = "qlearning_v2_relaction_mingreen"   # <-- update this each time you retrain
+RUN_LABEL = "qlearning_v3_finer_buckets_5s_cycle"   # <-- update this each time you retrain
 
 
 def run_episode(q_table, seed):
@@ -252,7 +258,7 @@ def main():
                 if not np.isnan(m):
                     ax.text(xi, m + (s if not np.isnan(s) else 0) + 1, f"n={c}", ha="center", fontsize=7)
             ax.set_xticks(x)
-            ax.set_xlabel("starting-backlog bucket (queue this phase inherited)\n0=empty ... 6=25+ vehicles")
+            ax.set_xlabel("starting-backlog bucket (queue this phase inherited)\n0=empty ... 7=21+ vehicles")
             ax.set_ylabel("mean hold duration (steps)")
             ax.legend(fontsize=8)
 

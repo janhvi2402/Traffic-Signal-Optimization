@@ -32,8 +32,13 @@ TESTRESULT_PATH = os.path.join(SCRIPT_DIR, "results", "qlearning_vs_fixed_unifie
 OUT_DIR         = os.path.join(SCRIPT_DIR, "diagnostics")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-ACTION_SPACE  = [(0, 0), (0, 2), (2, 0), (2, 2)]
-ACTION_LABELS = ["Both NS\n(0,0)", "J1 NS / J2 EW\n(0,2)", "J1 EW / J2 NS\n(2,0)", "Both EW\n(2,2)"]
+# CHANGED: train.py now uses RELATIVE actions (0=stay, 1=switch) per
+# junction instead of absolute target phases -- must match train.py's
+# ACTION_SPACE exactly, or the greedy-action analysis below (panel d in
+# particular) silently produces meaningless results instead of erroring.
+ACTION_SPACE  = [(0, 0), (0, 1), (1, 0), (1, 1)]
+ACTION_LABELS = ["Both Stay\n(0,0)", "J1 Stay / J2 Switch\n(0,1)",
+                  "J1 Switch / J2 Stay\n(1,0)", "Both Switch\n(1,1)"]
 
 plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
 
@@ -92,14 +97,19 @@ def run_qtable_diagnostics():
     ax.set_ylabel("Number of states")
 
     # (d) policy sanity check: does the agent switch when it should?
-    # state layout: (j1_green, j1_red, j2_green, j2_red, j1_phase_feat, j2_phase_feat)
+    # state layout: (j1_green, j1_red, j2_green, j2_red, j1_phase_feat,
+    # j2_phase_feat, j1_hold_bucket, j2_hold_bucket) -- only the first 6
+    # positions are used here, hold buckets aren't needed for this check.
+    #
+    # CHANGED: with RELATIVE actions, "does the greedy action switch J1"
+    # is just the action's own 0/1 component -- it no longer needs
+    # comparing against current phase (that comparison only made sense
+    # for the old absolute-phase action space).
     j1_green      = np.array([s[0] for s in states])
     j1_red        = np.array([s[1] for s in states])
-    j1_phase_feat = np.array([s[4] for s in states])      # 0 -> currently phase 0, 1 -> currently phase 2
-    current_j1_phase = j1_phase_feat * 2
-    best_j1_new   = np.array([ACTION_SPACE[a][0] for a in best_actions])
-    switch_j1     = (best_j1_new != current_j1_phase).astype(float)
-    imbalance     = j1_green - j1_red   # positive => green arm more congested than red arm
+    best_j1_choice = np.array([ACTION_SPACE[a][0] for a in best_actions])  # 0=stay, 1=switch
+    switch_j1      = best_j1_choice.astype(float)
+    imbalance      = j1_green - j1_red   # positive => green arm more congested than red arm
 
     diffs = sorted(set(imbalance.tolist()))
     xs, ys, ns = [], [], []
@@ -114,7 +124,7 @@ def run_qtable_diagnostics():
     ax.plot(xs, ys, marker="o", color="crimson", linewidth=2)
     ax.axhline(0.5, color="gray", linestyle=":")
     ax.set_xlabel("Green-arm queue bucket − Red-arm queue bucket")
-    ax.set_ylabel("P(agent switches J1 phase)")
+    ax.set_ylabel("P(agent's greedy action switches J1)")
     ax.set_title("Policy Sanity Check: Switch Probability vs Queue Imbalance\n"
                   "(should fall as the green arm gets more congested)")
 
