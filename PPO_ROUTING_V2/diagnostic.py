@@ -14,8 +14,10 @@ CHANGES vs your previous diagnostic script:
     off the info dict returned by step(), matching centralized's
     diagnostic style (hold_durations, hold_mean_abs_imbalance,
     switch_agrees_with_imbalance, wrong_direction_count).
-  - MIN_GREEN is now 15 (env.py class constant), used for the switch-
-    rate-vs-ceiling stat instead of being hardcoded here.
+  - MIN_GREEN is now RANDOMIZED per episode (MIN_GREEN_RANGE=(10, 20),
+    set in single_env.py), not a fixed constant. The switch-rate-vs-
+    ceiling stat below uses the MEAN of the min_green values actually
+    sampled across this run's episodes, not a hardcoded number.
 """
 
 import os

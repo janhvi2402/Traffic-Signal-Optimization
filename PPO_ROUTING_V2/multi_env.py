@@ -20,25 +20,16 @@ class SumoMultiJunctionEnv(gym.Env):
     8-dim halves (see test.py / diagnostic.py / plot_switch_timing.py).
 
     CHANGED, matching single_env.py's fixes (see that file's docstring
-    for the full diagnosis -- summary: the previous config, aligned to
-    centralized's IMBALANCE_BONUS_WEIGHT=0.0 / fixed MIN_GREEN=15,
-    produced a 0.982 J1-vs-J2 switch-timing correlation and a negative
-    hold-duration/imbalance correlation):
-
-      - IMBALANCE_BONUS_WEIGHT back on (0.0 -> 0.4), dense per-junction,
-        every step -- same reasoning as single_env.py.
-      - SWITCH_PENALTY lowered (0.4 -> 0.15), WRONG_DIRECTION_PENALTY
-        trimmed (0.25 -> 0.2).
-      - MIN_GREEN is now randomized INDEPENDENTLY PER JUNCTION, per
-        episode (self._min_green["J1"] != self._min_green["J2"] in
-        general) -- this is the direct fix for the 0.982 correlation.
-        With both junctions sharing one fixed MIN_GREEN, they had a
-        shared clock to switch on together regardless of their own
-        (independently randomized) local demand -- that's coordinated
-        by construction, not because either one is reading its own
-        queue. Decorrelating MIN_GREEN removes that shared landmark, so
-        any remaining synchrony has to come from genuinely correlated
-        demand, not the environment's own timing.
+    for the full diagnosis):
+      - IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5 -- at 0.4 this dense
+        per-junction term was numerically too small (built from a
+        DIFFERENCE) relative to the base queue penalty (built from a
+        SUM, same denominator) to meaningfully compete for the gradient.
+      - SWITCH_PENALTY lowered 0.15 -> 0.1, giving the now much stronger
+        imbalance bonus more room to be what decides WHEN to switch.
+      - MIN_GREEN is randomized INDEPENDENTLY PER JUNCTION (unchanged
+        from the previous fix -- this part already worked: J1-vs-J2
+        switch-timing correlation dropped from 0.982 to 0.307).
 
     Observation (per junction, 8 features x 2 = 16 total) -- unchanged:
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
@@ -69,11 +60,11 @@ class SumoMultiJunctionEnv(gym.Env):
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    MIN_GREEN_RANGE = (10, 20)   # was fixed MIN_GREEN=15, shared by both junctions
+    MIN_GREEN_RANGE = (10, 20)
 
-    SWITCH_PENALTY           = 0.15
+    SWITCH_PENALTY           = 0.1
     WASTED_VOTE_PENALTY      = 0.02
-    IMBALANCE_BONUS_WEIGHT   = 0.4
+    IMBALANCE_BONUS_WEIGHT   = 1.5
     WRONG_DIRECTION_PENALTY  = 0.2
 
     def __init__(
@@ -295,8 +286,6 @@ class SumoMultiJunctionEnv(gym.Env):
 
         self._episode_count += 1
 
-        # independently randomized MIN_GREEN per junction -- the direct
-        # fix for J1/J2 sharing a synchronized clock
         lo, hi = self.min_green_range
         self._min_green = {
             tl: int(self.np_random.integers(lo, hi + 1)) for tl in self.TL_IDS

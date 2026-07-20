@@ -31,7 +31,7 @@ MAX_STEPS    = 3600
 N_EPISODES   = 5
 BIN_SIZE     = 100
 
-RUN_LABEL = "sp0.15_wd0.2_ibw0.4_mingreen10-20"   # <-- update this each time you retrain
+RUN_LABEL = "sp0.1_wd0.2_ibw1.5_mingreen10-20"   # <-- update this each time you retrain
 
 
 def collect_single_switch_steps(model, n_episodes=N_EPISODES):

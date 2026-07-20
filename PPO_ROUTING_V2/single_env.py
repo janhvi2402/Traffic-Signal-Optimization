@@ -18,57 +18,35 @@ class SumoSingleJunctionEnv(gym.Env):
     TRAIN on this env. Test the resulting model on SumoMultiJunctionEnv
     (multi_env.py) by splitting the 16-dim obs into two 8-dim halves.
 
-    REVERTED/CHANGED vs the "aligned to centralized" version, based on
-    diagnostics from that run (mean hold ~20 steps against MIN_GREEN=15,
-    hold-duration/imbalance correlation -0.83, J1-vs-J2 switch-timing
-    correlation 0.982, explained_variance negative for the whole run):
+    CHANGED again, based on diagnostics from the IMBALANCE_BONUS_WEIGHT=
+    0.4 run (J1-vs-J2 switch-timing correlation dropped 0.982 -> 0.307 --
+    the MIN_GREEN decorrelation fix worked -- but J1/J2 action agreement
+    on steps where their imbalance DIRECTION DISAGREED stayed at 100.0%,
+    Correlation(|imbalance|, switch-vote) stayed ~0.12, and hold-duration/
+    imbalance correlation was still negative at -0.496):
 
-      1. IMBALANCE_BONUS_WEIGHT back ON (0.0 -> 0.4). Centralized trains
-         directly on the real, fixed 2-junction network and could get by
-         on SWITCH_PENALTY + WRONG_DIRECTION_PENALTY alone. single_env.py
-         trains under domain-randomized routes that change every episode
-         -- a much noisier distribution -- and with IMBALANCE_BONUS_WEIGHT
-         at 0, the ONLY signal tied to "which side is busier" was the
-         sparse, event-only wrong_direction_penalty (fires once, at the
-         instant of a switch). There was nothing rewarding it for HOLDING
-         the correct side step-by-step in between switches, so it fell
-         back to the cheap strategy: become eligible, wait a few steps,
-         switch -- a near-fixed cadence with noise, which is exactly what
-         the negative hold/imbalance correlation showed. This term is now
-         dense (paid every single step, not just at switch), so waiting
-         longer on the genuinely busier side accumulates real reward
-         instead of just avoiding a penalty.
+      IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5. The bonus is built from a
+      DIFFERENCE (ns_q - ew_q), while the base queue penalty is built
+      from the SUM of all four lanes, both over the same /max_queue
+      denominator -- a difference is inherently smaller than a sum, so
+      at weight=0.4 the bonus was numerically small relative to the
+      queue/wait terms it was supposed to compete with (roughly a
+      quarter the size at a typical observed imbalance). It nudged
+      behavior slightly (hold/imbalance correlation went from -0.83 to
+      -0.50) but was never large enough to actually change the optimal
+      strategy. At 1.5, a similar imbalance now produces a bonus
+      comparable to or larger than the base per-step penalty, so holding
+      the genuinely busier side becomes a first-order consideration
+      instead of a rounding error.
 
-      2. SWITCH_PENALTY lowered 0.4 -> 0.15. At 0.4, with ~150-185
-         switches/episode, switch penalties alone accounted for a large,
-         discontinuous fraction of total episode return (up to ~-74 out
-         of ~-225 mean episode reward) -- a much harder target for the
-         value function to fit than the smooth per-step queue/wait terms,
-         which likely contributed to explained_variance staying negative
-         for the entire 500k-step run. Lowering it reduces that
-         reward-scale mismatch while WRONG_DIRECTION_PENALTY and the
-         restored IMBALANCE_BONUS_WEIGHT still discourage cadence-only
-         switching.
+      SWITCH_PENALTY trimmed further, 0.15 -> 0.1, so it doesn't fight
+      the now much stronger imbalance bonus for the same probability
+      mass -- the imbalance bonus should be what decides WHEN to switch,
+      with switch_penalty as a lighter general deterrent against
+      switching for no reason, not the dominant term.
 
-      3. MIN_GREEN is RANDOMIZED again (10-20, sampled fresh per episode,
-         NOT observable) instead of the fixed 15 used to match
-         centralized. This directly targets the 0.982 J1-vs-J2
-         switch-timing correlation: two junctions sharing one fixed
-         MIN_GREEN gives them a shared clock they can both switch on
-         regardless of their own (independently randomized) local demand
-         -- looking "coordinated" for free, without either one actually
-         reading its own queue. Removing the fixed floor removes that
-         shortcut. (multi_env.py randomizes it INDEPENDENTLY per junction
-         for the same reason -- see that file.)
-
-      4. WRONG_DIRECTION_PENALTY trimmed slightly, 0.25 -> 0.2, so it and
-         the restored dense imbalance bonus don't double-penalize the
-         same behavior into instability.
-
-    Retrain from scratch with this config -- don't warm-start from the
-    previous checkpoint, since its value function is calibrated to a
-    reward scale (SWITCH_PENALTY=0.4, IMBALANCE_BONUS_WEIGHT=0.0) that no
-    longer matches.
+    Retrain from scratch again -- the value function is calibrated to a
+    reward scale that changed again.
 
     Observation (8 features) -- unchanged contract:
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
@@ -99,12 +77,12 @@ class SumoSingleJunctionEnv(gym.Env):
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    MIN_GREEN_RANGE = (10, 20)   # was fixed MIN_GREEN=15
+    MIN_GREEN_RANGE = (10, 20)
 
-    SWITCH_PENALTY           = 0.15   # was 0.4
-    WASTED_VOTE_PENALTY      = 0.02   # was 0.03
-    IMBALANCE_BONUS_WEIGHT   = 0.4    # was 0.0
-    WRONG_DIRECTION_PENALTY  = 0.2    # was 0.25
+    SWITCH_PENALTY           = 0.1    # was 0.15
+    WASTED_VOTE_PENALTY      = 0.02
+    IMBALANCE_BONUS_WEIGHT   = 1.5    # was 0.4
+    WRONG_DIRECTION_PENALTY  = 0.2
 
     def __init__(
         self,
@@ -150,7 +128,6 @@ class SumoSingleJunctionEnv(gym.Env):
         )
         self.min_green_range = min_green_range if min_green_range is not None else self.MIN_GREEN_RANGE
 
-        # seed rotation -- same scheme as before.
         self._base_seed = seed
         self._auto_seed_rng = np.random.default_rng(seed)
         self._seed = seed
@@ -267,9 +244,10 @@ class SumoSingleJunctionEnv(gym.Env):
         reward = 0.7 * queue_penalty + 0.3 * wait_penalty
 
         # dense, every step: reward for currently holding green on the
-        # side with the larger raw queue. This is what was missing --
-        # with this at 0, nothing rewarded holding correctly BETWEEN
-        # switches, only the instant of the switch itself.
+        # side with the larger raw queue. Weight raised to 1.5 -- at 0.4
+        # this term was numerically too small (a DIFFERENCE) relative to
+        # the base queue penalty (a SUM over the same denominator) to
+        # meaningfully compete for the gradient.
         if self.imbalance_bonus_weight > 0 and not self._in_yellow:
             ns_q, ew_q = self._get_raw_ns_ew_queue()
             raw_imbalance = ns_q - ew_q

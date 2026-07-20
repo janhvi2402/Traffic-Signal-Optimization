@@ -13,28 +13,32 @@ os.makedirs(BEST_DIR, exist_ok=True)
 
 lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 
-TOTAL_TIMESTEPS = 500_000
+# raised 500k -> 750k: the previous run's explained_variance never
+# really recovered, and this reward landscape (much larger
+# IMBALANCE_BONUS_WEIGHT) is a bigger change for PPO to settle into
+TOTAL_TIMESTEPS = 750_000
 
-# Reward config -- corrected after diagnosing the previous run (mean
-# hold ~20 steps against MIN_GREEN=15, hold/imbalance correlation
-# -0.83, J1-vs-J2 switch-timing correlation 0.982). See single_env.py's
-# docstring for the full reasoning behind each change:
-#   - IMBALANCE_BONUS_WEIGHT restored (0.0 -> 0.4): dense, every-step
-#     signal for holding the genuinely busier side; this was the
-#     missing piece that let the policy fall back to switching on a
-#     bare cadence.
-#   - SWITCH_PENALTY lowered (0.4 -> 0.15): at 0.4 it was large enough
-#     relative to the per-step queue/wait terms to destabilize the
-#     value function (explained_variance was negative the whole run).
-#   - WRONG_DIRECTION_PENALTY trimmed (0.25 -> 0.2) so it doesn't
-#     double-penalize alongside the restored imbalance bonus.
-#   - MIN_GREEN is randomized per episode inside single_env.py itself
-#     (MIN_GREEN_RANGE, not a train.py setting) -- removes the fixed
-#     floor that let J1/J2 share a synchronized switching clock in
-#     multi_env.py.
-SWITCH_PENALTY          = 0.15
+# Reward config -- corrected again after diagnosing the
+# IMBALANCE_BONUS_WEIGHT=0.4 run: J1-vs-J2 switch-timing correlation
+# dropped 0.982 -> 0.307 (the MIN_GREEN decorrelation fix worked), but
+# J1/J2 action agreement stayed at 100% even on steps where their
+# imbalance DIRECTIONS DISAGREED, Correlation(|imbalance|, switch-vote)
+# stayed ~0.12, and hold-duration/imbalance correlation was still
+# negative (-0.496). See single_env.py's docstring for the full
+# reasoning:
+#   - IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5: at 0.4 this term (a
+#     DIFFERENCE) was numerically too small relative to the base queue
+#     penalty (a SUM, same denominator) to meaningfully compete for the
+#     gradient -- it nudged behavior slightly but never changed the
+#     optimal strategy.
+#   - SWITCH_PENALTY lowered 0.15 -> 0.1 so it doesn't fight the now
+#     much stronger imbalance bonus for the same probability mass.
+#   - MIN_GREEN randomization (per episode in single_env.py, per
+#     junction in multi_env.py) is UNCHANGED -- that part already
+#     worked.
+SWITCH_PENALTY          = 0.1
 WASTED_VOTE_PENALTY     = 0.02
-IMBALANCE_BONUS_WEIGHT  = 0.4
+IMBALANCE_BONUS_WEIGHT  = 1.5
 WRONG_DIRECTION_PENALTY = 0.2
 
 
@@ -91,10 +95,6 @@ if __name__ == "__main__":
         deterministic=True,
         verbose=1,
     )
-    # slightly higher starting entropy (0.02 -> 0.03) than the previous
-    # run -- retraining from scratch on a changed reward landscape
-    # benefits from a bit more exploration before annealing down, so it
-    # doesn't re-converge onto the same cheap cadence shortcut early
     entropy_callback = EntropyAnnealCallback(start=0.03, end=0.01, total_timesteps=TOTAL_TIMESTEPS)
     callbacks = CallbackList([eval_callback, entropy_callback])
 
@@ -122,10 +122,11 @@ if __name__ == "__main__":
           f"wasted_vote_penalty={WASTED_VOTE_PENALTY}, "
           f"imbalance_bonus_weight={IMBALANCE_BONUS_WEIGHT}, "
           f"wrong_direction_penalty={WRONG_DIRECTION_PENALTY}, "
-          f"MIN_GREEN_RANGE={SumoSingleJunctionEnv.MIN_GREEN_RANGE}")
+          f"MIN_GREEN_RANGE={SumoSingleJunctionEnv.MIN_GREEN_RANGE}, "
+          f"total_timesteps={TOTAL_TIMESTEPS}")
     print(f"Output -> {MODELS_DIR}")
     print("NOTE: retrained from scratch -- do not warm-start from a checkpoint")
-    print("trained under the previous reward config, its value function won't transfer.")
+    print("trained under a previous reward config, its value function won't transfer.")
     print(f"{'='*70}\n")
 
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=callbacks)
