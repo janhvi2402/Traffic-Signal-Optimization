@@ -1,41 +1,95 @@
-Metric                                  Fixed-time  Decentralized PPO
-----------------------------------------------------------------------
-Mean avg wait/step (s)                     955.24s            455.79s
-Std                                         40.34s             53.82s
-
-Improvement over fixed-time: 52.3%
-
-step 3500: q_j1=0.15/0.15 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.10/0.25 imb_j2=0.43 a_j2=1 minG_j2=17
-step 3550: q_j1=0.18/0.07 imb_j1=0.56 a_j1=1 minG_j1=19 | q_j2=0.23/0.07 imb_j2=0.58 a_j2=1 minG_j2=17
-J1/J2 same-action rate: 99.9%  (near 100% is only a problem together with a low local correlation below -- see next lines)
-Correlation(|J1 raw imbalance|, J1 switch-vote): 0.129
-Correlation(|J2 raw imbalance|, J2 switch-vote): 0.119
-
-Steps where J1/J2 imbalance direction disagrees: 1792
-J1/J2 action agreement rate on THOSE steps: 100.0%
-  -> should be noticeably LOWER than the overall same-action rate above.
-     If it's still ~equal, the policy is ignoring local imbalance direction.
-
 
 ======================================================================
-SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN_RANGE=(10, 20), mean sampled this run=12.4, switch_penalty=0.15, imbalance_bonus_weight=0.4, wrong_direction_penalty=0.2)
+SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN_RANGE=(10, 20), mean sampled this run=16.4, switch_penalty=0.1, imbalance_bonus_weight=1.5, wrong_direction_penalty=0.2)
 ======================================================================
-Total switches across 5 episodes: 912
-Switch rate vs physical ceiling:       78.0%
-Mean hold duration:                    16.7 steps
-Hold-duration / imbalance correlation: -0.496
+Total switches across 5 episodes: 881
+Switch rate vs physical ceiling:       95.0%
+Mean hold duration:                    17.4 steps
+Hold-duration / imbalance correlation: 0.390
   -> positive => held longer when its side was genuinely busier
-Directional agreement at switch:       71.1%
+Directional agreement at switch:       66.3%
   -> should be well above 50% if the policy is using queue state
 Wrong-direction rate:                  0.0%
   -> should be low -- this is exactly what wrong_direction_penalty targets
 ======================================================================
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2$ /bin/python3 "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/plot_switching _time.py"
+Collecting single-junction switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  958 switches across 5 episodes
+Collecting decentralized transfer (J1/J2) switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  J1: 877 switches, J2: 1051 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
 
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.1_wd0.2_ibw1.5_mingreen10-20_20260720_1133.png
 
-Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.15_wd0.2_ibw0.4_mingreen10-20_20260719_1643.png
+Config: switch_penalty=0.1, wrong_direction_penalty=0.2, wasted_vote_penalty=0.02, imbalance_bonus_weight=1.5, MIN_GREEN_RANGE=(10, 20)
+single: coefficient of variation across time bins = 0.047
+J1: coefficient of variation across time bins = 0.055
+J2: coefficient of variation across time bins = 0.029
 
-Config: switch_penalty=0.15, wrong_direction_penalty=0.2, wasted_vote_penalty=0.02, imbalance_bonus_weight=0.4, MIN_GREEN_RANGE=(10, 20)
-single: coefficient of variation across time bins = 0.042
+J1 vs J2 switch-timing-profile correlation: 0.307
+  -> very high (near 1.0) suggests both junctions are switching on the
+     same schedule regardless of their own local demand
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2$ /bin/python3 "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/plot_switching _time.py"
+Collecting single-junction switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  930 switches across 5 episodes
+Collecting decentralized transfer (J1/J2) switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  J1: 877 switches, J2: 1051 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.1_wd0.2_ibw1.5_mingreen10-20_20260720_1137.png
+
+Config: switch_penalty=0.1, wrong_direction_penalty=0.2, wasted_vote_penalty=0.02, imbalance_bonus_weight=1.5, MIN_GREEN_RANGE=(10, 20)
+single: coefficient of variation across time bins = 0.040
+J1: coefficient of variation across time bins = 0.055
+J2: coefficient of variation across time bins = 0.029
+
+J1 vs J2 switch-timing-profile correlation: 0.307
+  -> very high (near 1.0) suggests both junctions are switching on the
+     same schedule regardless of their own local demand
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2$ /bin/python3 "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/plot_switching _time.py"
+Collecting single-junction switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  968 switches across 5 episodes
+Collecting decentralized transfer (J1/J2) switch timing...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  J1: 877 switches, J2: 1051 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2/switch_timing_plot_sp0.1_wd0.2_ibw1.5_mingreen10-20_20260720_1139.png
+
+Config: switch_penalty=0.1, wrong_direction_penalty=0.2, wasted_vote_penalty=0.02, imbalance_bonus_weight=1.5, MIN_GREEN_RANGE=(10, 20)
+single: coefficient of variation across time bins = 0.048
 J1: coefficient of variation across time bins = 0.055
 J2: coefficient of variation across time bins = 0.029
 

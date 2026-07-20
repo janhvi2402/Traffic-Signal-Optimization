@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <routes>
 <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.9"/>
-<flow id="W_to_N1" type="car" from="W_J1" to="J1_N1" begin="0" end="3600" probability="0.098" departLane="0" departSpeed="max"/>
-<flow id="W_to_S1" type="car" from="W_J1" to="J1_S1" begin="0" end="3600" probability="0.134" departLane="0" departSpeed="max"/>
-<flow id="W_to_J2" type="car" from="W_J1" to="J2_E" begin="0" end="3600" probability="0.141" departLane="0" departSpeed="max"/>
-<flow id="W_to_N2" type="car" from="W_J1" to="J2_N2" begin="0" end="3600" probability="0.251" departLane="0" departSpeed="max"/>
-<flow id="W_to_S2" type="car" from="W_J1" to="J2_S2" begin="0" end="3600" probability="0.219" departLane="0" departSpeed="max"/>
-<flow id="N1_to_W" type="car" from="N1_J1" to="J1_W" begin="0" end="3600" probability="0.262" departLane="0" departSpeed="max"/>
-<flow id="N1_to_S1" type="car" from="N1_J1" to="J1_S1" begin="0" end="3600" probability="0.164" departLane="0" departSpeed="max"/>
-<flow id="N1_to_J2" type="car" from="N1_J1" to="J2_E" begin="0" end="3600" probability="0.110" departLane="0" departSpeed="max"/>
-<flow id="S1_to_W" type="car" from="S1_J1" to="J1_W" begin="0" end="3600" probability="0.258" departLane="0" departSpeed="max"/>
-<flow id="S1_to_N1" type="car" from="S1_J1" to="J1_N1" begin="0" end="3600" probability="0.239" departLane="0" departSpeed="max"/>
-<flow id="S1_to_J2" type="car" from="S1_J1" to="J2_E" begin="0" end="3600" probability="0.130" departLane="0" departSpeed="max"/>
-<flow id="E_to_N2" type="car" from="E_J2" to="J2_N2" begin="0" end="3600" probability="0.267" departLane="0" departSpeed="max"/>
-<flow id="E_to_S2" type="car" from="E_J2" to="J2_S2" begin="0" end="3600" probability="0.149" departLane="0" departSpeed="max"/>
-<flow id="E_to_J1" type="car" from="E_J2" to="J1_W" begin="0" end="3600" probability="0.074" departLane="0" departSpeed="max"/>
-<flow id="E_to_N1" type="car" from="E_J2" to="J1_N1" begin="0" end="3600" probability="0.111" departLane="0" departSpeed="max"/>
-<flow id="E_to_S1" type="car" from="E_J2" to="J1_S1" begin="0" end="3600" probability="0.231" departLane="0" departSpeed="max"/>
-<flow id="N2_to_E" type="car" from="N2_J2" to="J2_E" begin="0" end="3600" probability="0.253" departLane="0" departSpeed="max"/>
-<flow id="N2_to_S2" type="car" from="N2_J2" to="J2_S2" begin="0" end="3600" probability="0.215" departLane="0" departSpeed="max"/>
-<flow id="N2_to_J1" type="car" from="N2_J2" to="J1_W" begin="0" end="3600" probability="0.145" departLane="0" departSpeed="max"/>
-<flow id="S2_to_E" type="car" from="S2_J2" to="J2_E" begin="0" end="3600" probability="0.069" departLane="0" departSpeed="max"/>
-<flow id="S2_to_N2" type="car" from="S2_J2" to="J2_N2" begin="0" end="3600" probability="0.118" departLane="0" departSpeed="max"/>
-<flow id="S2_to_J1" type="car" from="S2_J2" to="J1_W" begin="0" end="3600" probability="0.074" departLane="0" departSpeed="max"/>
+<flow id="W_to_N1" type="car" from="W_J1" to="J1_N1" begin="0" end="3600" probability="0.084" departLane="0" departSpeed="max"/>
+<flow id="W_to_S1" type="car" from="W_J1" to="J1_S1" begin="0" end="3600" probability="0.262" departLane="0" departSpeed="max"/>
+<flow id="W_to_J2" type="car" from="W_J1" to="J2_E" begin="0" end="3600" probability="0.241" departLane="0" departSpeed="max"/>
+<flow id="W_to_N2" type="car" from="W_J1" to="J2_N2" begin="0" end="3600" probability="0.114" departLane="0" departSpeed="max"/>
+<flow id="W_to_S2" type="car" from="W_J1" to="J2_S2" begin="0" end="3600" probability="0.174" departLane="0" departSpeed="max"/>
+<flow id="N1_to_W" type="car" from="N1_J1" to="J1_W" begin="0" end="3600" probability="0.162" departLane="0" departSpeed="max"/>
+<flow id="N1_to_S1" type="car" from="N1_J1" to="J1_S1" begin="0" end="3600" probability="0.213" departLane="0" departSpeed="max"/>
+<flow id="N1_to_J2" type="car" from="N1_J1" to="J2_E" begin="0" end="3600" probability="0.247" departLane="0" departSpeed="max"/>
+<flow id="S1_to_W" type="car" from="S1_J1" to="J1_W" begin="0" end="3600" probability="0.073" departLane="0" departSpeed="max"/>
+<flow id="S1_to_N1" type="car" from="S1_J1" to="J1_N1" begin="0" end="3600" probability="0.057" departLane="0" departSpeed="max"/>
+<flow id="S1_to_J2" type="car" from="S1_J1" to="J2_E" begin="0" end="3600" probability="0.259" departLane="0" departSpeed="max"/>
+<flow id="E_to_N2" type="car" from="E_J2" to="J2_N2" begin="0" end="3600" probability="0.158" departLane="0" departSpeed="max"/>
+<flow id="E_to_S2" type="car" from="E_J2" to="J2_S2" begin="0" end="3600" probability="0.241" departLane="0" departSpeed="max"/>
+<flow id="E_to_J1" type="car" from="E_J2" to="J1_W" begin="0" end="3600" probability="0.051" departLane="0" departSpeed="max"/>
+<flow id="E_to_N1" type="car" from="E_J2" to="J1_N1" begin="0" end="3600" probability="0.161" departLane="0" departSpeed="max"/>
+<flow id="E_to_S1" type="car" from="E_J2" to="J1_S1" begin="0" end="3600" probability="0.230" departLane="0" departSpeed="max"/>
+<flow id="N2_to_E" type="car" from="N2_J2" to="J2_E" begin="0" end="3600" probability="0.107" departLane="0" departSpeed="max"/>
+<flow id="N2_to_S2" type="car" from="N2_J2" to="J2_S2" begin="0" end="3600" probability="0.286" departLane="0" departSpeed="max"/>
+<flow id="N2_to_J1" type="car" from="N2_J2" to="J1_W" begin="0" end="3600" probability="0.275" departLane="0" departSpeed="max"/>
+<flow id="S2_to_E" type="car" from="S2_J2" to="J2_E" begin="0" end="3600" probability="0.058" departLane="0" departSpeed="max"/>
+<flow id="S2_to_N2" type="car" from="S2_J2" to="J2_N2" begin="0" end="3600" probability="0.056" departLane="0" departSpeed="max"/>
+<flow id="S2_to_J1" type="car" from="S2_J2" to="J1_W" begin="0" end="3600" probability="0.185" departLane="0" departSpeed="max"/>
 </routes>
