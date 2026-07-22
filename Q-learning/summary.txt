@@ -1,0 +1,20 @@
+Test.py
+
+
+Metric                        Fixed-time     Q-learning
+───────────────────────────────────────────────────────
+Mean avg wait/step (s)           955.24s        735.74s
+Std                               40.34s         50.58s
+
+Improvement over fixed-time: 23.0%
+Mean state coverage: 96.8%
+
+- Q-table covers 30675 distinct states.
+- Greedy policy is spread across all 4 actions (most-picked action accounts for 33.3% of states) — no single action dominates, so the policy is not degenerate.
+- Median decision confidence (Q-value spread) is 1.51.
+- Switch-probability-vs-imbalance plot decreases as expected: the agent is less likely to switch away from a junction that is currently serving its congested arm, supporting that it is conditioning on queue state rather than a fixed timer.
+- Mean reward/step improved from -36.418 (first half of training) to -36.399 (second half).
+- Q-table grew to 30675 states by the end of training; 3907 of those were discovered in the second half (growth largely plateaued, suggesting adequate coverage).
+- Across 5 test episodes, Q-learning improved average wait time by +22.9% over fixed-time (range +14.7% to +29.3%).
+- Mean test-time state coverage was 96.8%, i.e. the fraction of decisions where the visited state had been seen in training.
+ssl@ssl-H410M-H-V3:~/Docu
