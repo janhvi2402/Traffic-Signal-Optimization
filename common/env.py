@@ -21,17 +21,43 @@ class SumoTrafficEnv2J(gym.Env):
     RNG. The FIRST reset() on this env instance uses that seed literally
     (so fresh-env-per-episode test scripts get exact scenario control).
     Every reset() AFTER the first draws a NEW SUMO scenario from the
-    rotation RNG — this is what gives a long-lived training env genuine
+    rotation RNG -- this is what gives a long-lived training env genuine
     scenario diversity across its ~139 episodes in a 500k-step run,
     instead of replaying one fixed scenario.
 
-    MIN_GREEN raised 10 -> 15: diagnostics on earlier runs showed the
-    majority of switches landing exactly at the old MIN_GREEN=10 floor,
-    which is unrealistically short for a real signal. Raising the floor
-    removes that option outright.
+    CURRENT DEFAULTS (as of this file) -- these are the values used in
+    the sp=0.3 / wd=0.2 / MIN_GREEN=12 PPO run (57.5% improvement,
+    positive direction-agreement on both junctions):
+        MIN_GREEN               = 12
+        SWITCH_PENALTY           = 0.3
+        WASTED_VOTE_PENALTY      = 0.03
+        IMBALANCE_BONUS_WEIGHT   = 0.0
+        WRONG_DIRECTION_PENALTY  = 0.2
+
+    All five of the above can ALSO be passed explicitly to __init__
+    (switch_penalty=, wasted_vote_penalty=, imbalance_bonus_weight=,
+    wrong_direction_penalty=, min_green=). When a caller (e.g. a
+    training script) passes one of these explicitly, that value wins
+    over the class default below -- this is what lets train.py /
+    train_dqn.py pin down and log the exact config a run used instead
+    of silently inheriting whatever the class default happens to be.
+
+    IMPORTANT: MIN_GREEN did NOT have a constructor override in earlier
+    versions of this file -- it was a class-constant-only value, so a
+    caller could not actually pin it via an argument, only by editing
+    this class directly. That has been fixed: `min_green` is now a real
+    constructor parameter (see __init__ and self.min_green below). Any
+    training script relying on the class default for MIN_GREEN should
+    switch to passing `min_green=` explicitly so the run stays
+    reproducible even if this class default changes again later.
+
+    Call `get_hyperparams()` on an instance to get the exact effective
+    config (post constructor-override) as a dict -- use this for
+    logging / plot labels instead of hardcoding numbers in scripts, so
+    labels can never drift out of sync with what the env actually ran.
 
     WRONG_DIRECTION_PENALTY: penalizes a legal, agent-initiated switch
-    that abandons the side that was still busier — this is the term
+    that abandons the side that was still busier -- this is the term
     that specifically targets "switch on the clock" vs "switch because
     that side is genuinely busier".
     """
@@ -51,14 +77,14 @@ class SumoTrafficEnv2J(gym.Env):
     MAX_QUEUE_DEFAULT = 30
     MAX_WAIT    = 120
     MAX_PHASE_T = 60
-    MIN_GREEN   = 15    # was 10
+    MIN_GREEN   = 12    # class default; can be overridden per-instance via min_green=
     MAX_GREEN   = 90
     YELLOW_TIME = 3
 
-    SWITCH_PENALTY = 0.4             # was 0.3
+    SWITCH_PENALTY = 0.3
     WASTED_VOTE_PENALTY = 0.03
     IMBALANCE_BONUS_WEIGHT = 0.0
-    WRONG_DIRECTION_PENALTY = 0.25   # was 0.15
+    WRONG_DIRECTION_PENALTY = 0.2
 
     def __init__(
         self,
@@ -72,6 +98,7 @@ class SumoTrafficEnv2J(gym.Env):
         wasted_vote_penalty = None,
         imbalance_bonus_weight = None,
         wrong_direction_penalty = None,
+        min_green = None,
     ):
         super().__init__()
 
@@ -94,6 +121,7 @@ class SumoTrafficEnv2J(gym.Env):
             wrong_direction_penalty if wrong_direction_penalty is not None
             else self.WRONG_DIRECTION_PENALTY
         )
+        self.min_green = min_green if min_green is not None else self.MIN_GREEN
 
         self._base_seed = seed
         self._auto_seed_rng = np.random.default_rng(seed)
@@ -113,6 +141,25 @@ class SumoTrafficEnv2J(gym.Env):
         self._traci_started   = False
         self._last_hold_duration = {tl: None for tl in self.TL_IDS}
         self._wrong_direction_this_step = {tl: False for tl in self.TL_IDS}
+
+    def get_hyperparams(self):
+        """
+        Single source of truth for the *effective* (post-override) config
+        this instance is actually running with. Training scripts and
+        plotting/reporting scripts should pull labels from this instead
+        of re-typing numbers, so a label can never silently drift out of
+        sync with what the env actually did.
+        """
+        return {
+            "max_queue": self.max_queue,
+            "switch_penalty": self.switch_penalty,
+            "wasted_vote_penalty": self.wasted_vote_penalty,
+            "imbalance_bonus_weight": self.imbalance_bonus_weight,
+            "wrong_direction_penalty": self.wrong_direction_penalty,
+            "min_green": self.min_green,
+            "max_green": self.MAX_GREEN,
+            "yellow_time": self.YELLOW_TIME,
+        }
 
     def _start_sumo(self):
         binary = "sumo-gui" if self.use_gui else "sumo"
@@ -217,7 +264,7 @@ class SumoTrafficEnv2J(gym.Env):
         else:
             self._time_in_phase[tl] += 1
             force_switch = self._time_in_phase[tl] >= self.MAX_GREEN
-            eligible = self._time_in_phase[tl] >= self.MIN_GREEN
+            eligible = self._time_in_phase[tl] >= self.min_green
 
             if action == 1 and not eligible and not force_switch:
                 wasted_vote = True
