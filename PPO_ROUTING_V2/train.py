@@ -13,37 +13,51 @@ os.makedirs(BEST_DIR, exist_ok=True)
 
 lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)
 
-# raised 500k -> 750k: the previous run's explained_variance never
-# really recovered, and this reward landscape (much larger
-# IMBALANCE_BONUS_WEIGHT) is a bigger change for PPO to settle into
-TOTAL_TIMESTEPS = 750_000
+# raised 750k -> 1,000,000: this is the last training run before
+# deployment, and the reward change below (WASTED_VOTE_PENALTY) is a
+# meaningful shift in the incentive landscape -- more updates gives PPO
+# more room to settle into genuinely selective voting instead of
+# collapsing toward a shortcut again
+TOTAL_TIMESTEPS = 1_000_000
 
-# Reward config -- corrected again after diagnosing the
-# IMBALANCE_BONUS_WEIGHT=0.4 run: J1-vs-J2 switch-timing correlation
-# dropped 0.982 -> 0.307 (the MIN_GREEN decorrelation fix worked), but
-# J1/J2 action agreement stayed at 100% even on steps where their
-# imbalance DIRECTIONS DISAGREED, Correlation(|imbalance|, switch-vote)
-# stayed ~0.12, and hold-duration/imbalance correlation was still
-# negative (-0.496). See single_env.py's docstring for the full
-# reasoning:
-#   - IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5: at 0.4 this term (a
-#     DIFFERENCE) was numerically too small relative to the base queue
-#     penalty (a SUM, same denominator) to meaningfully compete for the
-#     gradient -- it nudged behavior slightly but never changed the
-#     optimal strategy.
-#   - SWITCH_PENALTY lowered 0.15 -> 0.1 so it doesn't fight the now
-#     much stronger imbalance bonus for the same probability mass.
-#   - MIN_GREEN randomization (per episode in single_env.py, per
-#     junction in multi_env.py) is UNCHANGED -- that part already
-#     worked.
+# Reward config -- FINAL correction after diagnosing a policy collapse:
+# raw action logs from the IMBALANCE_BONUS_WEIGHT=1.5 run showed
+# model.predict() returning action=1 on essentially every printed step,
+# across queue values from 0.00-0.40 and imbalance 0.32-0.70 -- the
+# observation had stopped influencing the vote. Confirmed numerically:
+# diagnostic.py's mean hold duration (17.4) was barely above the mean
+# SAMPLED MIN_GREEN (16.4) -- ~1 step of real slack, meaning switches
+# were firing the instant they became legally eligible, not when queue
+# state actually warranted it. The previously-reported positive hold/
+# imbalance correlation was a CONFOUND of the randomized MIN_GREEN
+# itself (longer random draws mechanically give more time for imbalance
+# to build before a still-timer-triggered switch), not evidence of
+# learning.
+#
+# ROOT CAUSE: WASTED_VOTE_PENALTY=0.02 was too cheap. Voting 1 through
+# ~15 ineligible steps cost only ~0.3 total per phase -- with MIN_GREEN
+# hidden from the observation, "always vote yes" became a cheap,
+# low-variance hedge that guaranteed catching the earliest legal switch
+# every phase, regardless of that episode's actual MIN_GREEN. This
+# defeated the entire purpose of IMBALANCE_BONUS_WEIGHT.
+#
+# FIX: WASTED_VOTE_PENALTY raised 0.02 -> 0.1 (now comparable to
+# SWITCH_PENALTY). Blanket voting through ~15 ineligible steps now costs
+# ~1.5 per phase -- a large fraction of that phase's total reward,
+# making it clearly worse than withholding the vote until warranted.
+# This is NOT expected to flip to the opposite collapse ("always vote 0
+# until forced at MAX_GREEN=90"): IMBALANCE_BONUS_WEIGHT=1.5 already
+# bleeds substantial negative reward every step spent on the wrong side,
+# so staying wrong for up to 90 forced steps is worse than an occasional
+# wasted vote. See single_env.py's docstring for the full reasoning.
 SWITCH_PENALTY          = 0.1
-WASTED_VOTE_PENALTY     = 0.02
+WASTED_VOTE_PENALTY     = 0.1     # was 0.02 -- the actual fix this round
 IMBALANCE_BONUS_WEIGHT  = 1.5
 WRONG_DIRECTION_PENALTY = 0.2
 
 
 class EntropyAnnealCallback(BaseCallback):
-    def __init__(self, start=0.03, end=0.01, total_timesteps=TOTAL_TIMESTEPS, verbose=0):
+    def __init__(self, start=0.04, end=0.02, total_timesteps=TOTAL_TIMESTEPS, verbose=0):
         super().__init__(verbose)
         self.start = start
         self.end = end
@@ -95,7 +109,13 @@ if __name__ == "__main__":
         deterministic=True,
         verbose=1,
     )
-    entropy_callback = EntropyAnnealCallback(start=0.03, end=0.01, total_timesteps=TOTAL_TIMESTEPS)
+    # entropy floor raised 0.01 -> 0.02 (and start 0.03 -> 0.04): a
+    # near-constant action is a classic entropy-collapse failure mode --
+    # once the categorical distribution over {0,1} saturates toward one
+    # side, gradients through log-prob shrink and it tends to stay
+    # stuck. Keeping a higher entropy floor for the whole run (not just
+    # early on) makes it harder for the policy to fully collapse again.
+    entropy_callback = EntropyAnnealCallback(start=0.04, end=0.02, total_timesteps=TOTAL_TIMESTEPS)
     callbacks = CallbackList([eval_callback, entropy_callback])
 
     model = PPO(
@@ -109,7 +129,7 @@ if __name__ == "__main__":
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0.03,   # overridden step-by-step by EntropyAnnealCallback
+        ent_coef=0.04,   # overridden step-by-step by EntropyAnnealCallback
         vf_coef=0.5,
         max_grad_norm=0.5,
         target_kl=0.03,
@@ -118,7 +138,7 @@ if __name__ == "__main__":
     )
 
     print(f"\n{'='*70}")
-    print(f"Training run: switch_penalty={SWITCH_PENALTY}, "
+    print(f"FINAL training run: switch_penalty={SWITCH_PENALTY}, "
           f"wasted_vote_penalty={WASTED_VOTE_PENALTY}, "
           f"imbalance_bonus_weight={IMBALANCE_BONUS_WEIGHT}, "
           f"wrong_direction_penalty={WRONG_DIRECTION_PENALTY}, "
@@ -127,6 +147,9 @@ if __name__ == "__main__":
     print(f"Output -> {MODELS_DIR}")
     print("NOTE: retrained from scratch -- do not warm-start from a checkpoint")
     print("trained under a previous reward config, its value function won't transfer.")
+    print("After training, run diagnostic.py FIRST and check the new")
+    print("'wasted-vote rate among votes cast' and 'slack' lines before anything else --")
+    print("that's the direct check for whether this run's fix actually worked.")
     print(f"{'='*70}\n")
 
     model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=callbacks)

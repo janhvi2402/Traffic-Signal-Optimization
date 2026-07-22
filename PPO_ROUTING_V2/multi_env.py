@@ -19,17 +19,17 @@ class SumoMultiJunctionEnv(gym.Env):
     it independently to J1 and J2 by splitting the 16-dim obs into two
     8-dim halves (see test.py / diagnostic.py / plot_switch_timing.py).
 
-    CHANGED, matching single_env.py's fixes (see that file's docstring
-    for the full diagnosis):
-      - IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5 -- at 0.4 this dense
-        per-junction term was numerically too small (built from a
-        DIFFERENCE) relative to the base queue penalty (built from a
-        SUM, same denominator) to meaningfully compete for the gradient.
-      - SWITCH_PENALTY lowered 0.15 -> 0.1, giving the now much stronger
-        imbalance bonus more room to be what decides WHEN to switch.
-      - MIN_GREEN is randomized INDEPENDENTLY PER JUNCTION (unchanged
-        from the previous fix -- this part already worked: J1-vs-J2
-        switch-timing correlation dropped from 0.982 to 0.307).
+    WASTED_VOTE_PENALTY raised 0.02 -> 0.1, matching single_env.py's fix
+    for the diagnosed policy collapse (action was ~always 1 regardless
+    of observation, since blanket voting was too cheap to discourage --
+    see single_env.py's docstring for the full diagnosis). This env's
+    own _get_reward() only actually matters if you ever train centrally
+    on it; kept consistent so "good behavior" means the same thing here
+    as in single_env.py.
+
+    MIN_GREEN randomized INDEPENDENTLY PER JUNCTION -- unchanged, still
+    the fix for J1/J2 sharing a synchronized clock (dropped their
+    switch-timing-profile correlation from 0.982 to 0.307 in testing).
 
     Observation (per junction, 8 features x 2 = 16 total) -- unchanged:
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
@@ -63,7 +63,7 @@ class SumoMultiJunctionEnv(gym.Env):
     MIN_GREEN_RANGE = (10, 20)
 
     SWITCH_PENALTY           = 0.1
-    WASTED_VOTE_PENALTY      = 0.02
+    WASTED_VOTE_PENALTY      = 0.1    # was 0.02
     IMBALANCE_BONUS_WEIGHT   = 1.5
     WRONG_DIRECTION_PENALTY  = 0.2
 

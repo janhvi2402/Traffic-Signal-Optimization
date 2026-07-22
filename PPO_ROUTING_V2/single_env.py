@@ -18,35 +18,50 @@ class SumoSingleJunctionEnv(gym.Env):
     TRAIN on this env. Test the resulting model on SumoMultiJunctionEnv
     (multi_env.py) by splitting the 16-dim obs into two 8-dim halves.
 
-    CHANGED again, based on diagnostics from the IMBALANCE_BONUS_WEIGHT=
-    0.4 run (J1-vs-J2 switch-timing correlation dropped 0.982 -> 0.307 --
-    the MIN_GREEN decorrelation fix worked -- but J1/J2 action agreement
-    on steps where their imbalance DIRECTION DISAGREED stayed at 100.0%,
-    Correlation(|imbalance|, switch-vote) stayed ~0.12, and hold-duration/
-    imbalance correlation was still negative at -0.496):
+    CRITICAL FIX -- policy collapse, diagnosed from the IMBALANCE_BONUS_
+    WEIGHT=1.5 run's raw action logs: model.predict() was returning
+    action=1 on essentially EVERY printed step (across queue values
+    ranging 0.00-0.40 and imbalance 0.32-0.70) -- the observation had
+    stopped influencing the vote almost entirely. Confirmed numerically:
+    diagnostic.py reported mean hold duration 17.4 steps against a mean
+    SAMPLED MIN_GREEN of 16.4 -- a slack of ~1 step. If the policy always
+    votes 1, every switch fires the INSTANT it becomes legally eligible;
+    hold_duration then just measures that episode's randomly-drawn
+    MIN_GREEN, not a real decision. The earlier-reported positive hold/
+    imbalance correlation (0.390) was consequently a CONFOUND, not
+    evidence of learning: a longer random MIN_GREEN draw mechanically
+    gives more time for imbalance to build before a still-purely-timer-
+    triggered switch, which looks like "holding longer when busier" but
+    isn't.
 
-      IMBALANCE_BONUS_WEIGHT raised 0.4 -> 1.5. The bonus is built from a
-      DIFFERENCE (ns_q - ew_q), while the base queue penalty is built
-      from the SUM of all four lanes, both over the same /max_queue
-      denominator -- a difference is inherently smaller than a sum, so
-      at weight=0.4 the bonus was numerically small relative to the
-      queue/wait terms it was supposed to compete with (roughly a
-      quarter the size at a typical observed imbalance). It nudged
-      behavior slightly (hold/imbalance correlation went from -0.83 to
-      -0.50) but was never large enough to actually change the optimal
-      strategy. At 1.5, a similar imbalance now produces a bonus
-      comparable to or larger than the base per-step penalty, so holding
-      the genuinely busier side becomes a first-order consideration
-      instead of a rounding error.
+    ROOT CAUSE: WASTED_VOTE_PENALTY=0.02 was too cheap. Voting 1
+    continuously through ~15 ineligible steps cost only ~0.02*15=0.3 per
+    phase -- negligible against the reward scale. With MIN_GREEN hidden
+    from the observation (correctly, to prevent a DIFFERENT shortcut --
+    see below), the policy found voting "always yes" to be a cheap,
+    low-variance way to guarantee it never misses the earliest legal
+    switch, regardless of that episode's actual MIN_GREEN. This defeats
+    the entire purpose of IMBALANCE_BONUS_WEIGHT: the vote itself carried
+    no information, so switching was still 100% timer-driven.
 
-      SWITCH_PENALTY trimmed further, 0.15 -> 0.1, so it doesn't fight
-      the now much stronger imbalance bonus for the same probability
-      mass -- the imbalance bonus should be what decides WHEN to switch,
-      with switch_penalty as a lighter general deterrent against
-      switching for no reason, not the dominant term.
+    FIX: WASTED_VOTE_PENALTY raised 0.02 -> 0.1 (5x, now comparable in
+    magnitude to SWITCH_PENALTY). Voting 1 across ~15 ineligible steps
+    now costs ~0.1*15=1.5 per phase -- a large fraction of that phase's
+    total reward, making blanket voting clearly worse than withholding
+    the vote until it's actually warranted. This should NOT cause the
+    opposite collapse ("always vote 0, only switch when forced at
+    MAX_GREEN=90"): the dense IMBALANCE_BONUS_WEIGHT=1.5 term already
+    bleeds substantial negative reward every step spent on the wrong
+    side, so staying wrong for up to 90 steps waiting for a forced
+    switch is even more costly than an occasional wasted vote. The
+    policy has to thread the needle -- which is exactly the point: it
+    can only do that by actually reading obs[0:4]/obs[7] (queue/wait/
+    imbalance), not a timer.
 
-    Retrain from scratch again -- the value function is calibrated to a
-    reward scale that changed again.
+    MIN_GREEN remains randomized per episode (MIN_GREEN_RANGE, NOT
+    observable) -- unrelated to this fix, still doing its separate job
+    of preventing J1/J2 from sharing a synchronized clock in
+    multi_env.py.
 
     Observation (8 features) -- unchanged contract:
         [0] mean queue length on NS incoming lanes   (normalised 0-1)
@@ -79,9 +94,9 @@ class SumoSingleJunctionEnv(gym.Env):
 
     MIN_GREEN_RANGE = (10, 20)
 
-    SWITCH_PENALTY           = 0.1    # was 0.15
-    WASTED_VOTE_PENALTY      = 0.02
-    IMBALANCE_BONUS_WEIGHT   = 1.5    # was 0.4
+    SWITCH_PENALTY           = 0.1
+    WASTED_VOTE_PENALTY      = 0.1    # was 0.02 -- the actual fix this round
+    IMBALANCE_BONUS_WEIGHT   = 1.5
     WRONG_DIRECTION_PENALTY  = 0.2
 
     def __init__(
@@ -243,11 +258,6 @@ class SumoSingleJunctionEnv(gym.Env):
         wait_penalty  = -(total_wait / n_lanes) / self.MAX_WAIT
         reward = 0.7 * queue_penalty + 0.3 * wait_penalty
 
-        # dense, every step: reward for currently holding green on the
-        # side with the larger raw queue. Weight raised to 1.5 -- at 0.4
-        # this term was numerically too small (a DIFFERENCE) relative to
-        # the base queue penalty (a SUM over the same denominator) to
-        # meaningfully compete for the gradient.
         if self.imbalance_bonus_weight > 0 and not self._in_yellow:
             ns_q, ew_q = self._get_raw_ns_ew_queue()
             raw_imbalance = ns_q - ew_q

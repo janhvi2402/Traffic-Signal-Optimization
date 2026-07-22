@@ -41,6 +41,8 @@ def run_decentralized(model, n_episodes=5, collect_divergence=False):
     """
     episode_waits = []
     divergence_log = []  # (raw_imb_j1, a_j1, raw_imb_j2, a_j2) across all steps
+    vote_stats = {"J1": {"votes_ineligible": 0, "ineligible_steps": 0},
+                  "J2": {"votes_ineligible": 0, "ineligible_steps": 0}}
 
     for ep in range(n_episodes):
         env = SumoMultiJunctionEnv(
@@ -69,6 +71,13 @@ def run_decentralized(model, n_episodes=5, collect_divergence=False):
                 ns2, ew2 = env._get_raw_ns_ew_queue("J2")
                 divergence_log.append((ns1 - ew1, a_j1, ns2 - ew2, a_j2))
 
+                for tl, a in [("J1", a_j1), ("J2", a_j2)]:
+                    was_eligible = (not env._in_yellow[tl]) and (env._time_in_phase[tl] >= env._min_green[tl])
+                    if not env._in_yellow[tl] and not was_eligible:
+                        vote_stats[tl]["ineligible_steps"] += 1
+                        if a == 1:
+                            vote_stats[tl]["votes_ineligible"] += 1
+
             if steps % 50 == 0:
                 print(
                     f"step {steps}: "
@@ -87,7 +96,7 @@ def run_decentralized(model, n_episodes=5, collect_divergence=False):
         episode_waits.append(wait_sum / steps)
         env.close()
 
-    return np.mean(episode_waits), np.std(episode_waits), divergence_log
+    return np.mean(episode_waits), np.std(episode_waits), divergence_log, vote_stats
 
 
 def run_fixed_time(n_episodes=5):
@@ -111,7 +120,7 @@ if __name__ == "__main__":
     N_EP = 1 if RECORD else 5
     print(f"\nEvaluating decentralized single-junction policy over {N_EP} episode(s)...\n")
 
-    decentral_wait, decentral_std, _ = run_decentralized(model, n_episodes=N_EP)
+    decentral_wait, decentral_std, _, _ = run_decentralized(model, n_episodes=N_EP)
     fixed_wait, fixed_std            = run_fixed_time(n_episodes=N_EP)
 
     improvement = (fixed_wait - decentral_wait) / fixed_wait * 100
@@ -124,12 +133,24 @@ if __name__ == "__main__":
 
     # --- Divergence check ---
     print("\n--- Divergence check ---")
-    _, _, divergence_log = run_decentralized(model, n_episodes=1, collect_divergence=True)
+    _, _, divergence_log, vote_stats = run_decentralized(model, n_episodes=1, collect_divergence=True)
 
     imb_j1 = np.array([r[0] for r in divergence_log])
     a_j1   = np.array([r[1] for r in divergence_log])
     imb_j2 = np.array([r[2] for r in divergence_log])
     a_j2   = np.array([r[3] for r in divergence_log])
+
+    # policy-collapse check FIRST, same as diagnostic.py -- a high
+    # same-action rate or agreement-on-disagreement rate is meaningless
+    # to interpret if the raw vote is ~always 1 regardless of local
+    # queue state to begin with
+    for tl in ["J1", "J2"]:
+        s = vote_stats[tl]
+        rate = 100 * s["votes_ineligible"] / s["ineligible_steps"] if s["ineligible_steps"] > 0 else float("nan")
+        print(f"{tl} wasted-vote rate (votes cast while ineligible / all ineligible steps): {rate:.1f}%")
+    print("  -> near 100% on either junction means that junction's raw vote is ~always 1")
+    print("     regardless of the observation -- check this BEFORE trusting the")
+    print("     divergence numbers below.\n")
 
     same_action_rate = np.mean(a_j1 == a_j2)
     print(f"J1/J2 same-action rate: {same_action_rate:.1%}  (near 100% is only a "
