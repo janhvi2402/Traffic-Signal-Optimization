@@ -1,82 +1,4 @@
-step 3150: q_j1=0.37/0.13 imb_j1=0.62 a_j1=1 minG_j1=18 | q_j2=0.33/0.05 imb_j2=0.64 a_j2=1 minG_j2=10
-step 3200: q_j1=0.18/0.20 imb_j1=0.49 a_j1=1 minG_j1=18 | q_j2=0.18/0.27 imb_j2=0.46 a_j2=1 minG_j2=10
-step 3250: q_j1=0.02/0.33 imb_j1=0.34 a_j1=1 minG_j1=18 | q_j2=0.13/0.18 imb_j2=0.47 a_j2=1 minG_j2=10
-step 3300: q_j1=0.17/0.32 imb_j1=0.43 a_j1=1 minG_j1=18 | q_j2=0.08/0.27 imb_j2=0.41 a_j2=1 minG_j2=10
-step 3350: q_j1=0.27/0.08 imb_j1=0.59 a_j1=1 minG_j1=18 | q_j2=0.22/0.33 imb_j2=0.44 a_j2=1 minG_j2=10
-step 3400: q_j1=0.40/0.08 imb_j1=0.66 a_j1=1 minG_j1=18 | q_j2=0.10/0.22 imb_j2=0.44 a_j2=1 minG_j2=10
-step 3450: q_j1=0.17/0.15 imb_j1=0.51 a_j1=1 minG_j1=18 | q_j2=0.00/0.28 imb_j2=0.36 a_j2=1 minG_j2=10
-step 3500: q_j1=0.08/0.30 imb_j1=0.39 a_j1=1 minG_j1=18 | q_j2=0.40/0.27 imb_j2=0.57 a_j2=1 minG_j2=10
-step 3550: q_j1=0.12/0.33 imb_j1=0.39 a_j1=1 minG_j1=18 | q_j2=0.15/0.30 imb_j2=0.43 a_j2=1 minG_j2=10
- Retrying in 1 seconds
-step 0: q_j1=0.00/0.00 imb_j1=0.50 a_j1=0 minG_j1=17 | q_j2=0.00/0.00 imb_j2=0.50 a_j2=0 minG_j2=20
-step 50: q_j1=0.12/0.13 imb_j1=0.49 a_j1=1 minG_j1=17 | q_j2=0.17/0.12 imb_j2=0.52 a_j2=1 minG_j2=20
-step 100: q_j1=0.13/0.28 imb_j1=0.43 a_j1=1 minG_j1=17 | q_j2=0.10/0.17 imb_j2=0.47 a_j2=1 minG_j2=20
-step 150: q_j1=0.22/0.05 imb_j1=0.58 a_j1=1 minG_j1=17 | q_j2=0.08/0.25 imb_j2=0.42 a_j2=1 minG_j2=20
-step 200: q_j1=0.40/0.15 imb_j1=0.62 a_j1=1 minG_j1=17 | q_j2=0.13/0.35 imb_j2=0.39 a_j2=1 minG_j2=20
-step 250: q_j1=0.40/0.17 imb_j1=0.62 a_j1=1 minG_j1=17 | q_j2=0.02/0.38 imb_j2=0.32 a_j2=1 minG_j2=20
-step 300: q_j1=0.15/0.28 imb_j1=0.43 a_j1=1 minG_j1=17 | q_j2=0.15/0.23 imb_j2=0.46 a_j2=1 minG_j2=20
-step 350: q_j1=0.23/0.10 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.20/0.10 imb_j2=0.55 a_j2=1 minG_j2=20
-step 400: q_j1=0.40/0.12 imb_j1=0.64 a_j1=1 minG_j1=17 | q_j2=0.22/0.08 imb_j2=0.57 a_j2=1 minG_j2=20
-step 450: q_j1=0.12/0.17 imb_j1=0.47 a_j1=1 minG_j1=17 | q_j2=0.23/0.10 imb_j2=0.57 a_j2=1 minG_j2=20
-step 500: q_j1=0.10/0.35 imb_j1=0.38 a_j1=1 minG_j1=17 | q_j2=0.40/0.13 imb_j2=0.63 a_j2=1 minG_j2=20
-step 550: q_j1=0.23/0.05 imb_j1=0.59 a_j1=1 minG_j1=17 | q_j2=0.40/0.17 imb_j2=0.62 a_j2=1 minG_j2=20
-step 600: q_j1=0.40/0.02 imb_j1=0.69 a_j1=1 minG_j1=17 | q_j2=0.30/0.10 imb_j2=0.60 a_j2=1 minG_j2=20
-step 650: q_j1=0.12/0.12 imb_j1=0.50 a_j1=1 minG_j1=17 | q_j2=0.17/0.22 imb_j2=0.47 a_j2=1 minG_j2=20
-step 700: q_j1=0.13/0.20 imb_j1=0.47 a_j1=1 minG_j1=17 | q_j2=0.03/0.20 imb_j2=0.42 a_j2=1 minG_j2=20
-step 750: q_j1=0.22/0.05 imb_j1=0.58 a_j1=1 minG_j1=17 | q_j2=0.00/0.15 imb_j2=0.43 a_j2=1 minG_j2=20
-step 800: q_j1=0.40/0.00 imb_j1=0.70 a_j1=1 minG_j1=17 | q_j2=0.15/0.27 imb_j2=0.44 a_j2=1 minG_j2=20
-step 850: q_j1=0.12/0.17 imb_j1=0.47 a_j1=1 minG_j1=17 | q_j2=0.03/0.37 imb_j2=0.33 a_j2=1 minG_j2=20
-step 900: q_j1=0.08/0.30 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.17/0.23 imb_j2=0.47 a_j2=1 minG_j2=20
-step 950: q_j1=0.22/0.08 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.20/0.12 imb_j2=0.54 a_j2=1 minG_j2=20
-step 1000: q_j1=0.40/0.03 imb_j1=0.68 a_j1=1 minG_j1=17 | q_j2=0.27/0.05 imb_j2=0.61 a_j2=1 minG_j2=20
-step 1050: q_j1=0.18/0.28 imb_j1=0.45 a_j1=1 minG_j1=17 | q_j2=0.30/0.12 imb_j2=0.59 a_j2=1 minG_j2=20
-step 1100: q_j1=0.10/0.28 imb_j1=0.41 a_j1=1 minG_j1=17 | q_j2=0.40/0.12 imb_j2=0.64 a_j2=1 minG_j2=20
-step 1150: q_j1=0.22/0.08 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.37/0.08 imb_j2=0.64 a_j2=1 minG_j2=20
-step 1200: q_j1=0.38/0.08 imb_j1=0.65 a_j1=1 minG_j1=17 | q_j2=0.23/0.15 imb_j2=0.54 a_j2=1 minG_j2=20
-step 1250: q_j1=0.30/0.23 imb_j1=0.53 a_j1=1 minG_j1=17 | q_j2=0.13/0.15 imb_j2=0.49 a_j2=1 minG_j2=20
-step 1300: q_j1=0.10/0.32 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.08/0.25 imb_j2=0.42 a_j2=1 minG_j2=20
-step 1350: q_j1=0.22/0.03 imb_j1=0.59 a_j1=1 minG_j1=17 | q_j2=0.08/0.28 imb_j2=0.40 a_j2=1 minG_j2=20
-step 1400: q_j1=0.40/0.05 imb_j1=0.68 a_j1=1 minG_j1=17 | q_j2=0.13/0.32 imb_j2=0.41 a_j2=1 minG_j2=20
-step 1450: q_j1=0.07/0.17 imb_j1=0.45 a_j1=1 minG_j1=17 | q_j2=0.12/0.30 imb_j2=0.41 a_j2=1 minG_j2=20
-step 1500: q_j1=0.10/0.27 imb_j1=0.42 a_j1=1 minG_j1=17 | q_j2=0.13/0.18 imb_j2=0.47 a_j2=1 minG_j2=20
-step 1550: q_j1=0.22/0.08 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.22/0.07 imb_j2=0.57 a_j2=1 minG_j2=20
-step 1600: q_j1=0.40/0.08 imb_j1=0.66 a_j1=1 minG_j1=17 | q_j2=0.30/0.02 imb_j2=0.64 a_j2=1 minG_j2=20
-step 1650: q_j1=0.08/0.13 imb_j1=0.47 a_j1=1 minG_j1=17 | q_j2=0.40/0.13 imb_j2=0.63 a_j2=1 minG_j2=20
-step 1700: q_j1=0.13/0.33 imb_j1=0.40 a_j1=1 minG_j1=17 | q_j2=0.40/0.07 imb_j2=0.67 a_j2=1 minG_j2=20
-step 1750: q_j1=0.22/0.05 imb_j1=0.58 a_j1=1 minG_j1=17 | q_j2=0.30/0.10 imb_j2=0.60 a_j2=1 minG_j2=20
-step 1800: q_j1=0.40/0.07 imb_j1=0.67 a_j1=1 minG_j1=17 | q_j2=0.20/0.20 imb_j2=0.50 a_j2=1 minG_j2=20
-step 1850: q_j1=0.12/0.15 imb_j1=0.48 a_j1=1 minG_j1=17 | q_j2=0.12/0.17 imb_j2=0.47 a_j2=1 minG_j2=20
-step 1900: q_j1=0.12/0.33 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.12/0.27 imb_j2=0.43 a_j2=1 minG_j2=20
-step 1950: q_j1=0.22/0.10 imb_j1=0.56 a_j1=1 minG_j1=17 | q_j2=0.07/0.35 imb_j2=0.36 a_j2=1 minG_j2=20
-step 2000: q_j1=0.40/0.10 imb_j1=0.65 a_j1=1 minG_j1=17 | q_j2=0.20/0.38 imb_j2=0.41 a_j2=1 minG_j2=20
-step 2050: q_j1=0.12/0.17 imb_j1=0.47 a_j1=1 minG_j1=17 | q_j2=0.17/0.22 imb_j2=0.47 a_j2=1 minG_j2=20
-step 2100: q_j1=0.10/0.32 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.18/0.10 imb_j2=0.54 a_j2=1 minG_j2=20
-step 2150: q_j1=0.20/0.08 imb_j1=0.56 a_j1=1 minG_j1=17 | q_j2=0.23/0.08 imb_j2=0.57 a_j2=1 minG_j2=20
-step 2200: q_j1=0.40/0.05 imb_j1=0.68 a_j1=1 minG_j1=17 | q_j2=0.32/0.08 imb_j2=0.62 a_j2=1 minG_j2=20
-step 2250: q_j1=0.15/0.18 imb_j1=0.48 a_j1=1 minG_j1=17 | q_j2=0.40/0.10 imb_j2=0.65 a_j2=1 minG_j2=20
-step 2300: q_j1=0.15/0.32 imb_j1=0.42 a_j1=1 minG_j1=17 | q_j2=0.37/0.05 imb_j2=0.66 a_j2=1 minG_j2=20
-step 2350: q_j1=0.22/0.07 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.23/0.17 imb_j2=0.53 a_j2=1 minG_j2=20
-step 2400: q_j1=0.40/0.17 imb_j1=0.62 a_j1=1 minG_j1=17 | q_j2=0.18/0.20 imb_j2=0.49 a_j2=1 minG_j2=20
-step 2450: q_j1=0.12/0.22 imb_j1=0.45 a_j1=1 minG_j1=17 | q_j2=0.05/0.25 imb_j2=0.40 a_j2=1 minG_j2=20
-step 2500: q_j1=0.12/0.30 imb_j1=0.41 a_j1=1 minG_j1=17 | q_j2=0.13/0.27 imb_j2=0.43 a_j2=1 minG_j2=20
-step 2550: q_j1=0.22/0.05 imb_j1=0.58 a_j1=1 minG_j1=17 | q_j2=0.18/0.20 imb_j2=0.49 a_j2=1 minG_j2=20
-step 2600: q_j1=0.40/0.00 imb_j1=0.70 a_j1=1 minG_j1=17 | q_j2=0.15/0.20 imb_j2=0.47 a_j2=1 minG_j2=20
-step 2650: q_j1=0.15/0.10 imb_j1=0.52 a_j1=1 minG_j1=17 | q_j2=0.18/0.10 imb_j2=0.54 a_j2=1 minG_j2=20
-step 2700: q_j1=0.00/0.22 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.22/0.05 imb_j2=0.58 a_j2=1 minG_j2=20
-step 2750: q_j1=0.22/0.03 imb_j1=0.59 a_j1=1 minG_j1=17 | q_j2=0.28/0.00 imb_j2=0.64 a_j2=1 minG_j2=20
-step 2800: q_j1=0.40/0.10 imb_j1=0.65 a_j1=1 minG_j1=17 | q_j2=0.35/0.07 imb_j2=0.64 a_j2=1 minG_j2=20
-step 2850: q_j1=0.10/0.27 imb_j1=0.42 a_j1=1 minG_j1=17 | q_j2=0.40/0.05 imb_j2=0.68 a_j2=1 minG_j2=20
-step 2900: q_j1=0.08/0.30 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.30/0.18 imb_j2=0.56 a_j2=1 minG_j2=20
-step 2950: q_j1=0.20/0.08 imb_j1=0.56 a_j1=1 minG_j1=17 | q_j2=0.28/0.17 imb_j2=0.56 a_j2=1 minG_j2=20
-step 3000: q_j1=0.40/0.02 imb_j1=0.69 a_j1=1 minG_j1=17 | q_j2=0.10/0.32 imb_j2=0.39 a_j2=1 minG_j2=20
-step 3050: q_j1=0.10/0.20 imb_j1=0.45 a_j1=1 minG_j1=17 | q_j2=0.03/0.32 imb_j2=0.36 a_j2=1 minG_j2=20
-step 3100: q_j1=0.12/0.27 imb_j1=0.43 a_j1=1 minG_j1=17 | q_j2=0.18/0.30 imb_j2=0.44 a_j2=1 minG_j2=20
-step 3150: q_j1=0.23/0.03 imb_j1=0.60 a_j1=1 minG_j1=17 | q_j2=0.08/0.27 imb_j2=0.41 a_j2=1 minG_j2=20
-step 3200: q_j1=0.40/0.08 imb_j1=0.66 a_j1=1 minG_j1=17 | q_j2=0.22/0.25 imb_j2=0.48 a_j2=1 minG_j2=20
-step 3250: q_j1=0.35/0.23 imb_j1=0.56 a_j1=1 minG_j1=17 | q_j2=0.20/0.15 imb_j2=0.52 a_j2=1 minG_j2=20
-step 3300: q_j1=0.10/0.28 imb_j1=0.41 a_j1=1 minG_j1=17 | q_j2=0.23/0.03 imb_j2=0.60 a_j2=1 minG_j2=20
-step 3350: q_j1=0.22/0.10 imb_j1=0.56 a_j1=1 minG_j1=17 | q_j2=0.32/0.08 imb_j2=0.62 a_j2=1 minG_j2=20
-step 3400: q_j1=0.40/0.05 imb_j1=0.68 a_j1=1 minG_j1=17 | q_j2=0.40/0.17 imb_j2=0.62 a_j2=1 minG_j2=20
+/0.17 imb_j2=0.62 a_j2=1 minG_j2=20
 step 3450: q_j1=0.12/0.20 imb_j1=0.46 a_j1=1 minG_j1=17 | q_j2=0.37/0.12 imb_j2=0.62 a_j2=1 minG_j2=20
 step 3500: q_j1=0.12/0.33 imb_j1=0.39 a_j1=1 minG_j1=17 | q_j2=0.23/0.12 imb_j2=0.56 a_j2=1 minG_j2=20
 step 3550: q_j1=0.20/0.07 imb_j1=0.57 a_j1=1 minG_j1=17 | q_j2=0.15/0.15 imb_j2=0.50 a_j2=1 minG_j2=20
@@ -92,76 +14,7 @@ Std                                         40.34s             53.82s
 
 Improvement over fixed-time: 52.3%
 
---- Divergence check ---
- Retrying in 1 seconds
-step 0: q_j1=0.00/0.00 imb_j1=0.50 a_j1=0 minG_j1=19 | q_j2=0.00/0.00 imb_j2=0.50 a_j2=0 minG_j2=17
-step 50: q_j1=0.17/0.10 imb_j1=0.53 a_j1=1 minG_j1=19 | q_j2=0.10/0.15 imb_j2=0.47 a_j2=1 minG_j2=17
-step 100: q_j1=0.08/0.27 imb_j1=0.41 a_j1=1 minG_j1=19 | q_j2=0.13/0.23 imb_j2=0.45 a_j2=1 minG_j2=17
-step 150: q_j1=0.10/0.30 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.22/0.03 imb_j2=0.59 a_j2=1 minG_j2=17
-step 200: q_j1=0.12/0.25 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.37/0.10 imb_j2=0.63 a_j2=1 minG_j2=17
-step 250: q_j1=0.25/0.08 imb_j1=0.58 a_j1=1 minG_j1=19 | q_j2=0.12/0.33 imb_j2=0.39 a_j2=1 minG_j2=17
-step 300: q_j1=0.22/0.08 imb_j1=0.57 a_j1=1 minG_j1=19 | q_j2=0.13/0.35 imb_j2=0.39 a_j2=1 minG_j2=17
-step 350: q_j1=0.40/0.15 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.22/0.07 imb_j2=0.57 a_j2=1 minG_j2=17
-step 400: q_j1=0.25/0.10 imb_j1=0.57 a_j1=1 minG_j1=19 | q_j2=0.37/0.03 imb_j2=0.67 a_j2=1 minG_j2=17
-step 450: q_j1=0.08/0.17 imb_j1=0.46 a_j1=1 minG_j1=19 | q_j2=0.10/0.22 imb_j2=0.44 a_j2=1 minG_j2=17
-step 500: q_j1=0.03/0.23 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.03/0.23 imb_j2=0.40 a_j2=1 minG_j2=17
-step 550: q_j1=0.12/0.28 imb_j1=0.42 a_j1=1 minG_j1=19 | q_j2=0.22/0.03 imb_j2=0.59 a_j2=1 minG_j2=17
-step 600: q_j1=0.30/0.10 imb_j1=0.60 a_j1=1 minG_j1=19 | q_j2=0.37/0.08 imb_j2=0.64 a_j2=1 minG_j2=17
-ste
-step 700: q_j1=0.40/0.15 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.05/0.32 imb_j2=0.37 a_j2=1 minG_j2=17
-step 750: q_j1=0.40/0.25 imb_j1=0.57 a_j1=1 minG_j1=19 | q_j2=0.40/0.08 imb_j2=0.66 a_j2=1 minG_j2=17
-step 800: q_j1=0.15/0.18 imb_j1=0.48 a_j1=1 minG_j1=19 | q_j2=0.37/0.12 imb_j2=0.62 a_j2=1 minG_j2=17
-step 850: q_j1=0.08/0.28 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.08/0.25 imb_j2=0.42 a_j2=1 minG_j2=17
-step 900: q_j1=0.17/0.40 imb_j1=0.38 a_j1=1 minG_j1=19 | q_j2=0.17/0.32 imb_j2=0.43 a_j2=1 minG_j2=17
-step 950: q_j1=0.12/0.22 imb_j1=0.45 a_j1=1 minG_j1=19 | q_j2=0.22/0.10 imb_j2=0.56 a_j2=1 minG_j2=17
-step 1000: q_j1=0.23/0.03 imb_j1=0.60 a_j1=1 minG_j1=19 | q_j2=0.37/0.02 imb_j2=0.68 a_j2=1 minG_j2=17
-step 1050: q_j1=0.37/0.00 imb_j1=0.68 a_j1=1 minG_j1=19 | q_j2=0.08/0.17 imb_j2=0.46 a_j2=1 minG_j2=17
-step 1100: q_j1=0.37/0.02 imb_j1=0.68 a_j1=1 minG_j1=19 | q_j2=0.17/0.35 imb_j2=0.41 a_j2=1 minG_j2=17
-step 1150: q_j1=0.35/0.12 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.22/0.08 imb_j2=0.57 a_j2=1 minG_j2=17
-step 1200: q_j1=0.03/0.17 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.37/0.15 imb_j2=0.61 a_j2=1 minG_j2=17
-step 1250: q_j1=0.07/0.25 imb_j1=0.41 a_j1=1 minG_j1=19 | q_j2=0.13/0.22 imb_j2=0.46 a_j2=1 minG_j2=17
-step 1300: q_j1=0.20/0.20 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.13/0.37 imb_j2=0.38 a_j2=1 minG_j2=17
-step 1350: q_j1=0.22/0.05 imb_j1=0.58 a_j1=1 minG_j1=19 | q_j2=0.22/0.07 imb_j2=0.57 a_j2=1 minG_j2=17
-step 1400: q_j1=0.33/0.00 imb_j1=0.67 a_j1=1 minG_j1=19 | q_j2=0.35/0.05 imb_j2=0.65 a_j2=1 minG_j2=17
-step 1450: q_j1=0.40/0.00 imb_j1=0.70 a_j1=1 minG_j1=19 | q_j2=0.13/0.20 imb_j2=0.47 a_j2=1 minG_j2=17
-step 1500: q_j1=0.40/0.08 imb_j1=0.66 a_j1=1 minG_j1=19 | q_j2=0.17/0.35 imb_j2=0.41 a_j2=1 minG_j2=17
-step 1550: q_j1=0.03/0.18 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.23/0.03 imb_j2=0.60 a_j2=1 minG_j2=17
-step 1600: q_j1=0.13/0.28 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.37/0.13 imb_j2=0.62 a_j2=1 minG_j2=17
-step 1650: q_j1=0.10/0.32 imb_j1=0.39 a_j1=1 minG_j1=19 | q_j2=0.05/0.22 imb_j2=0.42 a_j2=1 minG_j2=17
-step 1700: q_j1=0.22/0.10 imb_j1=0.56 a_j1=1 minG_j1=19 | q_j2=0.17/0.38 imb_j2=0.39 a_j2=1 minG_j2=17
-step 1750: q_j1=0.27/0.08 imb_j1=0.59 a_j1=1 minG_j1=19 | q_j2=0.23/0.12 imb_j2=0.56 a_j2=1 minG_j2=17
-step 1800: q_j1=0.40/0.12 imb_j1=0.64 a_j1=1 minG_j1=19 | q_j2=0.37/0.12 imb_j2=0.62 a_j2=1 minG_j2=17
-step 1850: q_j1=0.30/0.18 imb_j1=0.56 a_j1=1 minG_j1=19 | q_j2=0.10/0.13 imb_j2=0.48 a_j2=1 minG_j2=17
-step 1900: q_j1=0.17/0.13 imb_j1=0.52 a_j1=1 minG_j1=19 | q_j2=0.13/0.22 imb_j2=0.46 a_j2=1 minG_j2=17
-step 1950: q_j1=0.12/0.23 imb_j1=0.44 a_j1=1 minG_j1=19 | q_j2=0.23/0.05 imb_j2=0.59 a_j2=1 minG_j2=17
-step 2000: q_j1=0.07/0.27 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.37/0.02 imb_j2=0.68 a_j2=1 minG_j2=17
-step 2050: q_j1=0.13/0.13 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.13/0.23 imb_j2=0.45 a_j2=1 minG_j2=17
-step 2100: q_j1=0.25/0.03 imb_j1=0.61 a_j1=1 minG_j1=19 | q_j2=0.15/0.27 imb_j2=0.44 a_j2=1 minG_j2=17
-step 2150: q_j1=0.33/0.00 imb_j1=0.67 a_j1=1 minG_j1=19 | q_j2=0.23/0.03 imb_j2=0.60 a_j2=1 minG_j2=17
-step 2200: q_j1=0.37/0.12 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.37/0.10 imb_j2=0.63 a_j2=1 minG_j2=17
-step 2250: q_j1=0.17/0.15 imb_j1=0.51 a_j1=1 minG_j1=19 | q_j2=0.08/0.15 imb_j2=0.47 a_j2=1 minG_j2=17
-step 2300: q_j1=0.02/0.15 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.12/0.27 imb_j2=0.43 a_j2=1 minG_j2=17
-step 2350: q_j1=0.30/0.27 imb_j1=0.52 a_j1=1 minG_j1=19 | q_j2=0.23/0.08 imb_j2=0.57 a_j2=1 minG_j2=17
-step 2400: q_j1=0.17/0.20 imb_j1=0.48 a_j1=1 minG_j1=19 | q_j2=0.37/0.03 imb_j2=0.67 a_j2=1 minG_j2=17
-step 2450: q_j1=0.18/0.12 imb_j1=0.53 a_j1=1 minG_j1=19 | q_j2=0.25/0.30 imb_j2=0.47 a_j2=1 minG_j2=17
-step 2500: q_j1=0.32/0.10 imb_j1=0.61 a_j1=1 minG_j1=19 | q_j2=0.40/0.32 imb_j2=0.54 a_j2=1 minG_j2=17
-step 2550: q_j1=0.38/0.13 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.40/0.12 imb_j2=0.64 a_j2=1 minG_j2=17
-step 2600: q_j1=0.23/0.10 imb_j1=0.57 a_j1=1 minG_j1=19 | q_j2=0.37/0.05 imb_j2=0.66 a_j2=1 minG_j2=17
-step 2650: q_j1=0.07/0.20 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.08/0.23 imb_j2=0.43 a_j2=1 minG_j2=17
-step 2700: q_j1=0.13/0.33 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.12/0.32 imb_j2=0.40 a_j2=1 minG_j2=17
-step 2750: q_j1=0.32/0.25 imb_j1=0.53 a_j1=1 minG_j1=19 | q_j2=0.22/0.05 imb_j2=0.58 a_j2=1 minG_j2=17
-step 2800: q_j1=0.18/0.17 imb_j1=0.51 a_j1=1 minG_j1=19 | q_j2=0.38/0.13 imb_j2=0.62 a_j2=1 minG_j2=17
-step 2850: q_j1=0.28/0.05 imb_j1=0.62 a_j1=1 minG_j1=19 | q_j2=0.35/0.28 imb_j2=0.53 a_j2=1 minG_j2=17
-step 2900: q_j1=0.40/0.08 imb_j1=0.66 a_j1=1 minG_j1=19 | q_j2=0.12/0.27 imb_j2=0.43 a_j2=1 minG_j2=17
-step 2950: q_j1=0.32/0.18 imb_j1=0.57 a_j1=1 minG_j1=19 | q_j2=0.33/0.10 imb_j2=0.62 a_j2=1 minG_j2=17
-step 3000: q_j1=0.10/0.25 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.37/0.05 imb_j2=0.66 a_j2=1 minG_j2=17
-step 3050: q_j1=0.07/0.20 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.08/0.23 imb_j2=0.43 a_j2=1 minG_j2=17
-step 3100: q_j1=0.17/0.25 imb_j1=0.46 a_j1=1 minG_j1=19 | q_j2=0.10/0.30 imb_j2=0.40 a_j2=1 minG_j2=17
-step 3150: q_j1=0.20/0.20 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.27/0.07 imb_j2=0.60 a_j2=1 minG_j2=17
-step 3200: q_j1=0.38/0.03 imb_j1=0.68 a_j1=1 minG_j1=19 | q_j2=0.37/0.13 imb_j2=0.62 a_j2=1 minG_j2=17
-step 3250: q_j1=0.40/0.10 imb_j1=0.65 a_j1=1 minG_j1=19 | q_j2=0.13/0.20 imb_j2=0.47 a_j2=1 minG_j2=17
-step 3300: q_j1=0.37/0.10 imb_j1=0.63 a_j1=1 minG_j1=19 | q_j2=0.15/0.25 imb_j2=0.45 a_j2=1 minG_j2=17
-step 3350: q_j1=0.17/0.13 imb_j1=0.52 a_j1=1 minG_j1=19 | q_j2=0.22/0.07 imb_j2=0.57 a_j2=1 minG_j2=17
+/0.07 imb_j2=0.57 a_j2=1 minG_j2=17
 step 3400: q_j1=0.00/0.20 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.37/0.13 imb_j2=0.62 a_j2=1 minG_j2=17
 step 3450: q_j1=0.00/0.20 imb_j1=0.40 a_j1=1 minG_j1=19 | q_j2=0.10/0.23 imb_j2=0.43 a_j2=1 minG_j2=17
 step 3500: q_j1=0.15/0.15 imb_j1=0.50 a_j1=1 minG_j1=19 | q_j2=0.10/0.25 imb_j2=0.43 a_j2=1 minG_j2=17
@@ -227,3 +80,43 @@ J2: coefficient of variation across time bins = 0.029
 J1 vs J2 switch-timing-profile correlation: 0.307
   -> very high (near 1.0) suggests both junctions are switching on the
      same schedule regardless of their own local demand
+
+
+
+
+new training
+
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Metric                                  Fixed-time  Decentralized PPO
+----------------------------------------------------------------------
+Mean avg wait/step (s)                     955.24s            447.32s
+Std                                         40.34s             80.59s
+
+Improvement over fixed-time: 53.2%
+
+--- Divergence check ---
+ Retrying in 1 seconds
+step 3200: q_j1=0.27/0.08 imb_j1=0.59 a_j1=1 minG_j1=19 | q_j2=0.40/0.13 imb_j2=0.63 a_j2=1 minG_j2=17
+step 3250: q_j1=0.37/0.00 imb_j1=0.68 a_j1=1 minG_j1=19 | q_j2=0.12/0.20 imb_j2=0.46 a_j2=1 minG_j2=17
+step 3300: q_j1=0.40/0.02 imb_j1=0.69 a_j1=1 minG_j1=19 | q_j2=0.12/0.35 imb_j2=0.38 a_j2=1 minG_j2=17
+step 3350: q_j1=0.22/0.13 imb_j1=0.54 a_j1=1 minG_j1=19 | q_j2=0.23/0.10 imb_j2=0.57 a_j2=1 minG_j2=17
+step 3400: q_j1=0.08/0.17 imb_j1=0.46 a_j1=1 minG_j1=19 | q_j2=0.40/0.15 imb_j2=0.62 a_j2=1 minG_j2=17
+step 3450: q_j1=0.05/0.20 imb_j1=0.43 a_j1=1 minG_j1=19 | q_j2=0.10/0.22 imb_j2=0.44 a_j2=1 minG_j2=17
+step 3500: q_j1=0.12/0.17 imb_j1=0.47 a_j1=1 minG_j1=19 | q_j2=0.08/0.25 imb_j2=0.42 a_j2=1 minG_j2=17
+step 3550: q_j1=0.20/0.10 imb_j1=0.55 a_j1=1 minG_j1=19 | q_j2=0.20/0.07 imb_j2=0.57 a_j2=1 minG_j2=17
+J1 wasted-vote rate (votes cast while ineligible / all ineligible steps): 99.0%
+J2 wasted-vote rate (votes cast while ineligible / all ineligible steps): 99.0%
+  -> near 100% on either junction means that junction's raw vote is ~always 1
+     regardless of the observation -- check this BEFORE trusting the
+     divergence numbers below.
+
+J1/J2 same-action rate: 99.7%  (near 100% is only a problem together with a low local correlation below -- see next lines)
+Correlation(|J1 raw imbalance|, J1 switch-vote): 0.137
+Correlation(|J2 raw imbalance|, J2 switch-vote): 0.127
+
+Steps where J1/J2 imbalance direction disagrees: 1790
+J1/J2 action agreement rate on THOSE steps: 99.8%
+  -> should be noticeably LOWER than the overall same-action rate above.
+     If it's still ~equal, the policy is ignoring local imbalance direction.
