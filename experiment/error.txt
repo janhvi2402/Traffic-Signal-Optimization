@@ -1,0 +1,55 @@
+ experiment/wrappers.py                 |  68 ++++++++++++
+ 8 files changed, 1338 insertions(+)
+ create mode 100644 experiment/compare_ppo_dqn_fixed.py
+ create mode 100644 experiment/network.sumocfg
+ create mode 100644 experiment/plot_switch_timing.py
+ create mode 100644 experiment/plot_switch_timing_multi.py
+ create mode 100644 experiment/test_diagnostic_multi.py
+ create mode 100644 experiment/train.py
+ create mode 100644 experiment/train_dqn.py
+ create mode 100644 experiment/wrappers.py
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train.py
+/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
+Traceback (most recent call last):
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train.py", line 181, in <module>
+    run_training(
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train.py", line 114, in run_training
+    train_env = make_vec_env(
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/env_util.py", line 125, in make_vec_env
+    vec_env = vec_env_cls([make_env(i + start_index) for i in range(n_envs)], **vec_env_kwargs)
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 30, in __init__
+    self.envs = [_patch_env(fn()) for fn in env_fns]
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 30, in <listcomp>
+    self.envs = [_patch_env(fn()) for fn in env_fns]
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/env_util.py", line 98, in _init
+    env = env_id(**env_kwargs)
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train.py", line 78, in _init
+    return SumoTrafficEnv2J(
+TypeError: __init__() got an unexpected keyword argument 'min_green'
+
+
+
+    env = env_id(**env_kwargs)
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train.py", line 78, in _init
+    return SumoTrafficEnv2J(
+TypeError: __init__() got an unexpected keyword argument 'min_green'
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization/PPO_ROUTING_V2$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train_dqn.py
+/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
+Traceback (most recent call last):
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train_dqn.py", line 191, in <module>
+    main()
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train_dqn.py", line 134, in main
+    train_env = make_vec_env(make_train_env(42, TRAIN_PORT), n_envs=1)
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/env_util.py", line 125, in make_vec_env
+    vec_env = vec_env_cls([make_env(i + start_index) for i in range(n_envs)], **vec_env_kwargs)
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 30, in __init__
+    self.envs = [_patch_env(fn()) for fn in env_fns]
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 30, in <listcomp>
+    self.envs = [_patch_env(fn()) for fn in env_fns]
+  File "/home/ssl/.local/lib/python3.8/site-packages/stable_baselines3/common/env_util.py", line 98, in _init
+    env = env_id(**env_kwargs)
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/train_dqn.py", line 97, in _init
+    env = SumoTrafficEnv2J(
+TypeError: __init__() got an unexpected keyword argument 'min_green'
