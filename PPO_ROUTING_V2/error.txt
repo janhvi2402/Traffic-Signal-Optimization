@@ -120,3 +120,28 @@ Steps where J1/J2 imbalance direction disagrees: 1790
 J1/J2 action agreement rate on THOSE steps: 99.8%
   -> should be noticeably LOWER than the overall same-action rate above.
      If it's still ~equal, the policy is ignoring local imbalance direction.
+
+
+======================================================================
+SINGLE-JUNCTION DIAGNOSTIC (MIN_GREEN_RANGE=(10, 20), mean sampled this run=13.0, switch_penalty=0.1, wasted_vote_penalty=0.1, imbalance_bonus_weight=1.5, wrong_direction_penalty=0.2)
+======================================================================
+Total switches across 5 episodes: 874
+Switch rate vs physical ceiling:       77.7%
+Mean hold duration:                    17.6 steps
+Slack (mean hold - mean min_green):    +4.6 steps
+  -> near 0 means switches fire the INSTANT they're legally eligible,
+     regardless of queue state -- this is the single clearest sign of
+     a policy that's still letting MIN_GREEN gate everything for it.
+Wasted-vote rate (votes cast while ineligible / all ineligible steps): 1.2%
+  -> near 100% means the raw vote is ~always 1 regardless of the
+     observation -- a POLICY COLLAPSE, independent of how the gated
+     hold-duration numbers below look. This is the most direct check.
+Hold-duration / imbalance correlation: -0.835
+  -> positive => held longer when its side was genuinely busier
+  -> CAUTION: if slack is near 0, this correlation can be a CONFOUND
+     of MIN_GREEN's own randomization, not evidence of learning --
+     check slack and wasted-vote rate FIRST.
+Directional agreement at switch:       71.1%
+  -> should be well above 50% if the policy is using queue state
+Wrong-direction rate:                  0.0%
+  -> should be low -- this is exactly what wrong_direction_penalty targets
