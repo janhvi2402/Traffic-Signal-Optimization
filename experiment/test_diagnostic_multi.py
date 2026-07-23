@@ -33,13 +33,15 @@ IMPORTANT CAVEATS:
 """
 
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
-
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 from env import SumoTrafficEnv2J
+
 from wrappers import FlattenMultiDiscreteAction
 
 # Source of truth for the main pair's model locations and MIN_GREEN.
