@@ -7,7 +7,36 @@ timesteps, eval protocol all matched to train.py; buffer_size,
 exploration schedule shape, target_update_interval left as
 DQN-internal knobs with no PPO equivalent -- UNCHANGED here).
 
-CHANGES IN THIS VERSION (2026-07-23, round 2):
+CHANGES IN THIS VERSION (2026-07-23, round 3):
+
+  *** FAIRNESS DEVIATION -- READ BEFORE USING THESE NUMBERS IN THE REPORT ***
+  WRONG_DIRECTION_PENALTY raised from 0.2 to 0.35 for DQN ONLY.
+  train.py's PPO run still uses 0.2. This is a DELIBERATE, DOCUMENTED
+  break from the "identical reward config" fairness guarantee described
+  elsewhere in this file and in train.py's docstring -- it is done
+  specifically to push DQN's directional agreement (measured at
+  36.3%/38.7%, then 29.5%/39.3% on a later checkpoint -- moving the
+  WRONG way on J1, not just slowly converging) up toward a usable
+  range under time pressure.
+
+  Known risk, not hypothetical: the legacy sweep row already on record
+  (sp=0.4, wd=0.25, MIN_GREEN=15) LOST 17.7% vs. fixed-time -- raising
+  wrong_direction_penalty (alongside other changes in that run) traded
+  away wait-time performance for suppression. This 0.35 run could do
+  the same. Check compare_ppo_dqn_fixed.py's wait-time number for this
+  checkpoint before treating it as a win -- don't just check direction
+  agreement in isolation.
+
+  If this run's numbers go in the report: label this DQN config
+  explicitly as wd=0.35 (not the matched wd=0.2 pair), and do NOT
+  present it next to PPO's row in test_diagnostic_multi.py's "clean
+  single-variable comparison" framing -- that framing is no longer
+  true for this run. It's now a within-DQN comparison (wd=0.2 vs
+  wd=0.35 on DQN only) if you want to show the effect of the change,
+  or a labeled apples-to-oranges PPO/DQN row if you just want DQN's
+  best numbers -- but not both framings at once.
+
+  All other changes below carried over unchanged from round 2:
 
   1. gradient_steps=4, learning_starts=10_000 -- unchanged from the
      previous round (see prior comments): targets the hypothesis that
@@ -72,7 +101,12 @@ from wrappers import FlattenMultiDiscreteAction
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-OUTPUT_FOLDER_NAME = "mg12_sw0.3_wd0.2"
+OUTPUT_FOLDER_NAME = "mg12_sw0.3_wd0.35"  # CHANGED from wd0.2 -- see fairness
+                                            # deviation note above. Different
+                                            # folder name on purpose so this
+                                            # run can never silently overwrite
+                                            # or be confused with the matched
+                                            # wd=0.2 checkpoint.
 MODELS_DIR = os.path.join(SCRIPT_DIR, "models_dqn", OUTPUT_FOLDER_NAME)
 LOG_DIR = os.path.join(SCRIPT_DIR, "tb_logs_dqn", OUTPUT_FOLDER_NAME)
 
@@ -86,7 +120,9 @@ TOTAL_TIMESTEPS = 500_000  # matched to train.py
 SWITCH_PENALTY = 0.3
 WASTED_VOTE_PENALTY = 0.03
 IMBALANCE_BONUS_WEIGHT = 0.0
-WRONG_DIRECTION_PENALTY = 0.2
+WRONG_DIRECTION_PENALTY = 0.35  # CHANGED from 0.2 -- DQN-ONLY deviation from
+                                 # train.py's matched value. See module
+                                 # docstring "FAIRNESS DEVIATION" note.
 MIN_GREEN = 12
 
 TRAIN_PORT = 8823
@@ -305,6 +341,7 @@ def main():
           f"wrong_direction_penalty={WRONG_DIRECTION_PENALTY}, "
           f"min_green={MIN_GREEN}")
     print(f"gradient_steps=4, learning_starts=10_000")
+    print(f"*** FAIRNESS DEVIATION: wrong_direction_penalty=0.35, PPO run uses 0.2 ***")
     print(f"Monitoring dir. agreement every 50k steps against corrected formula.")
     print(f"Output -> {MODELS_DIR}")
     print(f"TensorBoard -> {LOG_DIR}")
