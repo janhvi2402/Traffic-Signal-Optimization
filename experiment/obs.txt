@@ -1,0 +1,139 @@
+ Retrying in 1 seconds
+
+Metric                                     PPO             DQN      Fixed-time
+------------------------------------------------------------------------------
+Mean avg wait/step (s)                 406.11s         221.26s         955.24s
+Std                                     60.34s          13.42s          40.34s
+
+Improvement of PPO over fixed-time: 57.5%
+
+Improvement of DQN over fixed-time: 76.8%
+
+DQN has the lower mean wait/step (PPO 406.11s vs DQN 221.26s, 45.5% difference)
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/plot_switch_timing_multi.py
+
+Evaluating: PPO (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/mg12_sw0.3_wd0.2) ...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [PPO] episode 0 done — J1: 189 switches, J2: 165 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [PPO] episode 1 done — J1: 190 switches, J2: 171 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [PPO] episode 2 done — J1: 184 switches, J2: 160 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [PPO] episode 3 done — J1: 188 switches, J2: 167 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [PPO] episode 4 done — J1: 190 switches, J2: 165 switches
+
+Evaluating: DQN (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models_dqn/mg12_sw0.3_wd0.2) ...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [DQN] episode 0 done — J1: 234 switches, J2: 231 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [DQN] episode 1 done — J1: 232 switches, J2: 230 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [DQN] episode 2 done — J1: 232 switches, J2: 230 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [DQN] episode 3 done — J1: 233 switches, J2: 231 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+  [DQN] episode 4 done — J1: 231 switches, J2: 231 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/switch_timing_plot_multi_20260722_1952.png
+
+Config (PPO): switch_penalty=0.3, wrong_direction_penalty=0.2, wasted_vote_penalty=0.03, imbalance_bonus_weight=0.0, min_green=12
+  J1: coefficient of variation across time bins = 0.039
+  J2: coefficient of variation across time bins = 0.047
+
+Config (DQN): switch_penalty=0.3, wrong_direction_penalty=0.2, wasted_vote_penalty=0.03, imbalance_bonus_weight=0.0, min_green=12
+  J1: coefficient of variation across time bins = 0.040
+  J2: coefficient of variation across time bins = 0.039
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/plot_switch_timing.py
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 0 done — J1: 189 switches, J2: 165 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 1 done — J1: 190 switches, J2: 171 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 2 done — J1: 184 switches, J2: 160 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 3 done — J1: 188 switches, J2: 167 switches
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+episode 4 done — J1: 190 switches, J2: 165 switches
+/home/ssl/.local/lib/python3.8/site-packages/matplotlib/backends/_backend_gtk.py:146: DeprecationWarning: Gtk.Window.set_wmclass is deprecated
+  self.window.set_wmclass("matplotlib", "Matplotlib")
+
+Saved plot -> /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/switch_timing_plot_sp0.3_wd0.2_mingreen12_20260722_1957.png
+
+Config: switch_penalty=0.3, wrong_direction_penalty=0.2, wasted_vote_penalty=0.03, imbalance_bonus_weight=0.0, min_green=12
+J1: coefficient of variation across time bins = 0.039
+J2: coefficient of variation across time bins = 0.047
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/test_diagnostic_multi.py
+/usr/lib/python3/dist-packages/apport/report.py:13: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+  import fnmatch, glob, traceback, errno, sys, atexit, imp, stat
+Traceback (most recent call last):
+  File "/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/test_diagnostic_multi.py", line 42, in <module>
+    from env import SumoTrafficEnv2J
+ModuleNotFoundError: No module named 'env'
+ssl@ssl-H410M-H-V3:~/Documents/b240009/Traffic-Signal-Optimization$ /bin/python3 /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/test_diagnostic_multi.py
+
+Evaluating: PPO (sp=0.3, wd=0.2, MIN_GREEN=12) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/mg12_sw0.3_wd0.2) ...
+  effective config: {'max_queue': 30, 'switch_penalty': 0.3, 'wasted_vote_penalty': 0.03, 'imbalance_bonus_weight': 0.0, 'wrong_direction_penalty': 0.2, 'min_green': 12, 'max_green': 90, 'yellow_time': 3}
+
+ Retrying in 1 seconds
+
+Evaluating: DQN (sp=0.3, wd=0.2, MIN_GREEN=12) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models_dqn/mg12_sw0.3_wd0.2) ...
+  effective config: {'max_queue': 30, 'switch_penalty': 0.3, 'wasted_vote_penalty': 0.03, 'imbalance_bonus_weight': 0.0, 'wrong_direction_penalty': 0.2, 'min_green': 12, 'max_green': 90, 'yellow_time': 3}
+ Retrying in 1 seconds
+
+Evaluating: legacy: PPO sp=0.4, wd=0.25, MIN_GREEN=15 (-17.7%, over-suppressed) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/<FILL_IN_YOUR_FOLDER_NAME>) ...
+[skip] legacy: PPO sp=0.4, wd=0.25, MIN_GREEN=15 (-17.7%, over-suppressed): no model found at /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/<FILL_IN_YOUR_FOLDER_NAME>/ppo_sumo_2junction.zip
+
+Evaluating: legacy: PPO sp=0.3, wd=0.15, MIN_GREEN=10 (73.6%, below-chance direction) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/<FILL_IN_YOUR_FOLDER_NAME>) ...
+[skip] legacy: PPO sp=0.3, wd=0.15, MIN_GREEN=10 (73.6%, below-chance direction): no model found at /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/<FILL_IN_YOUR_FOLDER_NAME>/ppo_sumo_2junction.zip
+
+Evaluating: legacy: PPO sweep sp=0.15 (no seed rotation) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp015) ...
+[skip] legacy: PPO sweep sp=0.15 (no seed rotation): no model found at /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp015/ppo_sumo_2junction.zip
+
+Evaluating: legacy: PPO sweep sp=0.3 (no seed rotation) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp03) ...
+[skip] legacy: PPO sweep sp=0.3 (no seed rotation): no model found at /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp03/ppo_sumo_2junction.zip
+
+Evaluating: legacy: PPO sweep sp=0.5 (no seed rotation) (/home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp05) ...
+[skip] legacy: PPO sweep sp=0.5 (no seed rotation): no model found at /home/ssl/Documents/b240009/Traffic-Signal-Optimization/experiment/models/sweep_sp05/ppo_sumo_2junction.zip
+
+====================================================================================================
+NOTE: sweep_sp* PPO models were trained WITHOUT the seed-rotation fix
+(single repeated scenario per run). The current-best PPO row and the
+DQN row both use seed rotation + sp=0.3, wd=0.2, MIN_GREEN=12, so THAT
+pair is the clean single-variable (algorithm-only) comparison. Every
+other pairing in this table mixes more than one changed variable.
+====================================================================================================
+
+====================================================================================================
+COMPARISON ACROSS CONFIGS
+====================================================================================================
+config                                                      tl    switch %ceil      corr   mean hold  dir. agree %
+--------------------------------------------------------------------------------------------------------------
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J1           78.4%     0.473        16.1         40.9%
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           69.0%     0.411        18.7         42.4%
+DQN (sp=0.3, wd=0.2, MIN_GREEN=12)                          J1           96.8%    -0.065        12.5         63.7%
+DQN (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           96.1%     0.066        12.6         61.3%
+==============================================================================================================
+Watch: as switch_penalty rises, switch % should drop. If directional
+agreement DOESN'T rise alongside it, the penalty is suppressing
+switching in general, not making switches smarter. Also watch
+whether each config clears 50% (coin flip) convincingly on both J1
+and J2.
