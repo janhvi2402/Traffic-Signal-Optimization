@@ -140,7 +140,7 @@ def run_episode(model, env):
                 log[tl]["hold_mean_abs_imbalance"].append(mean_abs_imb)
 
                 old_phase = 1 - phase
-                new_side_is_ns = (old_phase == 1)
+                new_side_is_ns = (old_phase == 0)
                 agrees = (mean_signed_imb > 0) == new_side_is_ns
                 log[tl]["switch_agrees_with_imbalance"].append(agrees)
 
