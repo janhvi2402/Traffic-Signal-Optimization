@@ -154,3 +154,55 @@ agreement DOESN'T rise alongside it, the penalty is suppressing
 switching in general, not making switches smarter. Also watch
 whether each config clears 50% (coin flip) convincingly on both J1
 and J2.
+
+[DirectionMonitor] step=100000
+  J1: mean_hold=13.1  dir_agree=35.4%  <-- below chance
+  J2: mean_hold=18.3  dir_agree=50.1%
+
+  [DirectionMonitor] step=150000
+  J1: mean_hold=13.3  dir_agree=36.1%  <-- below chance
+  J2: mean_hold=13.3  dir_agree=43.2%  <-- below chance
+
+  [DirectionMonitor] step=200000
+  J1: mean_hold=15.4  dir_agree=43.2%  <-- below chance
+  J2: mean_hold=12.6  dir_agree=41.2%  <-- below chance
+
+[DirectionMonitor] step=250000
+  J1: mean_hold=13.9  dir_agree=45.1%  <-- below chance
+  J2: mean_hold=13.9  dir_agree=46.5%  <-- below chance
+ Retrying in 1 seconds
+
+   J1: mean_hold=12.8  dir_agree=38.9%  <-- below chance
+  J2: mean_hold=12.8  dir_agree=40.4%  <-- below chance
+
+[DirectionMonitor] step=350000
+  J1: mean_hold=12.5  dir_agree=35.3%  <-- below chance
+  J2: mean_hold=13.1  dir_agree=42.1%  <-- below chance
+
+[DirectionMonitor] step=400000
+  J1: mean_hold=12.3  dir_agree=39.4%  <-- below chance
+  J2: mean_hold=12.0  dir_agree=36.2%  <-- below chance
+
+[DirectionMonitor] step=450000
+  J1: mean_hold=12.5  dir_agree=36.3%  <-- below chance
+  J2: mean_hold=12.2  dir_agree=32.1%  <-- below chance
+ Retrying in 1 seconds
+[QValueSpread] step=455000 mean_q_spread=0.0570
+
+
+[DirectionMonitor] step=500000
+  J1: mean_hold=12.6  dir_agree=39.5%  <-- below chance
+  J2: mean_hold=12.2  dir_agree=35.7%  <-- below chance
+
+
+
+====================================================================================================
+COMPARISON ACROSS CONFIGS
+====================================================================================================
+config                                                      tl    switch %ceil      corr   mean hold  dir. agree %
+--------------------------------------------------------------------------------------------------------------
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J1           78.4%     0.473        16.1         59.1%
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           69.0%     0.411        18.7         57.6%
+DQN (sp=0.3, wd=0.35, MIN_GREEN=12)                         J1           96.6%     0.032        12.5         36.0%
+DQN (sp=0.3, wd=0.35, MIN_GREEN=12)                         J2           98.4%    -0.021        12.2         37.1%
+==============================================================================================================
