@@ -137,3 +137,20 @@ agreement DOESN'T rise alongside it, the penalty is suppressing
 switching in general, not making switches smarter. Also watch
 whether each config clears 50% (coin flip) convincingly on both J1
 and J2.
+
+
+====================================================================================================
+COMPARISON ACROSS CONFIGS
+====================================================================================================
+config                                                      tl    switch %ceil      corr   mean hold  dir. agree %
+--------------------------------------------------------------------------------------------------------------
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J1           78.4%     0.473        16.1         59.1%
+PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           69.0%     0.411        18.7         57.6%
+DQN (sp=0.3, wd=0.2, MIN_GREEN=12)                          J1           96.8%    -0.065        12.5         36.3%
+DQN (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           96.1%     0.066        12.6         38.7%
+==============================================================================================================
+Watch: as switch_penalty rises, switch % should drop. If directional
+agreement DOESN'T rise alongside it, the penalty is suppressing
+switching in general, not making switches smarter. Also watch
+whether each config clears 50% (coin flip) convincingly on both J1
+and J2.
