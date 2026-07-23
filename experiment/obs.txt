@@ -206,3 +206,16 @@ PPO (sp=0.3, wd=0.2, MIN_GREEN=12)                          J2           69.0%  
 DQN (sp=0.3, wd=0.35, MIN_GREEN=12)                         J1           96.6%     0.032        12.5         36.0%
 DQN (sp=0.3, wd=0.35, MIN_GREEN=12)                         J2           98.4%    -0.021        12.2         37.1%
 ==============================================================================================================
+
+
+
+Metric                                     PPO             DQN      Fixed-time
+------------------------------------------------------------------------------
+Mean avg wait/step (s)                 406.11s         229.79s         955.24s
+Std                                     60.34s          16.22s          40.34s
+
+Improvement of PPO over fixed-time: 57.5%
+
+Improvement of DQN over fixed-time: 75.9%
+
+DQN has the lower mean wait/step (PPO 406.11s vs DQN 229.79s, 43.4% difference)
