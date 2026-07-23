@@ -1,57 +1,69 @@
 """
 train_dqn.py
 
-DQN counterpart to train.py. Trains on the identical SumoTrafficEnv2J
-(same reward config, same MIN_GREEN, same seed-rotation scheme, same
-eval protocol) so the PPO-vs-DQN comparison is apples-to-apples on the
-environment side. The only structural difference is the action-space
-adapter (see wrappers.FlattenMultiDiscreteAction) -- SB3's DQN requires
-a single Discrete action space, PPO doesn't.
+DQN counterpart to train.py. See train_dqn.py's original docstring
+history for the fairness notes (reward config, MIN_GREEN, seeds,
+timesteps, eval protocol all matched to train.py; buffer_size,
+exploration schedule shape, target_update_interval left as
+DQN-internal knobs with no PPO equivalent -- UNCHANGED here).
 
-FAIRNESS NOTES -- read before writing these numbers into your report:
+CHANGES IN THIS VERSION (2026-07-23, round 2):
 
-- Reward config, TOTAL_TIMESTEPS, gamma, seeds (train=42, eval=0),
-  eval_freq/n_eval_episodes, network width [128, 128], and MIN_GREEN
-  are matched to train.py's actual constants and passed explicitly to
-  the env constructor rather than relied upon as class defaults:
-  SWITCH_PENALTY=0.3, WASTED_VOTE_PENALTY=0.03,
-  IMBALANCE_BONUS_WEIGHT=0.0, WRONG_DIRECTION_PENALTY=0.2, MIN_GREEN=12.
-  (env.py's own class defaults now match these too, but both scripts
-  still pass everything explicitly on purpose -- so a future change to
-  env.py's defaults can't silently desync this comparison again.)
+  1. gradient_steps=4, learning_starts=10_000 -- unchanged from the
+     previous round (see prior comments): targets the hypothesis that
+     the Q-network wasn't getting enough updates to differentiate
+     "switch" from "hold" by state.
 
-- model-level seed=42 added to the DQN(...) constructor, matching
-  PPO's `seed=42`. This controls the algorithm's own internal RNG
-  (network init, replay/exploration sampling) -- separate from the
-  seed=42 passed to make_train_env, which controls SUMO scenario
-  rotation and was already matched.
+  2. NEW: DirectionAgreementMonitorCallback. The corrected diagnostic
+     run showed DQN's directional agreement at 36.3%/38.7% -- BELOW
+     the 50% coin-flip line, not just "no pattern learned" (~50%).
+     Neither change above specifically targets directionality, and
+     guessing another hyperparameter blind isn't a substitute for
+     seeing what's actually happening during training. This callback
+     runs a short deterministic eval every `check_freq` steps using
+     the SAME corrected agreement formula validated against
+     test_diagnostic_multi.py / train.py's docstring:
 
-- DQN is off-policy and PPO is on-policy, so some hyperparameters have
-  no PPO equivalent (buffer_size, target_update_interval, exploration
-  schedule) or share a name without being comparable 1:1. In particular
-  max_grad_norm is left at SB3's DQN default (10) rather than forced to
-  match PPO's 0.5, because it bounds a TD-error gradient vs. a clipped
-  surrogate-loss gradient -- same number, different scale. Say this
-  explicitly in your report if you list both hyperparameter tables
-  side by side; don't imply they were tuned to be equal.
+         new_phase = 1 - phase   # phase is the OLD side; info is read
+                                  # at the transition-to-yellow step,
+                                  # before self._phase[tl] flips
+         new_side_is_ns = (new_phase == 0)
+         agrees = (mean_signed_imb > 0) == new_side_is_ns
 
-- exploration_fraction=1.0 anneals epsilon across the *entire* run,
-  mirroring how EntropyAnnealCallback anneals PPO's ent_coef across the
-  entire run in train.py. This keeps the "explore early, exploit late"
-  shape comparable instead of one algorithm exploring for 10% of
-  training and the other for 100%.
+     and logs mean hold duration + directional agreement per junction
+     to TensorBoard (`custom/dir_agree_J1`, `custom/dir_agree_J2`,
+     `custom/mean_hold_J1`, `custom/mean_hold_J2`) plus stdout, so you
+     can watch the trend across training instead of waiting for the
+     final checkpoint. If agreement is still below or near 50% by the
+     later checkpoints, that's a signal the issue isn't "needs more
+     training" and is worth stopping early to investigate rather than
+     letting the full 500k steps run out on a policy that isn't
+     improving on the metric that matters here.
 
-- Ports (8823/8824) are offset from train.py's (8813/8814) so you can
-  run a PPO sweep and this DQN run in separate terminals at the same
-  time without a TraCI port collision.
+  3. QValueSpreadCallback kept from the previous round -- still useful
+     as a second, independent signal (whether the network differentiates
+     actions AT ALL, separate from whether it differentiates them
+     CORRECTLY).
+
+Honesty note: none of this guarantees agreement ends up above 50%.
+It gives you visibility into whether it's trending there during
+training, which is what actually lets you decide whether to keep
+this run, stop it early, or that the problem is somewhere other than
+these DQN-internal knobs (e.g. worth checking whether the flattened
+Discrete(4) action encoding in wrappers.py maps NS/EW switch intent
+consistently for both junctions -- I don't have that file, so I can't
+rule it in or out, but a below-chance result rather than a near-chance
+result is the kind of pattern a systematic encoding issue would produce).
 """
 
 import os
 import sys
+import numpy as np
+import torch
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.utils import get_linear_fn
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "common"))
 
@@ -60,19 +72,9 @@ from wrappers import FlattenMultiDiscreteAction
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# This run trains against env.py's 14-dim observation (7 features x 2
-# junctions: ns_q, ew_q, ns_w, ew_w, phase, time_in_phase, in_yellow).
-# There is NO separate raw-imbalance observation feature -- "imbalance"
-# only appears as a reward term (IMBALANCE_BONUS_WEIGHT), which is 0.0
-# (disabled) in this config. The wrapper here only touches the action
-# space, so the 14-dim observation passes straight through unchanged.
-#
-# Folder name is descriptive of the actual hyperparameters, not a
-# feature that isn't present in the obs -- keep this in sync with
-# train.py's OUTPUT_FOLDER_NAME so it's always obvious which PPO folder
-# a given DQN folder is meant to be compared against.
 OUTPUT_FOLDER_NAME = "mg12_sw0.3_wd0.2"
 MODELS_DIR = os.path.join(SCRIPT_DIR, "models_dqn", OUTPUT_FOLDER_NAME)
+LOG_DIR = os.path.join(SCRIPT_DIR, "tb_logs_dqn", OUTPUT_FOLDER_NAME)
 
 lr_schedule = get_linear_fn(start=3e-4, end=5e-5, end_fraction=1.0)  # same schedule as PPO
 
@@ -80,16 +82,19 @@ MAX_QUEUE = None
 TOTAL_TIMESTEPS = 500_000  # matched to train.py
 
 # --- reward + dynamics config -- MATCHED to train.py's actual constants.
-#     Don't change one without changing the other, or the comparison is
-#     meaningless. ---
+#     UNCHANGED in this version. ---
 SWITCH_PENALTY = 0.3
 WASTED_VOTE_PENALTY = 0.03
 IMBALANCE_BONUS_WEIGHT = 0.0
 WRONG_DIRECTION_PENALTY = 0.2
-MIN_GREEN = 12  # matched to train.py; passed explicitly, not left to env.py's class default
+MIN_GREEN = 12
 
 TRAIN_PORT = 8823
 EVAL_PORT = 8824
+MONITOR_PORT = 8825  # separate port so the direction-agreement monitor
+                      # doesn't collide with SB3's own EvalCallback env
+
+TL_IDS = ["J1", "J2"]
 
 
 def make_train_env(seed, port):
@@ -126,8 +131,131 @@ def make_eval_env(seed, port):
     return _init
 
 
+class QValueSpreadCallback(BaseCallback):
+    """Diagnostic only. See previous version's docstring for rationale."""
+
+    def __init__(self, check_freq: int = 5_000, batch_size: int = 256, verbose: int = 1):
+        super().__init__(verbose)
+        self.check_freq = check_freq
+        self.batch_size = batch_size
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.check_freq != 0:
+            return True
+        buffer = self.model.replay_buffer
+        if buffer.size() < self.batch_size:
+            return True
+        replay_data = buffer.sample(self.batch_size, env=self.model._vec_normalize_env)
+        with torch.no_grad():
+            q_values = self.model.q_net(replay_data.observations)
+        spread = (q_values.max(dim=1).values - q_values.min(dim=1).values).mean().item()
+        self.logger.record("custom/q_value_spread", spread)
+        if self.verbose:
+            print(f"[QValueSpread] step={self.num_timesteps} mean_q_spread={spread:.4f}")
+        return True
+
+
+class DirectionAgreementMonitorCallback(BaseCallback):
+    """
+    Runs a short deterministic eval every `check_freq` steps against a
+    dedicated env (own port, separate from train/eval envs) and logs
+    mean hold duration + directional agreement per junction, using the
+    CORRECTED formula validated against train.py's docstring numbers
+    (59.1%/57.6% for PPO) and test_diagnostic_multi.py post-fix.
+
+    Not a substitute for the full test_diagnostic_multi.py run at the
+    end (that uses 5 episodes; this uses n_episodes for speed) -- this
+    is for watching the trend mid-training, not for final reporting
+    numbers.
+    """
+
+    def __init__(self, port, check_freq: int = 50_000, n_episodes: int = 2,
+                 max_steps: int = 3600, verbose: int = 1):
+        super().__init__(verbose)
+        self.port = port
+        self.check_freq = check_freq
+        self.n_episodes = n_episodes
+        self.max_steps = max_steps
+
+    def _make_env(self, seed):
+        env = SumoTrafficEnv2J(
+            cfg_path=os.path.join(SCRIPT_DIR, "network.sumocfg"),
+            use_gui=False,
+            max_steps=self.max_steps,
+            seed=seed,
+            port=self.port,
+            switch_penalty=SWITCH_PENALTY,
+            wasted_vote_penalty=WASTED_VOTE_PENALTY,
+            imbalance_bonus_weight=IMBALANCE_BONUS_WEIGHT,
+            wrong_direction_penalty=WRONG_DIRECTION_PENALTY,
+            min_green=MIN_GREEN,
+        )
+        return FlattenMultiDiscreteAction(env)
+
+    def _run_episode(self, seed):
+        env = self._make_env(seed)
+        obs, _ = env.reset()
+        done = False
+
+        log = {tl: {"hold_durations": [], "agrees": []} for tl in TL_IDS}
+        current_hold_imbalance = {tl: [] for tl in TL_IDS}
+
+        while not done:
+            action, _ = self.model.predict(obs, deterministic=True)
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+
+            for tl in TL_IDS:
+                imb = info["imbalance"][tl]
+                phase = info["phase"][tl]
+                current_hold_imbalance[tl].append(imb)
+
+                hold_dur = info["hold_duration_at_switch"][tl]
+                if hold_dur is not None:
+                    mean_signed_imb = float(np.mean(current_hold_imbalance[tl]))
+                    log[tl]["hold_durations"].append(hold_dur)
+
+                    # CORRECTED: phase read here is the OLD side (info
+                    # is read at the transition-to-yellow step, before
+                    # self._phase[tl] flips in env.py).
+                    new_phase = 1 - phase
+                    new_side_is_ns = (new_phase == 0)
+                    agrees = (mean_signed_imb > 0) == new_side_is_ns
+                    log[tl]["agrees"].append(agrees)
+
+                    current_hold_imbalance[tl] = []
+
+        env.close()
+        return log
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.check_freq != 0:
+            return True
+
+        agg = {tl: {"hold_durations": [], "agrees": []} for tl in TL_IDS}
+        for ep in range(self.n_episodes):
+            log = self._run_episode(seed=ep)
+            for tl in TL_IDS:
+                agg[tl]["hold_durations"].extend(log[tl]["hold_durations"])
+                agg[tl]["agrees"].extend(log[tl]["agrees"])
+
+        print(f"\n[DirectionMonitor] step={self.num_timesteps}")
+        for tl in TL_IDS:
+            durations = agg[tl]["hold_durations"]
+            agrees = agg[tl]["agrees"]
+            mean_hold = float(np.mean(durations)) if durations else float("nan")
+            agree_pct = 100 * float(np.mean(agrees)) if agrees else float("nan")
+            self.logger.record(f"custom/mean_hold_{tl}", mean_hold)
+            self.logger.record(f"custom/dir_agree_{tl}", agree_pct)
+            flag = "" if agree_pct >= 50 else "  <-- below chance"
+            print(f"  {tl}: mean_hold={mean_hold:.1f}  dir_agree={agree_pct:.1f}%{flag}")
+
+        return True
+
+
 def main():
     os.makedirs(MODELS_DIR, exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)
     best_dir = os.path.join(MODELS_DIR, "best")
     os.makedirs(best_dir, exist_ok=True)
 
@@ -140,30 +268,33 @@ def main():
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=best_dir,
-        eval_freq=20_000,      # matched to train.py
-        n_eval_episodes=5,     # matched to train.py
+        eval_freq=20_000,
+        n_eval_episodes=5,
         deterministic=True,
         verbose=1,
+    )
+    q_spread_callback = QValueSpreadCallback(check_freq=5_000, batch_size=256)
+    direction_callback = DirectionAgreementMonitorCallback(
+        port=MONITOR_PORT, check_freq=50_000, n_episodes=2,
     )
 
     model = DQN(
         policy="MlpPolicy",
         env=train_env,
-        policy_kwargs=dict(net_arch=[128, 128]),   # same width as PPO's pi/vf nets
-        learning_rate=lr_schedule,                  # same schedule as PPO
-        buffer_size=100_000,                        # ~28 episodes of replay (3600 steps/ep)
-        learning_starts=5_000,
-        batch_size=128,                             # matched to PPO's batch_size
+        policy_kwargs=dict(net_arch=[128, 128]),
+        learning_rate=lr_schedule,
+        buffer_size=100_000,
+        learning_starts=10_000,
+        batch_size=128,
         train_freq=4,
-        gradient_steps=1,
+        gradient_steps=4,
         target_update_interval=1_000,
-        exploration_fraction=1.0,                   # anneal eps across the WHOLE run,
-                                                       # mirroring EntropyAnnealCallback's
-                                                       # full-run anneal for PPO
+        exploration_fraction=1.0,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.02,
-        gamma=0.99,                                  # matched to PPO
-        seed=42,                                     # matches PPO's seed=42
+        gamma=0.99,
+        seed=42,
+        tensorboard_log=LOG_DIR,
         verbose=1,
     )
 
@@ -173,10 +304,16 @@ def main():
           f"imbalance_bonus_weight={IMBALANCE_BONUS_WEIGHT}, "
           f"wrong_direction_penalty={WRONG_DIRECTION_PENALTY}, "
           f"min_green={MIN_GREEN}")
+    print(f"gradient_steps=4, learning_starts=10_000")
+    print(f"Monitoring dir. agreement every 50k steps against corrected formula.")
     print(f"Output -> {MODELS_DIR}")
+    print(f"TensorBoard -> {LOG_DIR}")
     print(f"{'='*70}\n")
 
-    model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=eval_callback)
+    model.learn(
+        total_timesteps=TOTAL_TIMESTEPS,
+        callback=[eval_callback, q_spread_callback, direction_callback],
+    )
 
     model.save(os.path.join(MODELS_DIR, "dqn_sumo_2junction"))
     train_env.save(os.path.join(MODELS_DIR, "vec_normalize_sumo_dqn.pkl"))
@@ -185,6 +322,7 @@ def main():
     eval_env.close()
 
     print(f"Training done -> {os.path.join(MODELS_DIR, 'dqn_sumo_2junction.zip')}")
+    print(f"Rerun test_diagnostic_multi.py (corrected version) for the final report numbers.")
 
 
 if __name__ == "__main__":
